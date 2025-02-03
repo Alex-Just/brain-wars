@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Operations</title>
+    <title>Математика</title>
     <style>
         /* Basic reset and centering */
         body {
@@ -148,6 +148,7 @@
             text-align: center;
             margin: 10px 0;
             padding: 0 20px;
+            min-height: 1.2em; /* Reserve space for one line */
         }
 
         /* Level display */
@@ -352,6 +353,10 @@
                 padding: 10px 0;
             }
 
+            #operators {
+                gap: 15px;
+            }
+
             .operator {
                 font-size: clamp(72px, 24vw, 96px) !important;
             }
@@ -370,10 +375,81 @@
                 padding: 8px 12px;
             }
         }
+
+        /* Add box-sizing to all elements */
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        /* Update the CSS for equation container and Russian text */
+        .equation-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .math-equation {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            white-space: nowrap;
+        }
+
+        .russian-equation {
+            font-size: clamp(14px, 3.5vw, 18px);
+            color: #4CAF50;
+            text-align: center;
+            margin-top: 10px;
+            min-height: 3.8em;
+            visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 0 10px;
+        }
+
+        .translation-line {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            text-align: center;
+            flex-wrap: wrap;
+            line-height: 1.3;
+        }
+
+        .russian-equation.visible {
+            visibility: visible;
+            animation: slideIn 0.3s ease-out forwards;
+        }
+
+        @keyframes slideIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Add media query for very small screens */
+        @media (max-width: 360px) {
+            .russian-equation {
+                font-size: 13px;
+                gap: 6px;
+            }
+            
+            .translation-line {
+                gap: 4px;
+            }
+        }
     </style>
 </head>
 <body>
-    <div id="levelDisplay">Level 1</div>
+    <div id="levelDisplay">Уровень 1</div>
     <div id="game">
         <div id="equation">2 <div class="box"></div> 3 = 6</div>
         <div id="operators">
@@ -382,9 +458,9 @@
             <button class="operator" data-operator="×"></button>
             <button class="operator" data-operator="÷"></button>
         </div>
-        <div id="message">Choose the correct arithmetic symbol</div>
+        <div id="message">Выбери правильный знак</div>
     </div>
-    <button id="startButton">Start Game</button>
+    <button id="startButton">Начать игру</button>
 
     <script>
         class OperationsGame {
@@ -435,7 +511,6 @@
                 this.message = document.getElementById('message');
                 this.startButton = document.getElementById('startButton');
                 this.levelDisplay = document.getElementById('levelDisplay');
-                this.instructions = document.getElementById('instructions');
                 this.operatorButtons = document.querySelectorAll('.operator');
             }
 
@@ -457,10 +532,8 @@
                 this.isPlaying = true;
                 this.level = 1;
                 this.startButton.classList.add('fade-out');
-                this.instructions.classList.add('fade-out');
                 setTimeout(() => {
                     this.startButton.remove();
-                    this.instructions.remove();
                 }, 300);
                 this.generateProblem();
             }
@@ -543,26 +616,34 @@
 
                 // Update equation display
                 const equationContainer = document.createElement('div');
-                equationContainer.style.display = 'flex';
-                equationContainer.style.alignItems = 'center';
-                equationContainer.style.gap = '10px';
-                equationContainer.style.whiteSpace = 'nowrap';
+                equationContainer.className = 'equation-container';
 
-                equationContainer.innerHTML = `
-                    <span>${a}</span>
+                const mathEquation = document.createElement('div');
+                mathEquation.className = 'math-equation';
+
+                mathEquation.innerHTML = `
+                    <span>${this.currentProblem.a}</span>
                     <div class="box"></div>
-                    <span>${b}</span>
+                    <span>${this.currentProblem.b}</span>
                     <span>=</span>
-                    <span>${result}</span>
+                    <span>${this.currentProblem.result}</span>
                 `;
+
+                equationContainer.appendChild(mathEquation);
+
+                // Add empty Russian equation placeholder
+                const russianText = document.createElement('div');
+                russianText.className = 'russian-equation';
+                russianText.innerHTML = '&nbsp;'; // Non-breaking space to maintain height
+
+                equationContainer.appendChild(russianText);
 
                 this.equation.innerHTML = '';
                 this.equation.appendChild(equationContainer);
 
-                this.message.textContent = 'Choose the correct arithmetic symbol';
-                this.levelDisplay.textContent = `Level ${this.level}`;
-                
-                this.operatorButtons.forEach(button => button.classList.remove('selected'));
+                this.message.textContent = 'Выбери правильный знак';
+                this.message.style.visibility = 'visible';
+                this.levelDisplay.textContent = `Уровень ${this.level}`;
             }
 
             handleOperatorClick(event) {
@@ -581,43 +662,117 @@
                     this.level++;
                     
                     // Show complete equation with animation
-                    const equationContainer = document.createElement('div');
-                    equationContainer.style.display = 'flex';
-                    equationContainer.style.alignItems = 'center';
-                    equationContainer.style.gap = '10px';
-                    equationContainer.style.whiteSpace = 'nowrap';
-                    equationContainer.style.animation = 'fadeInEquation 0.3s ease-out';
+                    const equationContainer = document.querySelector('.equation-container');
+                    const mathEquation = equationContainer.querySelector('.math-equation');
+                    mathEquation.style.animation = 'fadeInEquation 0.3s ease-out';
 
+                    // Replace the box with the operator
+                    const box = mathEquation.querySelector('.box');
                     const operatorSpan = document.createElement('span');
-                    operatorSpan.textContent = this.currentProblem.correctOperator;
+                    operatorSpan.textContent = selectedOperator;
                     operatorSpan.style.color = COLORS.CORRECT;
                     operatorSpan.style.animation = 'revealOperator 0.4s ease-out';
-                    operatorSpan.style.display = 'inline-block'; // Needed for transform
+                    operatorSpan.style.display = 'inline-block';
+                    box.replaceWith(operatorSpan);
 
-                    equationContainer.innerHTML = `
-                        <span>${this.currentProblem.a}</span>
+                    const russianText = equationContainer.querySelector('.russian-equation');
+                    russianText.innerHTML = `
+                        <div class="translation-line">
+                            🇷🇺 ${this.getNumberWord(this.currentProblem.a)} ${this.getOperatorWord(selectedOperator)} ${this.getNumberWord(this.currentProblem.b)} равно ${this.getNumberWord(this.currentProblem.result)}
+                        </div>
+                        <div class="translation-line">
+                            🇬🇧 ${this.getNumberWordEn(this.currentProblem.a)} ${this.getOperatorWordEn(selectedOperator)} ${this.getNumberWordEn(this.currentProblem.b)} equals ${this.getNumberWordEn(this.currentProblem.result)}
+                        </div>
+                        <div class="translation-line">
+                            🇪🇸 ${this.getNumberWordEs(this.currentProblem.a)} ${this.getOperatorWordEs(selectedOperator)} ${this.getNumberWordEs(this.currentProblem.b)} es igual a ${this.getNumberWordEs(this.currentProblem.result)}
+                        </div>
                     `;
-                    equationContainer.appendChild(operatorSpan);
-                    equationContainer.innerHTML += `
-                        <span>${this.currentProblem.b}</span>
-                        <span>=</span>
-                        <span>${this.currentProblem.result}</span>
-                    `;
+                    russianText.classList.add('visible');
 
-                    this.equation.innerHTML = '';
-                    this.equation.appendChild(equationContainer);
-                    
-                    // Generate new problem after showing complete equation
-                    setTimeout(() => {
+                    // Hide the message during equation display
+                    this.message.style.visibility = 'hidden';
+
+                    // Update the proceedHandler
+                    const proceedHandler = () => {
+                        document.body.removeEventListener('click', proceedHandler);
                         button.classList.remove('tapped');
+                        this.message.style.visibility = 'visible';
                         this.generateProblem();
-                    }, ANIMATION_DURATION.SHOW_RESULT);
+                    };
+
+                    // Wait for click anywhere to proceed
+                    setTimeout(() => {
+                        document.body.addEventListener('click', proceedHandler);
+                    }, 500);
                 } else {
                     button.classList.add('wrong');
                     setTimeout(() => {
                         button.classList.remove('wrong');
                     }, ANIMATION_DURATION.WRONG_TAP);
                 }
+            }
+
+            getOperatorWord(symbol) {
+                switch(symbol) {
+                    case '+': return 'плюс';
+                    case '−': return 'минус';
+                    case '×': return 'умножить на';
+                    case '÷': return 'разделить на';
+                    default: return '';
+                }
+            }
+
+            getOperatorWordEn(symbol) {
+                switch(symbol) {
+                    case '+': return 'plus';
+                    case '−': return 'minus';
+                    case '×': return 'times';
+                    case '÷': return 'divided by';
+                    default: return '';
+                }
+            }
+
+            getOperatorWordEs(symbol) {
+                switch(symbol) {
+                    case '+': return 'más';
+                    case '−': return 'menos';
+                    case '×': return 'por';
+                    case '÷': return 'entre';
+                    default: return '';
+                }
+            }
+
+            getNumberWord(num) {
+                const words = {
+                    0: 'ноль', 1: 'один', 2: 'два', 3: 'три', 4: 'четыре',
+                    5: 'пять', 6: 'шесть', 7: 'семь', 8: 'восемь', 9: 'девять',
+                    10: 'десять', 11: 'одиннадцать', 12: 'двенадцать', 13: 'тринадцать',
+                    14: 'четырнадцать', 15: 'пятнадцать', 16: 'шестнадцать',
+                    17: 'семнадцать', 18: 'восемнадцать', 19: 'девятнадцать', 20: 'двадцать'
+                };
+                return words[num] || num.toString();
+            }
+
+            getNumberWordEn(num) {
+                const words = {
+                    0: 'zero', 1: 'one', 2: 'two', 3: 'three', 4: 'four',
+                    5: 'five', 6: 'six', 7: 'seven', 8: 'eight', 9: 'nine',
+                    10: 'ten', 11: 'eleven', 12: 'twelve', 13: 'thirteen',
+                    14: 'fourteen', 15: 'fifteen', 16: 'sixteen',
+                    17: 'seventeen', 18: 'eighteen', 19: 'nineteen', 20: 'twenty'
+                };
+                return words[num] || num.toString();
+            }
+
+            getNumberWordEs(num) {
+                const words = {
+                    0: 'cero', 1: 'uno', 2: 'dos', 3: 'tres', 4: 'cuatro',
+                    5: 'cinco', 6: 'seis', 7: 'siete', 8: 'ocho', 9: 'nueve',
+                    10: 'diez', 11: 'once', 12: 'doce', 13: 'trece',
+                    14: 'catorce', 15: 'quince', 16: 'dieciséis',
+                    17: 'diecisiete', 18: 'dieciocho', 19: 'diecinueve', 20: 'veinte'
+                };
+                return words[num] || num.toString();
             }
         }
 

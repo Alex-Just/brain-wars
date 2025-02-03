@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Follow the Leader Game</title>
+  <title>Повтори за мной</title>
   <style>
     /* Basic reset and centering */
     body {
@@ -322,7 +322,7 @@
   </style>
 </head>
 <body>
-  <div id="levelDisplay">Level 1</div>
+  <div id="levelDisplay">Уровень 1</div>
   <!-- Game grid: 3x3 layout -->
   <div id="game">
     <div class="square" data-index="0"></div>
@@ -335,9 +335,9 @@
     <div class="square" data-index="7"></div>
     <div class="square" data-index="8"></div>
   </div>
-  <div id="message">Tap in the order they appeared</div>
+  <div id="message">Запомните последовательность</div>
   <div id="buttonContainer">
-  <button id="startButton">Start Game</button>
+  <button id="startButton">Начать игру</button>
   </div>
 
   <div id="backgroundLogo"></div>
@@ -434,7 +434,7 @@
         }, 300);
 
         this.resetGame();
-        this.messageEl.textContent = "Watch the sequence!";
+        this.messageEl.textContent = "Запомните последовательность";
         
         const initialSquares = this.calculateTotalSquares(1);
         while (this.sequence.length < initialSquares) {
@@ -465,7 +465,7 @@
           this.speed = Math.max(this.MIN_SPEED, this.INITIAL_SPEED - (this.level - 1) * currentSpeedIncrease);
         }
         
-        this.messageEl.textContent = `Level ${this.level}: Watch the sequence!`;
+        this.messageEl.textContent = `Level ${this.level}: Запомните последовательность`;
         this.playerSequence = [];
 
         // Generate completely new sequence
@@ -508,7 +508,7 @@
           this.squares[squareIndex].classList.add('ready');
         });
 
-        this.messageEl.textContent = "Tap in the order they appeared";
+        this.messageEl.textContent = "Запомните последовательность";
         this.isPlayerTurn = true;
       }
 
@@ -581,7 +581,7 @@
         this.sequence = this.sequence.sort(() => Math.random() - 0.5);
         
         this.playerSequence = [];
-        this.messageEl.textContent = "Watch the sequence!";
+        this.messageEl.textContent = "Запомните последовательность";
         await this.playSequence();
       }
 
