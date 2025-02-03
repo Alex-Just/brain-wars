@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Follow the Leader Game</title>
+  <style>
+    /* Basic reset and centering */
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #f0f0f0;
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation; /* Disable double-tap zoom */
+      -webkit-tap-highlight-color: transparent; /* Remove tap highlight on iOS */
+    }
+    h1 {
+      margin-bottom: 10px;
+    }
+    /* Game board container */
+    #game {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(80px, 100px));
+      grid-template-rows: repeat(3, minmax(80px, 100px));
+      gap: min(3vw, 10px);
+      margin: 20px auto;
+      width: min(90vw, 320px);
+      aspect-ratio: 1;
+    }
+    /* Style for each square */
+    .square {
+      width: 100%;
+      height: 100%;
+      background-color: transparent;  /* Initially empty */
+      border: none;
+      border-radius: min(2vw, 8px);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    /* When square appears in sequence */
+    .square.sequence {
+      background-color: #666;  /* Gray when appearing */
+    }
+    /* When sequence is complete */
+    .square.ready {
+      background-color: rgb(33, 150, 243);  /* Blue when ready for input */
+    }
+    /* Hover effect when ready */
+    .square.ready:hover {
+      transform: scale(0.95);
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    /* Message and button styles */
+    #message {
+      font-size: clamp(16px, 4vw, 18px);
+      margin: 10px;
+      text-align: center;
+      max-width: 90vw;
+    }
+    #startButton {
+      padding: clamp(12px, 3vw, 20px) clamp(20px, 5vw, 40px);
+      font-size: clamp(16px, 4vw, 18px);
+      min-height: 44px; /* Minimum touch target size */
+      min-width: 44px;
+      margin: 10px;
+      border: none;
+      border-radius: min(2vw, 5px);
+      background-color: #007BFF;
+      color: white;
+      cursor: pointer;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    #startButton:hover {
+      background-color: #0056b3;
+    }
+    /* Add new CSS for tap animation */
+    @keyframes tapAnimation {
+      0% {
+        transform: scale(1);
+        opacity: 1;
+        background-color: rgb(33, 150, 243);
+      }
+      100% {
+        transform: scale(1.5);
+        opacity: 0;
+        background-color: rgba(33, 150, 243, 0.3);
+      }
+    }
+
+    .square.tapped {
+      animation: tapAnimation 0.3s ease-out forwards;
+    }
+
+    /* Add new CSS for wrong tap animation */
+    @keyframes wrongTapAnimation {
+      0%, 50% {
+        transform: scale(1);
+        opacity: 1;
+        background-color: rgb(33, 150, 243);
+      }
+      25%, 75% {
+        transform: scale(1.1);
+        opacity: 0.7;
+        background-color: rgb(244, 67, 54);  /* Red flash */
+      }
+      100% {
+        transform: scale(1.5);
+        opacity: 0;
+        background-color: rgba(244, 67, 54, 0.3);
+      }
+    }
+
+    .square.wrong {
+      animation: wrongTapAnimation 0.6s ease-out forwards;
+    }
+
+    /* Update the CSS for level display */
+    #levelDisplay {
+      position: fixed;
+      top: max(10px, env(safe-area-inset-top));
+      right: max(10px, env(safe-area-inset-right));
+      font-size: clamp(12px, 3.5vw, 14px);
+      padding: 8px 12px;
+      border-radius: min(2vw, 4px);
+      z-index: 1000;
+    }
+
+    /* Add new CSS for level completion animation */
+    @keyframes particleBurst {
+      0% {
+        transform: translate(0, 0) scale(0);
+        opacity: 1;
+      }
+      100% {
+        transform: translate(var(--tx), var(--ty)) scale(1);
+        opacity: 0;
+      }
+    }
+
+    .particle {
+      position: fixed;
+      width: min(3vw, 10px);
+      height: min(3vw, 10px);
+      background-color: #4CAF50;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 1000;
+      animation: particleBurst 0.8s ease-out forwards;
+    }
+
+    /* Add CSS for button fade out animation */
+    @keyframes fadeOut {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
+
+    .fade-out {
+      animation: fadeOut 0.3s ease-out forwards;
+      pointer-events: none;
+    }
+
+    /* Media query for very small screens */
+    @media (max-width: 320px) {
+      body {
+        padding: 10px;
+      }
+      
+      #game {
+        gap: 5px;
+      }
+      
+      #message {
+        margin: 5px;
+      }
+    }
+
+    /* Safe area insets for notched phones */
+    @supports (padding: max(0px)) {
+      body {
+        padding-left: max(20px, env(safe-area-inset-left));
+        padding-right: max(20px, env(safe-area-inset-right));
+        padding-bottom: max(20px, env(safe-area-inset-bottom));
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="levelDisplay">Level 1</div>
+  <!-- Game grid: 3x3 layout -->
+  <div id="game">
+    <div class="square" data-index="0"></div>
+    <div class="square" data-index="1"></div>
+    <div class="square" data-index="2"></div>
+    <div class="square" data-index="3"></div>
+    <div class="square" data-index="4"></div>
+    <div class="square" data-index="5"></div>
+    <div class="square" data-index="6"></div>
+    <div class="square" data-index="7"></div>
+    <div class="square" data-index="8"></div>
+  </div>
+  <div id="message">Tap in the order they appeared</div>
+  <button id="startButton">Start Game</button>
+
+  <script>
+    // Use modern class syntax for game management
+    class MemoryGame {
+      constructor() {
+        // DOM elements
+        this.squares = document.querySelectorAll('.square');
+        this.messageEl = document.getElementById('message');
+        this.startButton = document.getElementById('startButton');
+        this.levelDisplayEl = document.getElementById('levelDisplay');
+
+        // Game state
+        this.sequence = [];
+        this.playerSequence = [];
+        this.level = 0;
+        this.isPlayerTurn = false;
+        this.speed = 500;
+        this.baseSpeedIncrease = 20;
+
+        // Bind event handlers
+        this.startButton.addEventListener('click', () => this.startGame());
+        this.squares.forEach(square => {
+          square.addEventListener('click', (e) => this.handleSquareClick(e));
+        });
+      }
+
+      resetGame() {
+        this.sequence = [];
+        this.playerSequence = [];
+        this.level = 0;
+        this.speed = 500;
+        this.isPlayerTurn = false;
+        this.squares.forEach(square => {
+          square.classList.remove('sequence', 'ready');
+        });
+        this.levelDisplayEl.textContent = 'Level 1';
+      }
+
+      async startGame() {
+        // Add fade out animation
+        this.startButton.classList.add('fade-out');
+        // Remove button after animation
+        setTimeout(() => this.startButton.remove(), 300);
+
+        this.resetGame();
+        this.messageEl.textContent = "Watch the sequence!";
+        
+        const initialSquares = 3;
+        while (this.sequence.length < initialSquares) {
+          const randomIndex = Math.floor(Math.random() * this.squares.length);
+          if (!this.sequence.includes(randomIndex)) {
+            this.sequence.push(randomIndex);
+          }
+        }
+        this.level = 1;
+        this.levelDisplayEl.textContent = 'Level 1';
+        await this.playSequence();
+      }
+
+      async nextLevel() {
+        this.level++;
+        this.levelDisplayEl.textContent = `Level ${this.level}`;
+        
+        const currentSpeedIncrease = this.baseSpeedIncrease + Math.floor(this.level / 10) * 5;
+        this.speed = Math.max(200, 500 - (this.level - 1) * currentSpeedIncrease);
+        
+        this.messageEl.textContent = `Level ${this.level}: Watch the sequence!`;
+        this.playerSequence = [];
+
+        const extraSquares = Math.floor((this.level - 1) / 3);
+        const totalSquares = 3 + extraSquares;
+        
+        while (this.sequence.length < totalSquares) {
+          const randomIndex = Math.floor(Math.random() * this.squares.length);
+          if (!this.sequence.includes(randomIndex)) {
+            this.sequence.push(randomIndex);
+          }
+        }
+        
+        await this.playSequence();
+      }
+
+      async playSequence() {
+        this.isPlayerTurn = false;
+        
+        // Use Promise-based delay for better async handling
+        const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+        
+        // Show sequence
+        for (const squareIndex of this.sequence) {
+          this.squares[squareIndex].classList.add('sequence');
+          await delay(this.speed);
+        }
+
+        // Small pause with all squares visible
+        await delay(300);
+
+        // Remove gray color from all squares at once
+        this.sequence.forEach(squareIndex => {
+          this.squares[squareIndex].classList.remove('sequence');
+          this.squares[squareIndex].classList.add('ready');
+        });
+
+        this.messageEl.textContent = "Tap in the order they appeared";
+        this.isPlayerTurn = true;
+      }
+
+      async handleSquareClick(event) {
+        if (!this.isPlayerTurn) return;
+
+        const square = event.currentTarget;
+        const index = parseInt(square.getAttribute('data-index'), 10);
+        
+        if (!square.classList.contains('ready')) return;
+
+        if (this.playerSequence.length >= this.sequence.length || 
+            index !== this.sequence[this.playerSequence.length]) {
+          await this.handleWrongMove(square);
+          return;
+        }
+
+        await this.handleCorrectMove(square);
+      }
+
+      async handleWrongMove(square) {
+        this.isPlayerTurn = false;
+        
+        square.classList.add('wrong');
+        
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Only animate squares that were part of the sequence
+        this.sequence.forEach(squareIndex => {
+          const otherSquare = this.squares[squareIndex];
+          if (otherSquare !== square) {
+            otherSquare.classList.add('tapped');
+          }
+        });
+
+        await new Promise(resolve => setTimeout(resolve, 600));
+        
+        // Clean up all squares (including the wrong one)
+        this.squares.forEach(square => {
+          square.classList.remove('wrong', 'tapped', 'ready');
+        });
+        
+        this.startGame();
+      }
+
+      async handleCorrectMove(square) {
+        square.classList.add('tapped');
+        setTimeout(() => {
+          square.classList.remove('tapped', 'ready');
+        }, 300);
+
+        this.playerSequence.push(parseInt(square.getAttribute('data-index'), 10));
+
+        if (this.playerSequence.length === this.sequence.length) {
+          this.isPlayerTurn = false;
+          
+          // Get the position of the last tapped square for the particle effect
+          const rect = square.getBoundingClientRect();
+          const x = rect.left + rect.width / 2;
+          const y = rect.top + rect.height / 2;
+          
+          // Create celebration particles
+          await this.createParticles(x, y);
+          
+          this.squares.forEach(s => {
+            if (s !== square) {
+              s.classList.remove('ready');
+            }
+          });
+          
+          // Add a slight delay to appreciate the animation
+          setTimeout(() => this.nextLevel(), 1000);
+        }
+      }
+
+      async createParticles(x, y) {
+        const colors = ['#4CAF50', '#2196F3', '#FFC107', '#9C27B0', '#FF5722'];
+        const particleCount = 20;
+        
+        for (let i = 0; i < particleCount; i++) {
+          const particle = document.createElement('div');
+          particle.className = 'particle';
+          
+          // Random position around the center
+          const angle = (i / particleCount) * 360;
+          const distance = 100 + Math.random() * 50;
+          const tx = Math.cos(angle * Math.PI / 180) * distance;
+          const ty = Math.sin(angle * Math.PI / 180) * distance;
+          
+          // Set particle position and color
+          particle.style.left = `${x}px`;
+          particle.style.top = `${y}px`;
+          particle.style.setProperty('--tx', `${tx}px`);
+          particle.style.setProperty('--ty', `${ty}px`);
+          particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+          
+          document.body.appendChild(particle);
+          
+          // Remove particle after animation
+          setTimeout(() => particle.remove(), 1000);
+        }
+      }
+    }
+
+    // Initialize game when DOM is loaded
+    document.addEventListener('DOMContentLoaded', () => {
+      new MemoryGame();
+    });
+  </script>
+</body>
+</html>
