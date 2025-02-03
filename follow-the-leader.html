@@ -46,8 +46,10 @@
       border-radius: min(2vw, 8px);
       cursor: pointer;
       transition: all 0.2s ease;
-      touch-action: manipulation;
-      user-select: none;
+      touch-action: none; /* Disable browser touch actions */
+      -webkit-touch-callout: none; /* Disable callout on iOS */
+      -webkit-tap-highlight-color: transparent; /* Remove tap highlight */
+      user-select: none; /* Prevent text selection */
       -webkit-user-select: none;
       box-shadow: none !important;
     }
@@ -58,6 +60,7 @@
     /* When sequence is complete */
     .square.ready {
       background-color: rgb(33, 150, 243);  /* Blue when ready for input */
+      pointer-events: auto; /* Enable interactions only when ready */
     }
     /* Hover effect when ready */
     .square.ready:hover {
@@ -319,6 +322,10 @@
     .square.wrong {
       box-shadow: none !important;
     }
+
+    .square:not(.ready) {
+      pointer-events: none; /* Disable interactions when not ready */
+    }
   </style>
 </head>
 <body>
@@ -384,9 +391,31 @@
       }
 
       bindEventListeners() {
-        this.startButton.addEventListener('click', () => this.startGame());
         this.squares.forEach(square => {
-          square.addEventListener('click', (e) => this.handleSquareClick(e));
+            // Remove click listener
+            square.removeEventListener('click', this.handleSquareClick);
+            
+            // Add touch/mouse listeners
+            square.addEventListener('touchstart', (e) => {
+                e.preventDefault(); // Prevent default touch behavior
+                this.handleSquareClick(e);
+            }, { passive: false });
+            
+            square.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                this.handleSquareClick(e);
+            });
+        });
+
+        // Update start button listener too
+        this.startButton.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            this.startGame();
+        }, { passive: false });
+        
+        this.startButton.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            this.startGame();
         });
       }
 
