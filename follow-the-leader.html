@@ -78,23 +78,24 @@
       justify-content: center;
     }
     #startButton {
-      position: absolute; /* Remove from document flow */
+      position: absolute;
       padding: clamp(12px, 3vw, 20px) clamp(20px, 5vw, 40px);
       font-size: clamp(16px, 4vw, 18px);
-      min-height: 44px; /* Minimum touch target size */
+      min-height: 44px;
       min-width: 44px;
       margin: 10px;
       border: none;
       border-radius: min(2vw, 5px);
-      background-color: #60ACBD;  /* Updated from #007BFF */
+      background-color: #60ACBD;
       color: white;
       cursor: pointer;
       touch-action: manipulation;
       user-select: none;
       -webkit-user-select: none;
+      box-shadow: 0 4px 12px rgba(96, 172, 189, 0.2);
     }
     #startButton:hover {
-      background-color: #4d8a98;  /* Darker version of #60ACBD for hover */
+      background-color: #4d8a98;
     }
     /* Add new CSS for tap animation */
     @keyframes tapAnimation {
@@ -318,36 +319,9 @@
     .square.wrong {
       box-shadow: none !important;
     }
-
-    /* Add this CSS for the menu button */
-    #menuButton {
-      position: fixed;
-      top: max(15px, env(safe-area-inset-top));
-      left: max(15px, env(safe-area-inset-left));
-      padding: 8px 12px;
-      font-size: clamp(14px, 3.5vw, 16px);
-      color: #60ACBD;
-      cursor: pointer;
-      text-decoration: none;
-      z-index: 1000;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    #menuButton::before {
-      content: "←";
-      display: inline-block;
-      margin-right: 4px;
-    }
-
-    #menuButton:hover {
-      color: #4d8a98;
-    }
   </style>
 </head>
 <body>
-  <a href="../index.html" id="menuButton">Main Menu</a>
   <div id="levelDisplay">Level 1</div>
   <!-- Game grid: 3x3 layout -->
   <div id="game">

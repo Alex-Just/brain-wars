@@ -164,13 +164,19 @@
 
         /* Start button */
         #startButton {
+            padding: clamp(12px, 3vw, 20px) clamp(20px, 5vw, 40px);
+            font-size: clamp(16px, 4vw, 18px);
+            min-height: 44px;
+            min-width: 44px;
+            margin: 10px;
+            border: none;
+            border-radius: min(2vw, 5px);
             background-color: #60ACBD;
             color: white;
-            border: none;
-            border-radius: 100px;  /* Rounded corners */
-            padding: 16px 40px;
-            font-size: clamp(20px, 5vw, 24px);
-            margin-top: 40px;
+            cursor: pointer;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
             box-shadow: 0 4px 12px rgba(96, 172, 189, 0.2);
         }
 
@@ -339,32 +345,6 @@
             }
         }
 
-        /* Replace the menuButton styles with */
-        #menuButton {
-            position: fixed;
-            top: max(15px, env(safe-area-inset-top));
-            left: max(15px, env(safe-area-inset-left));
-            padding: 8px 12px;
-            font-size: clamp(14px, 3.5vw, 16px);
-            color: #60ACBD;
-            cursor: pointer;
-            text-decoration: none;
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        #menuButton::before {
-            content: "←";
-            display: inline-block;
-            margin-right: 4px;
-        }
-
-        #menuButton:hover {
-            color: #4d8a98;
-        }
-
         /* Add responsive adjustments */
         @media (max-width: 480px) {
             #game {
@@ -393,7 +373,6 @@
     </style>
 </head>
 <body>
-    <a href="../index.html" id="menuButton">Main Menu</a>
     <div id="levelDisplay">Level 1</div>
     <div id="game">
         <div id="equation">2 <div class="box"></div> 3 = 6</div>
@@ -406,7 +385,6 @@
         <div id="message">Choose the correct arithmetic symbol</div>
     </div>
     <button id="startButton">Start Game</button>
-    <div id="instructions">Fill in the box with the correct operator</div>
 
     <script>
         class OperationsGame {
