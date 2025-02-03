@@ -30,38 +30,40 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 40px;  /* Increased gap between elements */
+            gap: 20px;
             width: min(90vw, 400px);
+            padding: 20px 0;
         }
 
         /* Equation display */
         #equation {
-            font-size: clamp(42px, 14vw, 72px);
+            font-size: clamp(32px, 10vw, 64px);
             color: #333;
             font-weight: 400;
             letter-spacing: 0.02em;
-            margin: 40px 0;
-            white-space: nowrap; /* Prevent wrapping */
+            margin: 10px 0;
+            white-space: nowrap;
             display: flex;
             align-items: center;
             gap: 10px;
         }
 
         .box {
-            width: clamp(50px, 14vw, 70px);
-            height: clamp(50px, 14vw, 70px);
+            width: clamp(35px, 10vw, 50px);
+            height: clamp(35px, 10vw, 50px);
             border: 2px solid #999;
             border-radius: 4px;
             display: inline-block;
-            margin: 0 10px;
+            margin: 0 5px;
         }
 
         /* Operators grid */
         #operators {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 25px;
-            width: min(90vw, 400px);
+            gap: min(4vw, 20px);
+            width: min(85vw, 360px);
+            margin: 10px 0;
         }
 
         .operator {
@@ -141,11 +143,11 @@
 
         /* Message display */
         #message {
-            font-size: clamp(24px, 6vw, 32px);
+            font-size: clamp(18px, 4vw, 24px);
             color: #666;
             text-align: center;
-            margin-top: 40px;
-            font-weight: 400;
+            margin: 10px 0;
+            padding: 0 20px;
         }
 
         /* Level display */
@@ -188,10 +190,10 @@
         /* Safe area insets */
         @supports (padding: max(0px)) {
             body {
-                padding: env(safe-area-inset-top)
-                         env(safe-area-inset-right)
-                         env(safe-area-inset-bottom)
-                         env(safe-area-inset-left);
+                padding: max(10px, env(safe-area-inset-top))
+                         max(10px, env(safe-area-inset-right))
+                         max(10px, env(safe-area-inset-bottom))
+                         max(10px, env(safe-area-inset-left));
             }
         }
 
@@ -336,9 +338,62 @@
                 transform: scale(1);
             }
         }
+
+        /* Replace the menuButton styles with */
+        #menuButton {
+            position: fixed;
+            top: max(15px, env(safe-area-inset-top));
+            left: max(15px, env(safe-area-inset-left));
+            padding: 8px 12px;
+            font-size: clamp(14px, 3.5vw, 16px);
+            color: #60ACBD;
+            cursor: pointer;
+            text-decoration: none;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        #menuButton::before {
+            content: "←";
+            display: inline-block;
+            margin-right: 4px;
+        }
+
+        #menuButton:hover {
+            color: #4d8a98;
+        }
+
+        /* Add responsive adjustments */
+        @media (max-width: 480px) {
+            #game {
+                gap: 15px;
+                padding: 10px 0;
+            }
+
+            .operator {
+                font-size: clamp(72px, 24vw, 96px) !important;
+            }
+
+            #message {
+                font-size: clamp(16px, 4vw, 20px);
+            }
+
+            #startButton {
+                padding: 12px 30px;
+                font-size: clamp(16px, 4vw, 20px);
+            }
+
+            #levelDisplay {
+                font-size: clamp(14px, 3.5vw, 16px);
+                padding: 8px 12px;
+            }
+        }
     </style>
 </head>
 <body>
+    <a href="../index.html" id="menuButton">Main Menu</a>
     <div id="levelDisplay">Level 1</div>
     <div id="game">
         <div id="equation">2 <div class="box"></div> 3 = 6</div>
