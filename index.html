@@ -8,7 +8,7 @@
     /* Basic reset and centering */
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background-color: #f0f0f0;
+      background-color: #ffffff;
       margin: 0;
       padding: 20px;
       min-height: 100vh;
@@ -65,7 +65,15 @@
       text-align: center;
       max-width: 90vw;
     }
+    /* Update the button container and button styles */
+    #buttonContainer {
+      height: 64px; /* Height that fits the button */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
     #startButton {
+      position: absolute; /* Remove from document flow */
       padding: clamp(12px, 3vw, 20px) clamp(20px, 5vw, 40px);
       font-size: clamp(16px, 4vw, 18px);
       min-height: 44px; /* Minimum touch target size */
@@ -88,17 +96,17 @@
       0% {
         transform: scale(1);
         opacity: 1;
-        background-color: rgb(33, 150, 243);
+        background-color: var(--color-primary);
       }
       100% {
-        transform: scale(1.5);
+        transform: scale(var(--scale-tap));
         opacity: 0;
-        background-color: rgba(33, 150, 243, 0.3);
+        background-color: var(--color-primary-light);
       }
     }
 
     .square.tapped {
-      animation: tapAnimation 0.3s ease-out forwards;
+      animation: tapAnimation var(--animation-speed-fast) ease-out forwards;
     }
 
     /* Add new CSS for wrong tap animation */
@@ -106,22 +114,22 @@
       0%, 50% {
         transform: scale(1);
         opacity: 1;
-        background-color: rgb(33, 150, 243);
+        background-color: var(--color-primary);
       }
       25%, 75% {
-        transform: scale(1.1);
+        transform: scale(var(--scale-error));
         opacity: 0.7;
-        background-color: rgb(244, 67, 54);  /* Red flash */
+        background-color: var(--color-error);
       }
       100% {
-        transform: scale(1.5);
+        transform: scale(var(--scale-tap));
         opacity: 0;
-        background-color: rgba(244, 67, 54, 0.3);
+        background-color: var(--color-error-light);
       }
     }
 
     .square.wrong {
-      animation: wrongTapAnimation 0.6s ease-out forwards;
+      animation: wrongTapAnimation var(--animation-speed-medium) ease-out forwards;
     }
 
     /* Update the CSS for level display */
@@ -149,23 +157,34 @@
 
     .particle {
       position: fixed;
-      width: min(3vw, 10px);
-      height: min(3vw, 10px);
-      background-color: #4CAF50;
+      width: var(--particle-size);
+      height: var(--particle-size);
+      background-color: var(--color-success);
       border-radius: 50%;
       pointer-events: none;
       z-index: 1000;
-      animation: particleBurst 0.8s ease-out forwards;
+      animation: particleBurst var(--animation-speed-slow) ease-out forwards;
     }
 
-    /* Add CSS for button fade out animation */
+    /* Update the fadeOut animation and create a separate one for the logo */
     @keyframes fadeOut {
       from { opacity: 1; }
       to { opacity: 0; }
     }
 
+    @keyframes fadeOutLogo {
+      from { opacity: 0.03; }
+      to { opacity: 0; }
+    }
+
+    /* Update the fade-out classes */
     .fade-out {
       animation: fadeOut 0.3s ease-out forwards;
+      pointer-events: none;
+    }
+
+    .fade-out-logo {
+      animation: fadeOutLogo 0.3s ease-out forwards;
       pointer-events: none;
     }
 
@@ -192,6 +211,95 @@
         padding-bottom: max(20px, env(safe-area-inset-bottom));
       }
     }
+
+    /* Update background logo styles to use a separate element instead of pseudo-element */
+    #backgroundLogo {
+      content: '';
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: min(90vw, 500px);
+      height: min(90vw, 500px);
+      background-image: url('transformers-logo.svg');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      opacity: 0.03;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    /* Add CSS custom properties for consistent values */
+    :root {
+      /* Colors */
+      --color-primary: rgb(33, 150, 243);
+      --color-primary-light: rgba(33, 150, 243, 0.3);
+      --color-secondary: #666;
+      --color-error: rgb(244, 67, 54);
+      --color-error-light: rgba(244, 67, 54, 0.3);
+      --color-success: #4CAF50;
+      --color-button: #007BFF;
+      --color-button-hover: #0056b3;
+      
+      /* Timing */
+      --animation-speed-fast: 0.3s;
+      --animation-speed-medium: 0.6s;
+      --animation-speed-slow: 0.8s;
+      --delay-short: 300ms;
+      --delay-medium: 600ms;
+      --delay-long: 1000ms;
+      
+      /* Game settings */
+      --initial-squares: 3;
+      --squares-increment-level: 5;
+      --initial-speed: 500;
+      --min-speed: 200;
+      --speed-decrease: 20;
+      --max-errors: 3;
+      
+      /* Sizes */
+      --border-radius: min(2vw, 8px);
+      --particle-size: min(3vw, 10px);
+      --button-height: 64px;
+      
+      /* Transforms */
+      --scale-hover: 0.95;
+      --scale-tap: 1.5;
+      --scale-error: 1.1;
+      
+      /* Layout */
+      --grid-size: min(90vw, 320px);
+      --grid-gap: min(3vw, 10px);
+      --safe-area: max(20px, env(safe-area-inset-left));
+      
+      /* Particles */
+      --particle-count: 20;
+      --particle-distance: 100;
+      --particle-distance-random: 50;
+      
+      /* Animation custom properties */
+      --tx: 0px;
+      --ty: 0px;
+    }
+
+    /* Update all hardcoded values to use custom properties */
+    .square {
+      border-radius: var(--border-radius);
+      transition: all var(--animation-speed-fast) ease;
+    }
+
+    .square.sequence {
+      background-color: var(--color-secondary);
+    }
+
+    .square.ready {
+      background-color: var(--color-primary);
+    }
+
+    .square.ready:hover {
+      transform: scale(var(--scale-hover));
+    }
   </style>
 </head>
 <body>
@@ -209,58 +317,110 @@
     <div class="square" data-index="8"></div>
   </div>
   <div id="message">Tap in the order they appeared</div>
+  <div id="buttonContainer">
   <button id="startButton">Start Game</button>
+  </div>
+
+  <div id="backgroundLogo"></div>
 
   <script>
     // Use modern class syntax for game management
     class MemoryGame {
       constructor() {
-        // DOM elements
+        // Game constants
+        this.INITIAL_SQUARES = parseInt(getComputedStyle(document.documentElement)
+          .getPropertyValue('--initial-squares'));
+        this.SQUARES_INCREMENT_LEVEL = parseInt(getComputedStyle(document.documentElement)
+          .getPropertyValue('--squares-increment-level'));
+        this.INITIAL_SPEED = parseInt(getComputedStyle(document.documentElement)
+          .getPropertyValue('--initial-speed'));
+        this.MIN_SPEED = parseInt(getComputedStyle(document.documentElement)
+          .getPropertyValue('--min-speed'));
+        this.SPEED_DECREASE = parseInt(getComputedStyle(document.documentElement)
+          .getPropertyValue('--speed-decrease'));
+        this.MAX_ERRORS = parseInt(getComputedStyle(document.documentElement)
+          .getPropertyValue('--max-errors'));
+        this.PARTICLE_COUNT = parseInt(getComputedStyle(document.documentElement)
+          .getPropertyValue('--particle-count'));
+        
+        // Initialize game
+        this.initializeGame();
+      }
+
+      initializeGame() {
+        // Move initialization logic here
         this.squares = document.querySelectorAll('.square');
         this.messageEl = document.getElementById('message');
         this.startButton = document.getElementById('startButton');
         this.levelDisplayEl = document.getElementById('levelDisplay');
 
-        // Game state
         this.sequence = [];
         this.playerSequence = [];
         this.level = 0;
         this.isPlayerTurn = false;
-        this.speed = 500;
-        this.baseSpeedIncrease = 20;
+        this.speed = this.INITIAL_SPEED;
+        this.consecutiveErrors = 0;
 
-        // Bind event handlers
+        this.bindEventListeners();
+      }
+
+      bindEventListeners() {
         this.startButton.addEventListener('click', () => this.startGame());
         this.squares.forEach(square => {
           square.addEventListener('click', (e) => this.handleSquareClick(e));
         });
       }
 
+      // Update game logic to use constants
+      calculateTotalSquares(level) {
+        return this.INITIAL_SQUARES + Math.floor((level - 1) / this.SQUARES_INCREMENT_LEVEL);
+      }
       resetGame() {
         this.sequence = [];
         this.playerSequence = [];
         this.level = 0;
-        this.speed = 500;
+        this.speed = this.INITIAL_SPEED;
         this.isPlayerTurn = false;
+        this.consecutiveErrors = 0;
         this.squares.forEach(square => {
           square.classList.remove('sequence', 'ready');
         });
         this.levelDisplayEl.textContent = 'Level 1';
       }
 
+      // Add new helper method for better randomization
+      getRandomSquare() {
+        // Get all available squares (those not in current sequence)
+        const availableSquares = Array.from(Array(9).keys())
+          .filter(i => !this.sequence.includes(i));
+        
+        // If no squares available, return null (shouldn't happen)
+        if (availableSquares.length === 0) return null;
+        
+        // Get random index from available squares
+        const randomIndex = Math.floor(Math.random() * availableSquares.length);
+        return availableSquares[randomIndex];
+      }
+
+      // Update startGame method
       async startGame() {
-        // Add fade out animation
+        // Add fade out animations with different classes
         this.startButton.classList.add('fade-out');
-        // Remove button after animation
-        setTimeout(() => this.startButton.remove(), 300);
+        document.getElementById('backgroundLogo').classList.add('fade-out-logo');
+        
+        // Remove elements after animation
+        setTimeout(() => {
+          this.startButton.remove();
+          document.getElementById('backgroundLogo').remove();
+        }, 300);
 
         this.resetGame();
         this.messageEl.textContent = "Watch the sequence!";
         
-        const initialSquares = 3;
+        const initialSquares = this.calculateTotalSquares(1);
         while (this.sequence.length < initialSquares) {
-          const randomIndex = Math.floor(Math.random() * this.squares.length);
-          if (!this.sequence.includes(randomIndex)) {
+          const randomIndex = this.getRandomSquare();
+          if (randomIndex !== null) {
             this.sequence.push(randomIndex);
           }
         }
@@ -269,25 +429,44 @@
         await this.playSequence();
       }
 
+      // Update nextLevel method
       async nextLevel() {
         this.level++;
         this.levelDisplayEl.textContent = `Level ${this.level}`;
         
-        const currentSpeedIncrease = this.baseSpeedIncrease + Math.floor(this.level / 10) * 5;
-        this.speed = Math.max(200, 500 - (this.level - 1) * currentSpeedIncrease);
+        // Calculate if we're adding a new square this level
+        const previousSquares = this.calculateTotalSquares(this.level - 2);
+        const currentSquares = this.calculateTotalSquares(this.level - 1);
+        const addingNewSquare = currentSquares > previousSquares;
+        
+        if (addingNewSquare) {
+          this.speed = this.INITIAL_SPEED; // Reset to initial speed
+        } else {
+          const currentSpeedIncrease = this.SPEED_DECREASE + Math.floor(this.level / 10) * 5;
+          this.speed = Math.max(this.MIN_SPEED, this.INITIAL_SPEED - (this.level - 1) * currentSpeedIncrease);
+        }
         
         this.messageEl.textContent = `Level ${this.level}: Watch the sequence!`;
         this.playerSequence = [];
 
-        const extraSquares = Math.floor((this.level - 1) / 3);
-        const totalSquares = 3 + extraSquares;
+        // Generate completely new sequence
+        const totalSquares = this.calculateTotalSquares(this.level);
+        this.sequence = []; // Clear existing sequence
         
+        // Fill with new random squares
         while (this.sequence.length < totalSquares) {
-          const randomIndex = Math.floor(Math.random() * this.squares.length);
-          if (!this.sequence.includes(randomIndex)) {
-            this.sequence.push(randomIndex);
-          }
+          // Get all unused squares
+          const availableSquares = Array.from(Array(9).keys())
+            .filter(i => !this.sequence.includes(i));
+          
+          // Pick random square from available ones
+          const randomIndex = Math.floor(Math.random() * availableSquares.length);
+          this.sequence.push(availableSquares[randomIndex]);
         }
+        
+        // Shuffle the sequence for extra randomness
+        this.sequence = this.sequence
+          .sort(() => Math.random() - 0.5);
         
         await this.playSequence();
       }
@@ -304,10 +483,7 @@
           await delay(this.speed);
         }
 
-        // Small pause with all squares visible
-        await delay(300);
-
-        // Remove gray color from all squares at once
+        // Remove gray color and make squares ready immediately
         this.sequence.forEach(squareIndex => {
           this.squares[squareIndex].classList.remove('sequence');
           this.squares[squareIndex].classList.add('ready');
@@ -323,19 +499,24 @@
         const square = event.currentTarget;
         const index = parseInt(square.getAttribute('data-index'), 10);
         
+        // Ignore if square is not part of sequence or already tapped
         if (!square.classList.contains('ready')) return;
-
+        
+        // Ignore if this square was just tapped (prevent double-tap)
+        if (square.classList.contains('tapped')) return;
+        
         if (this.playerSequence.length >= this.sequence.length || 
             index !== this.sequence[this.playerSequence.length]) {
           await this.handleWrongMove(square);
-          return;
-        }
+            return;
+          }
 
         await this.handleCorrectMove(square);
       }
 
       async handleWrongMove(square) {
         this.isPlayerTurn = false;
+        this.consecutiveErrors++;
         
         square.classList.add('wrong');
         
@@ -351,15 +532,35 @@
 
         await new Promise(resolve => setTimeout(resolve, 600));
         
-        // Clean up all squares (including the wrong one)
+        // Clean up all squares
         this.squares.forEach(square => {
           square.classList.remove('wrong', 'tapped', 'ready');
         });
         
-        this.startGame();
+        // Check if we need to go back a level
+        if (this.consecutiveErrors >= this.MAX_ERRORS) {
+          this.consecutiveErrors = 0;
+          if (this.level > 1) {
+            this.level--;
+            this.levelDisplayEl.textContent = `Level ${this.level}`;
+            
+            // Recalculate squares for previous level
+            const totalSquares = this.calculateTotalSquares(this.level - 1);
+            
+            // Trim sequence to match previous level
+            this.sequence = this.sequence.slice(0, totalSquares);
+          }
+        }
+        
+        this.playerSequence = [];
+        this.messageEl.textContent = "Watch the sequence!";
+        await this.playSequence();
       }
 
       async handleCorrectMove(square) {
+        // Reset consecutive errors on correct move
+        this.consecutiveErrors = 0;
+        
         square.classList.add('tapped');
         setTimeout(() => {
           square.classList.remove('tapped', 'ready');
@@ -390,20 +591,28 @@
       }
 
       async createParticles(x, y) {
-        const colors = ['#4CAF50', '#2196F3', '#FFC107', '#9C27B0', '#FF5722'];
-        const particleCount = 20;
+        const colors = [
+          getComputedStyle(document.documentElement).getPropertyValue('--color-success'),
+          getComputedStyle(document.documentElement).getPropertyValue('--color-primary'),
+          '#FFC107', // Keep some colors for variety
+          '#9C27B0',
+          '#FF5722'
+        ];
         
-        for (let i = 0; i < particleCount; i++) {
+        for (let i = 0; i < this.PARTICLE_COUNT; i++) {
           const particle = document.createElement('div');
           particle.className = 'particle';
           
           // Random position around the center
-          const angle = (i / particleCount) * 360;
-          const distance = 100 + Math.random() * 50;
+          const angle = (i / this.PARTICLE_COUNT) * 360;
+          const distance = parseInt(getComputedStyle(document.documentElement)
+            .getPropertyValue('--particle-distance')) + 
+            Math.random() * parseInt(getComputedStyle(document.documentElement)
+            .getPropertyValue('--particle-distance-random'));
+          
           const tx = Math.cos(angle * Math.PI / 180) * distance;
           const ty = Math.sin(angle * Math.PI / 180) * distance;
           
-          // Set particle position and color
           particle.style.left = `${x}px`;
           particle.style.top = `${y}px`;
           particle.style.setProperty('--tx', `${tx}px`);
@@ -413,7 +622,8 @@
           document.body.appendChild(particle);
           
           // Remove particle after animation
-          setTimeout(() => particle.remove(), 1000);
+          setTimeout(() => particle.remove(), parseFloat(getComputedStyle(document.documentElement)
+            .getPropertyValue('--animation-speed-slow')) * 1000);
         }
       }
     }
