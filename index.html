@@ -41,7 +41,7 @@
     .square {
       width: 100%;
       height: 100%;
-      background-color: transparent;  /* Initially empty */
+      background-color: transparent;
       border: none;
       border-radius: min(2vw, 8px);
       cursor: pointer;
@@ -49,6 +49,7 @@
       touch-action: manipulation;
       user-select: none;
       -webkit-user-select: none;
+      box-shadow: none !important;
     }
     /* When square appears in sequence */
     .square.sequence {
@@ -61,7 +62,6 @@
     /* Hover effect when ready */
     .square.ready:hover {
       transform: scale(0.95);
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
     /* Message and button styles */
     #message {
@@ -302,6 +302,19 @@
 
     .square.ready:hover {
       transform: scale(var(--scale-hover));
+    }
+
+    /* Remove hover shadow effect */
+    .square.ready:hover {
+      /* Remove box-shadow line */
+    }
+
+    /* Ensure no shadows during animations */
+    .square.sequence,
+    .square.ready,
+    .square.tapped,
+    .square.wrong {
+      box-shadow: none !important;
     }
   </style>
 </head>
@@ -546,14 +559,23 @@
           if (this.level > 1) {
             this.level--;
             this.levelDisplayEl.textContent = `Level ${this.level}`;
-            
-            // Recalculate squares for previous level
-            const totalSquares = this.calculateTotalSquares(this.level - 1);
-            
-            // Trim sequence to match previous level
-            this.sequence = this.sequence.slice(0, totalSquares);
           }
         }
+        
+        // Generate new random sequence for current level
+        const totalSquares = this.calculateTotalSquares(this.level);
+        this.sequence = []; // Clear existing sequence
+        
+        // Fill with new random squares
+        while (this.sequence.length < totalSquares) {
+          const availableSquares = Array.from(Array(9).keys())
+            .filter(i => !this.sequence.includes(i));
+          const randomIndex = Math.floor(Math.random() * availableSquares.length);
+          this.sequence.push(availableSquares[randomIndex]);
+        }
+        
+        // Shuffle the sequence for extra randomness
+        this.sequence = this.sequence.sort(() => Math.random() - 0.5);
         
         this.playerSequence = [];
         this.messageEl.textContent = "Watch the sequence!";
