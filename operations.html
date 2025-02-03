@@ -64,6 +64,14 @@
             gap: min(4vw, 20px);
             width: min(85vw, 360px);
             margin: 10px 0;
+            visibility: visible;
+            opacity: 1;
+            transition: opacity 0.3s ease-out;
+        }
+
+        #operators.hidden {
+            visibility: hidden;
+            opacity: 0;
         }
 
         .operator {
@@ -661,6 +669,9 @@
                     button.classList.add('tapped');
                     this.level++;
                     
+                    // Hide operator buttons
+                    this.operators.classList.add('hidden');
+                    
                     // Show complete equation with animation
                     const equationContainer = document.querySelector('.equation-container');
                     const mathEquation = equationContainer.querySelector('.math-equation');
@@ -692,11 +703,12 @@
                     // Hide the message during equation display
                     this.message.style.visibility = 'hidden';
 
-                    // Update the proceedHandler
+                    // Update the proceedHandler to show buttons again
                     const proceedHandler = () => {
                         document.body.removeEventListener('click', proceedHandler);
                         button.classList.remove('tapped');
                         this.message.style.visibility = 'visible';
+                        this.operators.classList.remove('hidden');
                         this.generateProblem();
                     };
 
