@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Operations</title>
+    <style>
+        /* Basic reset and centering */
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;  /* Light gray background */
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            height: 100vh;
+            max-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+        }
+
+        /* Game container */
+        #game {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 40px;  /* Increased gap between elements */
+            width: min(90vw, 400px);
+        }
+
+        /* Equation display */
+        #equation {
+            font-size: clamp(42px, 14vw, 72px);
+            color: #333;
+            font-weight: 400;
+            letter-spacing: 0.02em;
+            margin: 40px 0;
+            white-space: nowrap; /* Prevent wrapping */
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .box {
+            width: clamp(50px, 14vw, 70px);
+            height: clamp(50px, 14vw, 70px);
+            border: 2px solid #999;
+            border-radius: 4px;
+            display: inline-block;
+            margin: 0 10px;
+        }
+
+        /* Operators grid */
+        #operators {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
+            width: min(90vw, 400px);
+        }
+
+        .operator {
+            background: white;
+            border: none;
+            border-radius: 20px;
+            aspect-ratio: 1;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            padding: 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            color: #60ACBD;
+            font-family: 'Cambria Math', 'Times New Roman', serif;
+            font-style: italic;
+        }
+
+        /* Plus sign */
+        .operator:nth-child(1)::before {
+            content: '+';
+            font-size: clamp(96px, 32vw, 164px);
+            line-height: 1;
+            font-family: 'Cambria Math', 'Times New Roman', serif;
+            font-style: italic;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        /* Minus sign */
+        .operator:nth-child(2)::before {
+            content: '−';
+            font-size: clamp(84px, 28vw, 166px);
+            line-height: 1;
+            font-family: 'Cambria Math', 'Times New Roman', serif;
+            font-style: italic;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        /* Multiplication sign */
+        .operator:nth-child(3)::before {
+            content: '×';
+            font-size: clamp(90px, 30vw, 165px);
+            line-height: 1;
+            font-family: 'Cambria Math', 'Times New Roman', serif;
+            font-style: italic;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        /* Division sign */
+        .operator:nth-child(4)::before {
+            content: '÷';
+            font-size: clamp(90px, 30vw, 165px);
+            line-height: 1;
+            font-family: 'Cambria Math', 'Times New Roman', serif;
+            font-style: italic;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            top: 50%;  /* Override previous top value */
+        }
+
+        .operator.selected {
+            background-color: #60ACBD;
+            color: white;
+        }
+
+        /* Message display */
+        #message {
+            font-size: clamp(24px, 6vw, 32px);
+            color: #666;
+            text-align: center;
+            margin-top: 40px;
+            font-weight: 400;
+        }
+
+        /* Level display */
+        #levelDisplay {
+            position: fixed;
+            top: max(15px, env(safe-area-inset-top));
+            right: max(15px, env(safe-area-inset-right));
+            font-size: clamp(16px, 4vw, 20px);
+            padding: 10px 15px;
+            border-radius: 6px;
+            background: rgba(0,0,0,0.1);
+            color: #666;
+        }
+
+        /* Start button */
+        #startButton {
+            background-color: #60ACBD;
+            color: white;
+            border: none;
+            border-radius: 100px;  /* Rounded corners */
+            padding: 16px 40px;
+            font-size: clamp(20px, 5vw, 24px);
+            margin-top: 40px;
+            box-shadow: 0 4px 12px rgba(96, 172, 189, 0.2);
+        }
+
+        #startButton:hover {
+            background-color: #4d8a98;
+        }
+
+        /* Instructions */
+        #instructions {
+            font-size: clamp(24px, 6vw, 32px);
+            color: #666;
+            text-align: center;
+            margin-top: 40px;
+            font-weight: 400;
+        }
+
+        /* Safe area insets */
+        @supports (padding: max(0px)) {
+            body {
+                padding: env(safe-area-inset-top)
+                         env(safe-area-inset-right)
+                         env(safe-area-inset-bottom)
+                         env(safe-area-inset-left);
+            }
+        }
+
+        .fade-out {
+            animation: fadeOut 0.3s ease-out forwards;
+            pointer-events: none;
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+
+        /* Update and add these animation styles */
+        @keyframes tapAnimation {
+            0% {
+                transform: scale(1);
+                background-color: white;
+                color: #60ACBD;
+            }
+            50% {
+                transform: scale(0.95);
+                background-color: #4CAF50;
+                color: white;
+            }
+            75% {
+                transform: scale(0.98);
+                background-color: #4CAF50;
+                color: white;
+            }
+            100% {
+                transform: scale(1);
+                background-color: white;
+                color: #60ACBD;
+            }
+        }
+
+        @keyframes wrongTapAnimation {
+            0% {
+                transform: scale(1);
+                background-color: white;
+                color: #60ACBD;
+            }
+            15% {
+                transform: scale(0.95) translateX(-4px);
+                background-color: #FF6B6B;
+                color: white;
+            }
+            30% {
+                transform: scale(0.97) translateX(4px);
+            }
+            45% {
+                transform: scale(0.98) translateX(-2px);
+            }
+            60% {
+                transform: scale(0.99) translateX(2px);
+            }
+            75% {
+                transform: scale(1);
+                background-color: #FF6B6B;
+                color: white;
+            }
+            100% {
+                transform: scale(1);
+                background-color: white;
+                color: #60ACBD;
+            }
+        }
+
+        /* Add ripple effect for wrong answers */
+        @keyframes wrongRipple {
+            0% {
+                box-shadow: 0 8px 24px rgba(0,0,0,0.1),
+                            0 0 0 0 rgba(255, 107, 107, 0.3);
+            }
+            30% {
+                box-shadow: 0 4px 12px rgba(0,0,0,0.08),
+                            0 0 0 20px rgba(255, 107, 107, 0);
+            }
+            100% {
+                box-shadow: 0 8px 24px rgba(0,0,0,0.1),
+                            0 0 0 0 rgba(255, 107, 107, 0);
+            }
+        }
+
+        /* Add ripple effect for correct answers */
+        @keyframes correctRipple {
+            0% {
+                box-shadow: 0 8px 24px rgba(0,0,0,0.1),
+                            0 0 0 0 rgba(76, 175, 80, 0.3);
+            }
+            30% {
+                box-shadow: 0 4px 12px rgba(0,0,0,0.08),
+                            0 0 0 20px rgba(76, 175, 80, 0);
+            }
+            100% {
+                box-shadow: 0 8px 24px rgba(0,0,0,0.1),
+                            0 0 0 0 rgba(76, 175, 80, 0);
+            }
+        }
+
+        .operator.tapped {
+            animation: 
+                tapAnimation 0.3s ease-out,
+                correctRipple 0.3s ease-out;
+        }
+
+        .operator.wrong {
+            animation: 
+                wrongTapAnimation 0.6s ease-out,
+                wrongRipple 0.6s ease-out;
+        }
+
+        /* Add font-face for fallback */
+        @font-face {
+            font-family: 'Cambria Math';
+            src: local('Cambria Math');
+        }
+
+        /* Add these new animations to the CSS */
+        @keyframes revealOperator {
+            0% {
+                transform: scale(0.5);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.2);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeInEquation {
+            from {
+                opacity: 0.5;
+                transform: scale(0.98);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="levelDisplay">Level 1</div>
+    <div id="game">
+        <div id="equation">2 <div class="box"></div> 3 = 6</div>
+        <div id="operators">
+            <button class="operator" data-operator="+"></button>
+            <button class="operator" data-operator="−"></button>
+            <button class="operator" data-operator="×"></button>
+            <button class="operator" data-operator="÷"></button>
+        </div>
+        <div id="message">Choose the correct arithmetic symbol</div>
+    </div>
+    <button id="startButton">Start Game</button>
+    <div id="instructions">Fill in the box with the correct operator</div>
+
+    <script>
+        class OperationsGame {
+            // Game configuration constants
+            static CONSTANTS = {
+                // Number constraints
+                MAX_NUMBER: 20,
+                MIN_NUMBER: 1,
+                
+                // Multiplication limits
+                MAX_MULTIPLIER: 4,
+                MAX_DIVISOR: 5,
+                MAX_QUOTIENT: 4,
+                
+                // Animation timings (in ms)
+                ANIMATION_DURATION: {
+                    FADE_OUT: 300,
+                    CORRECT_TAP: 300,
+                    WRONG_TAP: 600,
+                    SHOW_RESULT: 1000
+                },
+                
+                // Visual settings
+                COLORS: {
+                    CORRECT: '#4CAF50',
+                    WRONG: '#FF6B6B',
+                    OPERATOR: '#60ACBD'
+                },
+                
+                // Operation symbols
+                OPERATORS: {
+                    ADD: '+',
+                    SUBTRACT: '−',
+                    MULTIPLY: '×',
+                    DIVIDE: '÷'
+                }
+            };
+
+            constructor() {
+                this.initializeElements();
+                this.initializeGame();
+                this.bindEventListeners();
+            }
+
+            initializeElements() {
+                this.equation = document.getElementById('equation');
+                this.operators = document.getElementById('operators');
+                this.message = document.getElementById('message');
+                this.startButton = document.getElementById('startButton');
+                this.levelDisplay = document.getElementById('levelDisplay');
+                this.instructions = document.getElementById('instructions');
+                this.operatorButtons = document.querySelectorAll('.operator');
+            }
+
+            initializeGame() {
+                this.level = 1;
+                this.isPlaying = false;
+                this.currentProblem = null;
+                this.operationsQueue = [];
+            }
+
+            bindEventListeners() {
+                this.startButton.addEventListener('click', () => this.startGame());
+                this.operatorButtons.forEach(button => {
+                    button.addEventListener('click', (e) => this.handleOperatorClick(e));
+                });
+            }
+
+            startGame() {
+                this.isPlaying = true;
+                this.level = 1;
+                this.startButton.classList.add('fade-out');
+                this.instructions.classList.add('fade-out');
+                setTimeout(() => {
+                    this.startButton.remove();
+                    this.instructions.remove();
+                }, 300);
+                this.generateProblem();
+            }
+
+            generateProblem() {
+                const operations = [
+                    { symbol: OperationsGame.CONSTANTS.OPERATORS.ADD, func: (a, b) => a + b },
+                    { symbol: OperationsGame.CONSTANTS.OPERATORS.SUBTRACT, func: (a, b) => a - b },
+                    { symbol: OperationsGame.CONSTANTS.OPERATORS.MULTIPLY, func: (a, b) => a * b },
+                    { symbol: OperationsGame.CONSTANTS.OPERATORS.DIVIDE, func: (a, b) => a / b }
+                ];
+
+                // If queue is empty, create new shuffled queue
+                if (this.operationsQueue.length === 0) {
+                    this.operationsQueue = [...operations];
+                    // Fisher-Yates shuffle
+                    for (let i = this.operationsQueue.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [this.operationsQueue[i], this.operationsQueue[j]] = 
+                        [this.operationsQueue[j], this.operationsQueue[i]];
+                    }
+                }
+
+                const operation = this.operationsQueue.pop();
+                let a, b, result;
+                let validProblem = false;
+                const { MAX_NUMBER, MIN_NUMBER, MAX_MULTIPLIER, MAX_DIVISOR, MAX_QUOTIENT } = OperationsGame.CONSTANTS;
+
+                while (!validProblem) {
+                    switch (operation.symbol) {
+                        case OperationsGame.CONSTANTS.OPERATORS.ADD:
+                            a = Math.floor(Math.random() * (MAX_NUMBER / 2)) + MIN_NUMBER;
+                            b = Math.floor(Math.random() * (MAX_NUMBER - a)) + MIN_NUMBER;
+                            result = a + b;
+                            break;
+
+                        case OperationsGame.CONSTANTS.OPERATORS.SUBTRACT:
+                            a = Math.floor(Math.random() * MAX_NUMBER) + MIN_NUMBER;
+                            b = Math.floor(Math.random() * a) + MIN_NUMBER;
+                            result = a - b;
+                            break;
+
+                        case OperationsGame.CONSTANTS.OPERATORS.MULTIPLY:
+                            a = Math.floor(Math.random() * MAX_MULTIPLIER) + MIN_NUMBER;
+                            b = Math.floor(Math.random() * (MAX_NUMBER / a)) + MIN_NUMBER;
+                            result = a * b;
+                            break;
+
+                        case OperationsGame.CONSTANTS.OPERATORS.DIVIDE:
+                            b = Math.floor(Math.random() * MAX_DIVISOR) + MIN_NUMBER;
+                            result = Math.floor(Math.random() * MAX_QUOTIENT) + MIN_NUMBER;
+                            a = b * result;
+                            break;
+                    }
+
+                    // Check if only one operation gives this result
+                    const validOperations = operations.filter(op => {
+                        try {
+                            const testResult = op.func(a, b);
+                            return testResult === result && 
+                                   testResult <= MAX_NUMBER && 
+                                   testResult >= 0 && 
+                                   testResult % 1 === 0;
+                        } catch {
+                            return false;
+                        }
+                    });
+
+                    if (validOperations.length === 1 && 
+                        validOperations[0].symbol === operation.symbol &&
+                        a <= MAX_NUMBER && b <= MAX_NUMBER && result <= MAX_NUMBER) {
+                        validProblem = true;
+                    }
+                }
+
+                this.currentProblem = {
+                    a, b, result,
+                    correctOperator: operation.symbol
+                };
+
+                // Update equation display
+                const equationContainer = document.createElement('div');
+                equationContainer.style.display = 'flex';
+                equationContainer.style.alignItems = 'center';
+                equationContainer.style.gap = '10px';
+                equationContainer.style.whiteSpace = 'nowrap';
+
+                equationContainer.innerHTML = `
+                    <span>${a}</span>
+                    <div class="box"></div>
+                    <span>${b}</span>
+                    <span>=</span>
+                    <span>${result}</span>
+                `;
+
+                this.equation.innerHTML = '';
+                this.equation.appendChild(equationContainer);
+
+                this.message.textContent = 'Choose the correct arithmetic symbol';
+                this.levelDisplay.textContent = `Level ${this.level}`;
+                
+                this.operatorButtons.forEach(button => button.classList.remove('selected'));
+            }
+
+            handleOperatorClick(event) {
+                if (!this.isPlaying) return;
+
+                const button = event.target;
+                const selectedOperator = button.dataset.operator;
+                const { ANIMATION_DURATION, COLORS } = OperationsGame.CONSTANTS;
+                
+                this.operatorButtons.forEach(btn => {
+                    btn.classList.remove('tapped', 'wrong', 'selected');
+                });
+
+                if (selectedOperator === this.currentProblem.correctOperator) {
+                    button.classList.add('tapped');
+                    this.level++;
+                    
+                    // Show complete equation with animation
+                    const equationContainer = document.createElement('div');
+                    equationContainer.style.display = 'flex';
+                    equationContainer.style.alignItems = 'center';
+                    equationContainer.style.gap = '10px';
+                    equationContainer.style.whiteSpace = 'nowrap';
+                    equationContainer.style.animation = 'fadeInEquation 0.3s ease-out';
+
+                    const operatorSpan = document.createElement('span');
+                    operatorSpan.textContent = this.currentProblem.correctOperator;
+                    operatorSpan.style.color = COLORS.CORRECT;
+                    operatorSpan.style.animation = 'revealOperator 0.4s ease-out';
+                    operatorSpan.style.display = 'inline-block'; // Needed for transform
+
+                    equationContainer.innerHTML = `
+                        <span>${this.currentProblem.a}</span>
+                    `;
+                    equationContainer.appendChild(operatorSpan);
+                    equationContainer.innerHTML += `
+                        <span>${this.currentProblem.b}</span>
+                        <span>=</span>
+                        <span>${this.currentProblem.result}</span>
+                    `;
+
+                    this.equation.innerHTML = '';
+                    this.equation.appendChild(equationContainer);
+                    
+                    // Generate new problem after showing complete equation
+                    setTimeout(() => {
+                        button.classList.remove('tapped');
+                        this.generateProblem();
+                    }, ANIMATION_DURATION.SHOW_RESULT);
+                } else {
+                    button.classList.add('wrong');
+                    setTimeout(() => {
+                        button.classList.remove('wrong');
+                    }, ANIMATION_DURATION.WRONG_TAP);
+                }
+            }
+        }
+
+        // Initialize game when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            new OperationsGame();
+        });
+    </script>
+</body>
+</html> 
