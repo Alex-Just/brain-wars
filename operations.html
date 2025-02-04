@@ -5,6 +5,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Математика</title>
     <style>
+        /* Add CSS variables at the root */
+        :root {
+            /* Colors */
+            --color-primary: #60ACBD;
+            --color-primary-dark: #4d8a98;
+            --color-success: #4CAF50;
+            --color-error: #FF6B6B;
+            --color-text: #333;
+            --color-text-secondary: #666;
+            --color-background: #f5f5f5;
+            
+            /* Spacing */
+            --spacing-xs: 5px;
+            --spacing-sm: 10px;
+            --spacing-md: 20px;
+            --spacing-lg: 40px;
+            
+            /* Font sizes */
+            --font-size-sm: clamp(14px, 3.5vw, 16px);
+            --font-size-base: clamp(16px, 4vw, 18px);
+            --font-size-lg: clamp(18px, 5vw, 26px);
+            --font-size-xl: clamp(32px, 10vw, 64px);
+            
+            /* Animations */
+            --animation-speed-fast: 0.3s;
+            --animation-speed-normal: 0.4s;
+            --animation-speed-slow: 0.6s;
+            
+            /* Border radius */
+            --border-radius-sm: min(2vw, 5px);
+            --border-radius-md: min(2vw, 8px);
+            --border-radius-lg: 20px;
+        }
+
         /* Basic reset and centering */
         body {
             font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -30,18 +64,19 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 20px;
             width: min(90vw, 400px);
-            padding: 20px 0;
+            padding: 0;
+            margin: 0;
+            min-height: 100vh;
         }
 
         /* Equation display */
         #equation {
+            margin-top: 180px; /* Fixed distance from top */
             font-size: clamp(32px, 10vw, 64px);
             color: #333;
             font-weight: 400;
             letter-spacing: 0.02em;
-            margin: 10px 0;
             white-space: nowrap;
             display: flex;
             align-items: center;
@@ -59,11 +94,11 @@
 
         /* Operators grid */
         #operators {
+            margin-top: 50px; /* Fixed space between equation and operators */
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: min(4vw, 20px);
             width: min(85vw, 360px);
-            margin: 10px 0;
             visibility: visible;
             opacity: 1;
             transition: opacity 0.3s ease-out;
@@ -141,7 +176,6 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            top: 50%;  /* Override previous top value */
         }
 
         .operator.selected {
@@ -151,12 +185,13 @@
 
         /* Message display */
         #message {
+            margin-top: 40px;
             font-size: clamp(18px, 4vw, 24px);
             color: #666;
             text-align: center;
-            margin: 10px 0;
             padding: 0 20px;
-            min-height: 1.2em; /* Reserve space for one line */
+            min-height: 1.2em;
+            margin-bottom: 20px; /* Add space between message and button */
         }
 
         /* Level display */
@@ -169,15 +204,17 @@
             border-radius: 6px;
             background: rgba(0,0,0,0.1);
             color: #666;
+            z-index: 1000;
         }
 
         /* Start button */
         #startButton {
+            position: static; /* Remove any absolute positioning */
+            margin: 0; /* Remove default margins */
             padding: clamp(12px, 3vw, 20px) clamp(20px, 5vw, 40px);
             font-size: clamp(16px, 4vw, 18px);
             min-height: 44px;
             min-width: 44px;
-            margin: 10px;
             border: none;
             border-radius: min(2vw, 5px);
             background-color: #60ACBD;
@@ -310,10 +347,30 @@
             }
         }
 
+        /* Update correct animation to stay green */
+        @keyframes correctTapAnimation {
+            0% {
+                transform: scale(1);
+                background-color: white;
+                color: #60ACBD;
+            }
+            50% {
+                transform: scale(0.95);
+                background-color: #4CAF50;
+                color: white;
+            }
+            100% {
+                transform: scale(1);
+                background-color: #4CAF50; /* Stay green */
+                color: white; /* Stay white text */
+            }
+        }
+
+        /* Update the operator.tapped class */
         .operator.tapped {
             animation: 
-                tapAnimation 0.3s ease-out,
-                correctRipple 0.3s ease-out;
+                correctTapAnimation 0.4s ease-out,
+                correctRipple 0.4s ease-out;
         }
 
         .operator.wrong {
@@ -409,9 +466,7 @@
             color: #4CAF50;
             text-align: center;
             margin-top: 20px;
-            min-height: 5em;
-            visibility: hidden;
-            display: flex;
+            display: none;
             flex-direction: column;
             align-items: center;
             justify-content: center;
@@ -420,6 +475,18 @@
             padding: 15px;
             max-width: 100vw;
             box-sizing: border-box;
+        }
+
+        .russian-equation.visible {
+            display: flex;
+            animation: slideIn 0.3s ease-out forwards;
+        }
+
+        @keyframes slideIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .translation-line {
@@ -447,18 +514,6 @@
             word-wrap: break-word;
             hyphens: auto;
             padding-right: 10px;
-        }
-
-        .russian-equation.visible {
-            visibility: visible;
-            animation: slideIn 0.3s ease-out forwards;
-        }
-
-        @keyframes slideIn {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
         }
 
         /* Add media query for very small screens */
@@ -489,145 +544,172 @@
                 padding: 3px 0;
             }
         }
+
+        /* Remove absolute positioning from all elements */
+        #equation, #operators, #message {
+            position: static;
+            transform: none;
+            left: auto;
+            top: auto;
+        }
     </style>
 </head>
 <body>
-    <div id="levelDisplay">Уровень 1</div>
-    <div id="game">
-        <div id="equation">2 <div class="box"></div> 3 = 6</div>
-        <div id="operators">
-            <button class="operator" data-operator="+"></button>
-            <button class="operator" data-operator="−"></button>
-            <button class="operator" data-operator="×"></button>
-            <button class="operator" data-operator="÷"></button>
+    <main class="game" id="game">
+        <div class="level-display" id="levelDisplay" role="status" aria-live="polite">Уровень 1</div>
+        <div class="equation" id="equation" aria-live="polite">
+            <span>2</span>
+            <div class="box" role="img" aria-label="пустое место для знака"></div>
+            <span>3</span>
+            <span>=</span>
+            <span>6</span>
         </div>
-        <div id="message">Выбери правильный знак</div>
-    </div>
-    <button id="startButton">Начать игру</button>
+        <div class="operators" id="operators" role="group" aria-label="математические операторы">
+            <button class="operator" data-operator="+" aria-label="плюс"></button>
+            <button class="operator" data-operator="−" aria-label="минус"></button>
+            <button class="operator" data-operator="×" aria-label="умножить"></button>
+            <button class="operator" data-operator="÷" aria-label="разделить"></button>
+        </div>
+        <div class="message" id="message" role="status" aria-live="polite">Выбери правильный знак</div>
+        <button class="start-button" id="startButton">Начать игру</button>
+    </main>
 
     <script>
         class OperationsGame {
-            // Game configuration constants
-            static CONSTANTS = {
-                // Number constraints
-                MAX_NUMBER: 20,
-                MIN_NUMBER: 1,
-                
-                // Multiplication limits
-                MAX_MULTIPLIER: 4,
-                MAX_DIVISOR: 5,
-                MAX_QUOTIENT: 4,
-                
-                // Animation timings (in ms)
-                ANIMATION_DURATION: {
-                    FADE_OUT: 300,
-                    CORRECT_TAP: 300,
-                    WRONG_TAP: 600,
-                    SHOW_RESULT: 1000
-                },
-                
-                // Visual settings
-                COLORS: {
-                    CORRECT: '#4CAF50',
-                    WRONG: '#FF6B6B',
-                    OPERATOR: '#60ACBD'
-                },
-                
-                // Operation symbols
-                OPERATORS: {
-                    ADD: '+',
-                    SUBTRACT: '−',
-                    MULTIPLY: '×',
-                    DIVIDE: '÷'
-                }
-            };
+            #state;
+            #elements;
+            #config;
 
             constructor() {
-                this.initializeElements();
-                this.initializeGame();
-                this.bindEventListeners();
+                this.#initializeConfig();
+                this.#initializeElements();
+                this.#initializeState();
+                this.#bindEventListeners();
             }
 
-            initializeElements() {
-                this.equation = document.getElementById('equation');
-                this.operators = document.getElementById('operators');
-                this.message = document.getElementById('message');
-                this.startButton = document.getElementById('startButton');
-                this.levelDisplay = document.getElementById('levelDisplay');
-                this.operatorButtons = document.querySelectorAll('.operator');
+            #initializeConfig() {
+                this.#config = {
+                    numbers: {
+                        max: 20,
+                        min: 1,
+                        maxMultiplier: 4,
+                        maxDivisor: 5,
+                        maxQuotient: 4
+                    },
+                    operators: {
+                        add: '+',
+                        subtract: '−',
+                        multiply: '×',
+                        divide: '÷'
+                    },
+                    colors: {
+                        CORRECT: '#4CAF50',
+                        ERROR: '#FF6B6B',
+                        PRIMARY: '#60ACBD'
+                    },
+                    ANIMATION_DURATION: {
+                        WRONG_TAP: 600,
+                        CORRECT_TAP: 400
+                    }
+                };
             }
 
-            initializeGame() {
-                this.level = 1;
-                this.isPlaying = false;
-                this.currentProblem = null;
-                this.operationsQueue = [];
+            #initializeState() {
+                this.#state = {
+                    level: 1,
+                    isPlaying: false,
+                    currentProblem: null,
+                    operationsQueue: []
+                };
             }
 
-            bindEventListeners() {
-                this.startButton.addEventListener('click', () => this.startGame());
-                this.operatorButtons.forEach(button => {
-                    button.addEventListener('click', (e) => this.handleOperatorClick(e));
+            #initializeElements() {
+                this.#elements = {
+                    equation: document.getElementById('equation'),
+                    operators: document.getElementById('operators'),
+                    message: document.getElementById('message'),
+                    startButton: document.getElementById('startButton'),
+                    levelDisplay: document.getElementById('levelDisplay'),
+                    operatorButtons: document.querySelectorAll('.operator')
+                };
+            }
+
+            #bindEventListeners() {
+                this.#elements.startButton.addEventListener('click', () => this.#startGame());
+                
+                this.#elements.operators.addEventListener('click', (e) => {
+                    if (e.target.matches('.operator')) {
+                        this.#handleOperatorClick(e);
+                    }
                 });
             }
 
-            startGame() {
-                this.isPlaying = true;
-                this.level = 1;
-                this.startButton.classList.add('fade-out');
+            #startGame() {
+                this.#state.isPlaying = true;
+                this.#state.level = 1;
+                this.#elements.startButton.classList.add('fade-out');
                 setTimeout(() => {
-                    this.startButton.remove();
+                    this.#elements.startButton.remove();
                 }, 300);
-                this.generateProblem();
+                this.#generateProblem();
             }
 
-            generateProblem() {
+            #generateProblem() {
+                try {
+                    this.#createValidProblem();
+                } catch (error) {
+                    console.error('Error generating problem:', error);
+                    this.#handleError();
+                }
+            }
+
+            #createValidProblem() {
                 const operations = [
-                    { symbol: OperationsGame.CONSTANTS.OPERATORS.ADD, func: (a, b) => a + b },
-                    { symbol: OperationsGame.CONSTANTS.OPERATORS.SUBTRACT, func: (a, b) => a - b },
-                    { symbol: OperationsGame.CONSTANTS.OPERATORS.MULTIPLY, func: (a, b) => a * b },
-                    { symbol: OperationsGame.CONSTANTS.OPERATORS.DIVIDE, func: (a, b) => a / b }
+                    { symbol: this.#config.operators.add, func: (a, b) => a + b },
+                    { symbol: this.#config.operators.subtract, func: (a, b) => a - b },
+                    { symbol: this.#config.operators.multiply, func: (a, b) => a * b },
+                    { symbol: this.#config.operators.divide, func: (a, b) => a / b }
                 ];
 
                 // If queue is empty, create new shuffled queue
-                if (this.operationsQueue.length === 0) {
-                    this.operationsQueue = [...operations];
+                if (this.#state.operationsQueue.length === 0) {
+                    this.#state.operationsQueue = [...operations];
                     // Fisher-Yates shuffle
-                    for (let i = this.operationsQueue.length - 1; i > 0; i--) {
+                    for (let i = this.#state.operationsQueue.length - 1; i > 0; i--) {
                         const j = Math.floor(Math.random() * (i + 1));
-                        [this.operationsQueue[i], this.operationsQueue[j]] = 
-                        [this.operationsQueue[j], this.operationsQueue[i]];
+                        [this.#state.operationsQueue[i], this.#state.operationsQueue[j]] = 
+                        [this.#state.operationsQueue[j], this.#state.operationsQueue[i]];
                     }
                 }
 
-                const operation = this.operationsQueue.pop();
+                const operation = this.#state.operationsQueue.pop();
                 let a, b, result;
                 let validProblem = false;
-                const { MAX_NUMBER, MIN_NUMBER, MAX_MULTIPLIER, MAX_DIVISOR, MAX_QUOTIENT } = OperationsGame.CONSTANTS;
+                const { max, min, maxMultiplier, maxDivisor, maxQuotient } = this.#config.numbers;
 
                 while (!validProblem) {
                     switch (operation.symbol) {
-                        case OperationsGame.CONSTANTS.OPERATORS.ADD:
-                            a = Math.floor(Math.random() * (MAX_NUMBER / 2)) + MIN_NUMBER;
-                            b = Math.floor(Math.random() * (MAX_NUMBER - a)) + MIN_NUMBER;
+                        case this.#config.operators.add:
+                            a = Math.floor(Math.random() * (max / 2)) + min;
+                            b = Math.floor(Math.random() * (max - a)) + min;
                             result = a + b;
                             break;
 
-                        case OperationsGame.CONSTANTS.OPERATORS.SUBTRACT:
-                            a = Math.floor(Math.random() * MAX_NUMBER) + MIN_NUMBER;
-                            b = Math.floor(Math.random() * a) + MIN_NUMBER;
+                        case this.#config.operators.subtract:
+                            a = Math.floor(Math.random() * max) + min;
+                            b = Math.floor(Math.random() * a) + min;
                             result = a - b;
                             break;
 
-                        case OperationsGame.CONSTANTS.OPERATORS.MULTIPLY:
-                            a = Math.floor(Math.random() * MAX_MULTIPLIER) + MIN_NUMBER;
-                            b = Math.floor(Math.random() * (MAX_NUMBER / a)) + MIN_NUMBER;
+                        case this.#config.operators.multiply:
+                            a = Math.floor(Math.random() * maxMultiplier) + min;
+                            b = Math.floor(Math.random() * (max / a)) + min;
                             result = a * b;
                             break;
 
-                        case OperationsGame.CONSTANTS.OPERATORS.DIVIDE:
-                            b = Math.floor(Math.random() * MAX_DIVISOR) + MIN_NUMBER;
-                            result = Math.floor(Math.random() * MAX_QUOTIENT) + MIN_NUMBER;
+                        case this.#config.operators.divide:
+                            b = Math.floor(Math.random() * maxDivisor) + min;
+                            result = Math.floor(Math.random() * maxQuotient) + min;
                             a = b * result;
                             break;
                     }
@@ -637,7 +719,7 @@
                         try {
                             const testResult = op.func(a, b);
                             return testResult === result && 
-                                   testResult <= MAX_NUMBER && 
+                                   testResult <= max && 
                                    testResult >= 0 && 
                                    testResult % 1 === 0;
                         } catch {
@@ -647,12 +729,12 @@
 
                     if (validOperations.length === 1 && 
                         validOperations[0].symbol === operation.symbol &&
-                        a <= MAX_NUMBER && b <= MAX_NUMBER && result <= MAX_NUMBER) {
+                        a <= max && b <= max && result <= max) {
                         validProblem = true;
                     }
                 }
 
-                this.currentProblem = {
+                this.#state.currentProblem = {
                     a, b, result,
                     correctOperator: operation.symbol
                 };
@@ -665,11 +747,11 @@
                 mathEquation.className = 'math-equation';
 
                 mathEquation.innerHTML = `
-                    <span>${this.currentProblem.a}</span>
+                    <span>${this.#state.currentProblem.a}</span>
                     <div class="box"></div>
-                    <span>${this.currentProblem.b}</span>
+                    <span>${this.#state.currentProblem.b}</span>
                     <span>=</span>
-                    <span>${this.currentProblem.result}</span>
+                    <span>${this.#state.currentProblem.result}</span>
                 `;
 
                 equationContainer.appendChild(mathEquation);
@@ -681,79 +763,82 @@
 
                 equationContainer.appendChild(russianText);
 
-                this.equation.innerHTML = '';
-                this.equation.appendChild(equationContainer);
+                this.#elements.equation.innerHTML = '';
+                this.#elements.equation.appendChild(equationContainer);
 
-                this.message.textContent = 'Выбери правильный знак';
-                this.message.style.visibility = 'visible';
-                this.levelDisplay.textContent = `Уровень ${this.level}`;
+                this.#elements.message.textContent = 'Выбери правильный знак';
+                this.#elements.message.style.display = '';
+                this.#elements.levelDisplay.textContent = `Уровень ${this.#state.level}`;
             }
 
-            handleOperatorClick(event) {
-                if (!this.isPlaying) return;
+            #handleOperatorClick(event) {
+                if (!this.#state.isPlaying) return;
 
                 const button = event.target;
                 const selectedOperator = button.dataset.operator;
-                const { ANIMATION_DURATION, COLORS } = OperationsGame.CONSTANTS;
+                const { ANIMATION_DURATION } = this.#config;
                 
-                this.operatorButtons.forEach(btn => {
+                this.#elements.operatorButtons.forEach(btn => {
                     btn.classList.remove('tapped', 'wrong', 'selected');
                 });
 
-                if (selectedOperator === this.currentProblem.correctOperator) {
+                if (selectedOperator === this.#state.currentProblem.correctOperator) {
                     button.classList.add('tapped');
-                    this.level++;
+                    this.#state.level++;
                     
-                    // Hide operator buttons
-                    this.operators.classList.add('hidden');
-                    
-                    // Show complete equation with animation
-                    const equationContainer = document.querySelector('.equation-container');
-                    const mathEquation = equationContainer.querySelector('.math-equation');
-                    mathEquation.style.animation = 'fadeInEquation 0.3s ease-out';
-
-                    // Replace the box with the operator
-                    const box = mathEquation.querySelector('.box');
-                    const operatorSpan = document.createElement('span');
-                    operatorSpan.textContent = selectedOperator;
-                    operatorSpan.style.color = COLORS.CORRECT;
-                    operatorSpan.style.animation = 'revealOperator 0.4s ease-out';
-                    operatorSpan.style.display = 'inline-block';
-                    box.replaceWith(operatorSpan);
-
-                    const russianText = equationContainer.querySelector('.russian-equation');
-                    russianText.innerHTML = `
-                        <div class="translation-line">
-                            <span class="flag">🇷🇺</span>
-                            <span class="translation-text">${this.getNumberWord(this.currentProblem.a)} ${this.getOperatorWord(selectedOperator)} ${this.getNumberWord(this.currentProblem.b)} равно ${this.getNumberWord(this.currentProblem.result)}</span>
-                        </div>
-                        <div class="translation-line">
-                            <span class="flag">🇬🇧</span>
-                            <span class="translation-text">${this.getNumberWordEn(this.currentProblem.a)} ${this.getOperatorWordEn(selectedOperator)} ${this.getNumberWordEn(this.currentProblem.b)} equals ${this.getNumberWordEn(this.currentProblem.result)}</span>
-                        </div>
-                        <div class="translation-line">
-                            <span class="flag">🇪🇸</span>
-                            <span class="translation-text">${this.getNumberWordEs(this.currentProblem.a)} ${this.getOperatorWordEs(selectedOperator)} ${this.getNumberWordEs(this.currentProblem.b)} es igual a ${this.getNumberWordEs(this.currentProblem.result)}</span>
-                        </div>
-                    `;
-                    russianText.classList.add('visible');
-
-                    // Hide the message during equation display
-                    this.message.style.visibility = 'hidden';
-
-                    // Update the proceedHandler to show buttons again
-                    const proceedHandler = () => {
-                        document.body.removeEventListener('click', proceedHandler);
-                        button.classList.remove('tapped');
-                        this.message.style.visibility = 'visible';
-                        this.operators.classList.remove('hidden');
-                        this.generateProblem();
-                    };
-
-                    // Wait for click anywhere to proceed
+                    // Hide operator buttons after animation
                     setTimeout(() => {
-                        document.body.addEventListener('click', proceedHandler);
-                    }, 500);
+                        this.#elements.operators.classList.add('hidden');
+                        
+                        // Show complete equation with animation
+                        const equationContainer = document.querySelector('.equation-container');
+                        const mathEquation = equationContainer.querySelector('.math-equation');
+                        mathEquation.style.animation = 'fadeInEquation 0.3s ease-out';
+
+                        // Replace the box with the operator
+                        const box = mathEquation.querySelector('.box');
+                        const operatorSpan = document.createElement('span');
+                        operatorSpan.textContent = selectedOperator;
+                        operatorSpan.style.color = this.#config.colors.CORRECT;
+                        operatorSpan.style.animation = 'revealOperator 0.4s ease-out';
+                        operatorSpan.style.display = 'inline-block';
+                        box.replaceWith(operatorSpan);
+
+                        // Show translations after operator animation
+                        const russianText = equationContainer.querySelector('.russian-equation');
+                        russianText.innerHTML = `
+                            <div class="translation-line">
+                                <span class="flag">🇷🇺</span>
+                                <span class="translation-text">${this.#getNumberWord(this.#state.currentProblem.a)} ${this.#getOperatorWord(selectedOperator)} ${this.#getNumberWord(this.#state.currentProblem.b)} равно ${this.#getNumberWord(this.#state.currentProblem.result)}</span>
+                            </div>
+                            <div class="translation-line">
+                                <span class="flag">🇬🇧</span>
+                                <span class="translation-text">${this.#getNumberWordEn(this.#state.currentProblem.a)} ${this.#getOperatorWordEn(selectedOperator)} ${this.#getNumberWordEn(this.#state.currentProblem.b)} equals ${this.#getNumberWordEn(this.#state.currentProblem.result)}</span>
+                            </div>
+                            <div class="translation-line">
+                                <span class="flag">🇪🇸</span>
+                                <span class="translation-text">${this.#getNumberWordEs(this.#state.currentProblem.a)} ${this.#getOperatorWordEs(selectedOperator)} ${this.#getNumberWordEs(this.#state.currentProblem.b)} es igual a ${this.#getNumberWordEs(this.#state.currentProblem.result)}</span>
+                            </div>
+                        `;
+                        russianText.classList.add('visible');
+
+                        // Hide the message during equation display
+                        this.#elements.message.style.display = 'none';
+
+                        // Add click handler to proceed
+                        const proceedHandler = () => {
+                            document.body.removeEventListener('click', proceedHandler);
+                            button.classList.remove('tapped');
+                            this.#elements.operators.classList.remove('hidden');
+                            this.#elements.message.style.display = '';
+                            this.#generateProblem();
+                        };
+
+                        // Wait for click anywhere to proceed
+                        setTimeout(() => {
+                            document.body.addEventListener('click', proceedHandler);
+                        }, 500);
+                    }, 400);
                 } else {
                     button.classList.add('wrong');
                     setTimeout(() => {
@@ -762,7 +847,7 @@
                 }
             }
 
-            getOperatorWord(symbol) {
+            #getOperatorWord(symbol) {
                 switch(symbol) {
                     case '+': return 'плюс';
                     case '−': return 'минус';
@@ -772,7 +857,7 @@
                 }
             }
 
-            getOperatorWordEn(symbol) {
+            #getOperatorWordEn(symbol) {
                 switch(symbol) {
                     case '+': return 'plus';
                     case '−': return 'minus';
@@ -782,7 +867,7 @@
                 }
             }
 
-            getOperatorWordEs(symbol) {
+            #getOperatorWordEs(symbol) {
                 switch(symbol) {
                     case '+': return 'más';
                     case '−': return 'menos';
@@ -792,7 +877,7 @@
                 }
             }
 
-            getNumberWord(num) {
+            #getNumberWord(num) {
                 const words = {
                     0: 'ноль', 1: 'один', 2: 'два', 3: 'три', 4: 'четыре',
                     5: 'пять', 6: 'шесть', 7: 'семь', 8: 'восемь', 9: 'девять',
@@ -803,7 +888,7 @@
                 return words[num] || num.toString();
             }
 
-            getNumberWordEn(num) {
+            #getNumberWordEn(num) {
                 const words = {
                     0: 'zero', 1: 'one', 2: 'two', 3: 'three', 4: 'four',
                     5: 'five', 6: 'six', 7: 'seven', 8: 'eight', 9: 'nine',
@@ -814,7 +899,7 @@
                 return words[num] || num.toString();
             }
 
-            getNumberWordEs(num) {
+            #getNumberWordEs(num) {
                 const words = {
                     0: 'cero', 1: 'uno', 2: 'dos', 3: 'tres', 4: 'cuatro',
                     5: 'cinco', 6: 'seis', 7: 'siete', 8: 'ocho', 9: 'nueve',
@@ -823,6 +908,11 @@
                     17: 'diecisiete', 18: 'dieciocho', 19: 'diecinueve', 20: 'veinte'
                 };
                 return words[num] || num.toString();
+            }
+
+            #handleError() {
+                console.warn('Problem generation failed, retrying...');
+                this.#generateProblem();
             }
         }
 
