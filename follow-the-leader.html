@@ -75,18 +75,19 @@
     }
     /* Update the button container and button styles */
     #buttonContainer {
-      height: 64px; /* Height that fits the button */
       display: flex;
       align-items: center;
       justify-content: center;
+      width: 100%;
+      margin-top: 20px;
     }
     #startButton {
-      position: absolute;
-      padding: clamp(12px, 3vw, 20px) clamp(20px, 5vw, 40px);
-      font-size: clamp(16px, 4vw, 18px);
-      min-height: 44px;
-      min-width: 44px;
-      margin: 10px;
+      position: relative;
+      margin: 0;
+      width: min(85vw, 360px);
+      padding: clamp(12px, 3vw, 20px) clamp(24px, 6vw, 48px);
+      font-size: clamp(18px, 4.5vw, 22px);
+      min-height: 48px;
       border: none;
       border-radius: min(2vw, 5px);
       background-color: #60ACBD;
@@ -95,7 +96,7 @@
       touch-action: manipulation;
       user-select: none;
       -webkit-user-select: none;
-      box-shadow: 0 4px 12px rgba(96, 172, 189, 0.2);
+      box-shadow: 0 4px 12px rgba(96, 172, 189, 0.4);
     }
     #startButton:hover {
       background-color: #4d8a98;
@@ -192,6 +193,7 @@
     .fade-out {
       animation: fadeOut 0.3s ease-out forwards;
       pointer-events: none;
+      visibility: hidden; /* Instead of removing element */
     }
 
     .fade-out-logo {
@@ -326,6 +328,14 @@
     .square:not(.ready) {
       pointer-events: none; /* Disable interactions when not ready */
     }
+
+    /* Add media query for very small screens */
+    @media (max-width: 360px) {
+      #startButton {
+        min-width: 160px;
+        padding: 10px 20px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -395,11 +405,14 @@
             // Remove click listener
             square.removeEventListener('click', this.handleSquareClick);
             
-            // Add touch/mouse listeners
+            // Add touch listener with passive true
             square.addEventListener('touchstart', (e) => {
-                e.preventDefault(); // Prevent default touch behavior
+                // Prevent scrolling by touching coordinates
+                if (e.cancelable) {
+                    e.preventDefault();
+                }
                 this.handleSquareClick(e);
-            }, { passive: false });
+            });
             
             square.addEventListener('mousedown', (e) => {
                 e.preventDefault();
@@ -409,9 +422,11 @@
 
         // Update start button listener too
         this.startButton.addEventListener('touchstart', (e) => {
-            e.preventDefault();
+            if (e.cancelable) {
+                e.preventDefault();
+            }
             this.startGame();
-        }, { passive: false });
+        });
         
         this.startButton.addEventListener('mousedown', (e) => {
             e.preventDefault();
@@ -456,10 +471,10 @@
         this.startButton.classList.add('fade-out');
         document.getElementById('backgroundLogo').classList.add('fade-out-logo');
         
-        // Remove elements after animation
+        // Remove only the background logo after animation
         setTimeout(() => {
-          this.startButton.remove();
-          document.getElementById('backgroundLogo').remove();
+            document.getElementById('backgroundLogo').remove();
+            // Don't remove the button, just leave it hidden
         }, 300);
 
         this.resetGame();

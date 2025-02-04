@@ -95,7 +95,7 @@
 
         /* Operators grid */
         #operators {
-            margin-top: 40px; /* Reduced from 50px */
+            margin-top: 40px;
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: min(4vw, 20px);
@@ -186,7 +186,7 @@
 
         /* Message display */
         #message {
-            margin-top: 30px; /* Reduced from 40px */
+            margin-top: 20px;
             font-size: clamp(18px, 4vw, 24px);
             color: #666;
             text-align: center;
@@ -215,7 +215,7 @@
             left: 50%;
             transform: translateX(-50%);
             margin: 0;
-            width: min(85vw, 360px); /* Match operators width */
+            width: min(85vw, 360px);
             padding: clamp(12px, 3vw, 20px) clamp(24px, 6vw, 48px);
             font-size: clamp(18px, 4.5vw, 22px);
             min-height: 48px;
@@ -655,7 +655,8 @@
                     level: 1,
                     isPlaying: false,
                     currentProblem: null,
-                    operationsQueue: []
+                    operationsQueue: [],
+                    hadErrorThisRound: false
                 };
             }
 
@@ -700,6 +701,9 @@
             }
 
             #createValidProblem() {
+                // Reset error flag at the start of new problem
+                this.#state.hadErrorThisRound = false;
+
                 const operations = [
                     { symbol: this.#config.operators.add, func: (a, b) => a + b },
                     { symbol: this.#config.operators.subtract, func: (a, b) => a - b },
@@ -820,7 +824,11 @@
 
                 if (selectedOperator === this.#state.currentProblem.correctOperator) {
                     button.classList.add('tapped');
-                    this.#state.level++;
+                    
+                    // Only increase level if there were no errors this round
+                    if (!this.#state.hadErrorThisRound) {
+                        this.#state.level++;
+                    }
                     
                     // Hide operator buttons after animation
                     setTimeout(() => {
@@ -877,6 +885,7 @@
                     }, 400);
                 } else {
                     button.classList.add('wrong');
+                    this.#state.hadErrorThisRound = true;  // Mark that there was an error this round
                     setTimeout(() => {
                         button.classList.remove('wrong');
                     }, ANIMATION_DURATION.WRONG_TAP);
