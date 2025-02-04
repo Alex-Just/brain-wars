@@ -405,30 +405,48 @@
         }
 
         .russian-equation {
-            font-size: clamp(14px, 3.5vw, 18px);
+            font-size: clamp(18px, 5vw, 26px);
             color: #4CAF50;
             text-align: center;
-            margin-top: 10px;
-            min-height: 3.8em;
+            margin-top: 20px;
+            min-height: 5em;
             visibility: hidden;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 20px;
             width: 100%;
-            padding: 0 10px;
+            padding: 15px;
+            max-width: 100vw;
+            box-sizing: border-box;
         }
 
         .translation-line {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
+            align-items: flex-start;
+            justify-content: flex-start;
+            gap: 12px;
             width: 100%;
-            text-align: center;
-            flex-wrap: wrap;
-            line-height: 1.3;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 5px 0;
+        }
+
+        .translation-line .flag {
+            flex: 0 0 auto;
+            margin-top: 0.2em;
+        }
+
+        .translation-text {
+            flex: 1 1 auto;
+            min-width: 0;
+            text-align: left;
+            white-space: normal;
+            overflow-wrap: break-word;
+            word-wrap: break-word;
+            hyphens: auto;
+            padding-right: 10px;
         }
 
         .russian-equation.visible {
@@ -446,12 +464,29 @@
         /* Add media query for very small screens */
         @media (max-width: 360px) {
             .russian-equation {
-                font-size: 13px;
-                gap: 6px;
+                font-size: 15px;
+                gap: 10px;
             }
             
             .translation-line {
-                gap: 4px;
+                gap: 3px;
+            }
+
+            .translation-text {
+                min-width: 120px;
+            }
+        }
+
+        /* Update media queries */
+        @media (max-width: 480px) {
+            .russian-equation {
+                padding: 10px;
+                gap: 15px;
+            }
+            
+            .translation-line {
+                gap: 8px;
+                padding: 3px 0;
             }
         }
     </style>
@@ -689,13 +724,16 @@
                     const russianText = equationContainer.querySelector('.russian-equation');
                     russianText.innerHTML = `
                         <div class="translation-line">
-                            🇷🇺 ${this.getNumberWord(this.currentProblem.a)} ${this.getOperatorWord(selectedOperator)} ${this.getNumberWord(this.currentProblem.b)} равно ${this.getNumberWord(this.currentProblem.result)}
+                            <span class="flag">🇷🇺</span>
+                            <span class="translation-text">${this.getNumberWord(this.currentProblem.a)} ${this.getOperatorWord(selectedOperator)} ${this.getNumberWord(this.currentProblem.b)} равно ${this.getNumberWord(this.currentProblem.result)}</span>
                         </div>
                         <div class="translation-line">
-                            🇬🇧 ${this.getNumberWordEn(this.currentProblem.a)} ${this.getOperatorWordEn(selectedOperator)} ${this.getNumberWordEn(this.currentProblem.b)} equals ${this.getNumberWordEn(this.currentProblem.result)}
+                            <span class="flag">🇬🇧</span>
+                            <span class="translation-text">${this.getNumberWordEn(this.currentProblem.a)} ${this.getOperatorWordEn(selectedOperator)} ${this.getNumberWordEn(this.currentProblem.b)} equals ${this.getNumberWordEn(this.currentProblem.result)}</span>
                         </div>
                         <div class="translation-line">
-                            🇪🇸 ${this.getNumberWordEs(this.currentProblem.a)} ${this.getOperatorWordEs(selectedOperator)} ${this.getNumberWordEs(this.currentProblem.b)} es igual a ${this.getNumberWordEs(this.currentProblem.result)}
+                            <span class="flag">🇪🇸</span>
+                            <span class="translation-text">${this.getNumberWordEs(this.currentProblem.a)} ${this.getOperatorWordEs(selectedOperator)} ${this.getNumberWordEs(this.currentProblem.b)} es igual a ${this.getNumberWordEs(this.currentProblem.result)}</span>
                         </div>
                     `;
                     russianText.classList.add('visible');
