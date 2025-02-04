@@ -68,11 +68,12 @@
             padding: 0;
             margin: 0;
             min-height: 100vh;
+            padding-bottom: env(safe-area-inset-bottom, 20px); /* Add safe area padding */
         }
 
         /* Equation display */
         #equation {
-            margin-top: 180px; /* Fixed distance from top */
+            margin-top: clamp(60px, 15vh, 180px); /* Responsive top margin */
             font-size: clamp(32px, 10vw, 64px);
             color: #333;
             font-weight: 400;
@@ -94,7 +95,7 @@
 
         /* Operators grid */
         #operators {
-            margin-top: 50px; /* Fixed space between equation and operators */
+            margin-top: 40px; /* Reduced from 50px */
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: min(4vw, 20px);
@@ -185,13 +186,13 @@
 
         /* Message display */
         #message {
-            margin-top: 40px;
+            margin-top: 30px; /* Reduced from 40px */
             font-size: clamp(18px, 4vw, 24px);
             color: #666;
             text-align: center;
             padding: 0 20px;
             min-height: 1.2em;
-            margin-bottom: 20px; /* Add space between message and button */
+            margin-bottom: 80px;
         }
 
         /* Level display */
@@ -209,12 +210,15 @@
 
         /* Start button */
         #startButton {
-            position: static; /* Remove any absolute positioning */
-            margin: 0; /* Remove default margins */
-            padding: clamp(12px, 3vw, 20px) clamp(20px, 5vw, 40px);
-            font-size: clamp(16px, 4vw, 18px);
-            min-height: 44px;
-            min-width: 44px;
+            position: fixed;
+            bottom: max(20px, env(safe-area-inset-bottom));
+            left: 50%;
+            transform: translateX(-50%);
+            margin: 0;
+            width: min(85vw, 360px); /* Match operators width */
+            padding: clamp(12px, 3vw, 20px) clamp(24px, 6vw, 48px);
+            font-size: clamp(18px, 4.5vw, 22px);
+            min-height: 48px;
             border: none;
             border-radius: min(2vw, 5px);
             background-color: #60ACBD;
@@ -223,7 +227,8 @@
             touch-action: manipulation;
             user-select: none;
             -webkit-user-select: none;
-            box-shadow: 0 4px 12px rgba(96, 172, 189, 0.2);
+            box-shadow: 0 4px 12px rgba(96, 172, 189, 0.4);
+            z-index: 10;
         }
 
         #startButton:hover {
@@ -551,6 +556,37 @@
             transform: none;
             left: auto;
             top: auto;
+        }
+
+        /* Add media queries for better responsiveness */
+        @media (max-height: 600px) {
+            #game {
+                padding-bottom: 60px;
+            }
+            
+            #equation {
+                margin-top: 40px; /* Smaller top margin for short screens */
+            }
+            
+            #operators {
+                margin-top: 25px; /* Reduced from 30px */
+            }
+            
+            #message {
+                margin-top: 15px; /* Reduced from 20px */
+            }
+            
+            #startButton {
+                bottom: 10px;
+                padding: 10px 20px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            #startButton {
+                min-width: 160px;
+                padding: 10px 20px;
+            }
         }
     </style>
 </head>
