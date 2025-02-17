@@ -825,8 +825,11 @@
                 if (selectedOperator === this.#state.currentProblem.correctOperator) {
                     button.classList.add('tapped');
                     
-                    // Only increase level if there were no errors this round
-                    if (!this.#state.hadErrorThisRound) {
+                    // If there were errors this round, decrease level
+                    if (this.#state.hadErrorThisRound) {
+                        this.#state.level = Math.max(1, this.#state.level - 1);
+                    } else {
+                        // Only increase level if there were no errors this round
                         this.#state.level++;
                     }
                     
