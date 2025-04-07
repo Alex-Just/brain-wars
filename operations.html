@@ -212,33 +212,6 @@
             z-index: 1000;
         }
 
-        /* Start button */
-        #startButton {
-            position: fixed;
-            bottom: max(20px, env(safe-area-inset-bottom));
-            left: 50%;
-            transform: translateX(-50%);
-            margin: 0;
-            width: min(85vw, 360px);
-            padding: clamp(12px, 3vw, 20px) clamp(24px, 6vw, 48px);
-            font-size: clamp(18px, 4.5vw, 22px);
-            min-height: 48px;
-            border: none;
-            border-radius: min(2vw, 5px);
-            background-color: #60ACBD;
-            color: white;
-            cursor: pointer;
-            touch-action: manipulation;
-            user-select: none;
-            -webkit-user-select: none;
-            box-shadow: 0 4px 12px rgba(96, 172, 189, 0.4);
-            z-index: 10;
-        }
-
-        #startButton:hover {
-            background-color: #4d8a98;
-        }
-
         /* Instructions */
         #instructions {
             font-size: clamp(24px, 6vw, 32px);
@@ -256,16 +229,6 @@
                          max(10px, env(safe-area-inset-bottom))
                          max(10px, env(safe-area-inset-left));
             }
-        }
-
-        .fade-out {
-            animation: fadeOut 0.3s ease-out forwards;
-            pointer-events: none;
-        }
-
-        @keyframes fadeOut {
-            from { opacity: 1; }
-            to { opacity: 0; }
         }
 
         /* Update and add these animation styles */
@@ -439,11 +402,6 @@
                 font-size: clamp(16px, 4vw, 20px);
             }
 
-            #startButton {
-                padding: 12px 30px;
-                font-size: clamp(16px, 4vw, 20px);
-            }
-
             #levelDisplay {
                 font-size: clamp(14px, 3.5vw, 16px);
                 padding: 8px 12px;
@@ -580,17 +538,14 @@
                 margin-top: 15px; /* Reduced from 20px */
             }
             
-            #startButton {
-                bottom: 10px;
-                padding: 10px 20px;
+            #levelDisplay {
+                font-size: clamp(14px, 3.5vw, 16px);
+                padding: 8px 12px;
             }
         }
 
         @media (max-width: 360px) {
-            #startButton {
-                min-width: 160px;
-                padding: 10px 20px;
-            }
+            /* Removed start button specific rules */
         }
     </style>
 </head>
@@ -611,7 +566,6 @@
             <button class="operator" data-operator="÷" aria-label="разделить"></button>
         </div>
         <div class="message" id="message" role="status" aria-live="polite">Выбери правильный знак</div>
-        <button class="start-button" id="startButton">Начать игру</button>
     </main>
 
     <script>
@@ -625,6 +579,7 @@
                 this.#initializeElements();
                 this.#initializeState();
                 this.#bindEventListeners();
+                this.#startGameDirectly();
             }
 
             #initializeConfig() {
@@ -657,7 +612,7 @@
             #initializeState() {
                 this.#state = {
                     level: 1,
-                    isPlaying: false,
+                    isPlaying: true,
                     currentProblem: null,
                     operationsQueue: [],
                     hadErrorThisRound: false
@@ -669,15 +624,12 @@
                     equation: document.getElementById('equation'),
                     operators: document.getElementById('operators'),
                     message: document.getElementById('message'),
-                    startButton: document.getElementById('startButton'),
                     levelDisplay: document.getElementById('levelDisplay'),
                     operatorButtons: document.querySelectorAll('.operator')
                 };
             }
 
             #bindEventListeners() {
-                this.#elements.startButton.addEventListener('click', () => this.#startGame());
-                
                 this.#elements.operators.addEventListener('click', (e) => {
                     if (e.target.matches('.operator')) {
                         this.#handleOperatorClick(e);
@@ -685,13 +637,8 @@
                 });
             }
 
-            #startGame() {
-                this.#state.isPlaying = true;
-                this.#state.level = 1;
-                this.#elements.startButton.classList.add('fade-out');
-                setTimeout(() => {
-                    this.#elements.startButton.remove();
-                }, 300);
+            #startGameDirectly() {
+                console.log("Starting game directly...");
                 this.#generateProblem();
             }
 

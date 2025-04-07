@@ -102,11 +102,6 @@
             transition: opacity 0.5s ease-out; /* Fade out */
         }
 
-        #timeChoices.hidden {
-            visibility: hidden;
-            opacity: 0;
-        }
-
         .choice-button {
             background: white;
             border: none;
@@ -142,18 +137,6 @@
             /* Position adjusted dynamically by JS/CSS */
         }
 
-        /* Style for welcome message before game starts */
-        #message.message-welcome {
-            position: fixed;
-            bottom: 90px; /* Position above the start button (adjust as needed) */
-            left: 50%;
-            transform: translateX(-50%);
-            width: min(85vw, 360px);
-            z-index: 5; /* Ensure it's above other static content if any */
-            margin-bottom: 0;
-            margin-top: 0;
-        }
-
         /* Level display */
         #levelDisplay {
             position: fixed;
@@ -165,34 +148,6 @@
             background: rgba(0,0,0,0.1);
             color: var(--color-text-secondary);
             z-index: 1000;
-        }
-
-        /* Start button */
-        #startButton {
-            position: fixed;
-            bottom: max(20px, env(safe-area-inset-bottom));
-            left: 50%;
-            transform: translateX(-50%);
-            margin: 0;
-            width: min(85vw, 360px);
-            padding: clamp(12px, 3vw, 20px) clamp(24px, 6vw, 48px);
-            font-size: clamp(18px, 4.5vw, 22px);
-            min-height: 48px;
-            border: none;
-            border-radius: var(--border-radius-md);
-            background-color: var(--color-primary);
-            color: white;
-            cursor: pointer;
-            touch-action: manipulation;
-            user-select: none;
-            -webkit-user-select: none;
-            box-shadow: 0 4px 12px rgba(96, 172, 189, 0.4);
-            z-index: 10;
-            transition: background-color 0.2s;
-        }
-
-        #startButton:hover {
-            background-color: var(--color-primary-dark);
         }
 
         /* Instructions (Hidden initially) */
@@ -316,7 +271,7 @@
              }
 
              #timeChoices {
-                 gap: 10px; /* Slightly reduce gap */
+                 gap: 10px;
                  margin-top: 15px;
              }
 
@@ -326,14 +281,8 @@
              }
 
              #message {
-                 font-size: clamp(16px, 4vw, 20px);
-                 margin-bottom: 70px; /* Adjust space for button */
-                 margin-top: 15px;
-             }
-
-             #startButton {
-                 padding: 12px 30px;
-                 font-size: clamp(16px, 4vw, 20px);
+                 font-size: clamp(18px, 4.5vw, 22px);
+                 margin-bottom: 70px;
              }
 
              #levelDisplay {
@@ -355,13 +304,13 @@
             }
             
              #analogClockContainer {
-                 margin-top: clamp(20px, 5vh, 60px); /* Smaller top margin */
+                 margin-top: clamp(20px, 5vh, 60px);
                  margin-bottom: 15px;
             }
             
             #timeChoices {
                 margin-top: 15px;
-                 gap: 8px;
+                gap: 8px;
             }
             
             #message {
@@ -369,10 +318,7 @@
                  margin-bottom: 65px; /* Keep space for button */
             }
             
-            #startButton {
-                bottom: 15px;
-            }
-             #instructions {
+            #levelDisplay {
                  font-size: 18px;
                  bottom: 65px; /* Position above start button */
                  padding: 8px;
@@ -380,10 +326,6 @@
         }
 
         @media (max-width: 360px) {
-             #startButton {
-                 min-width: 160px;
-                 padding: 10px 20px;
-             }
              .choice-button {
                  font-size: 16px; /* Adjust relative to new base */
                  min-height: 45px;
@@ -399,43 +341,12 @@
              }
         }
         
-        /* Box-sizing */
         *, *::before, *::after {
             box-sizing: border-box;
-        }
-
-        /* Background Clock Image */
-        #backgroundClock {
-            content: '';
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: min(90vw, 500px); /* Match logo size */
-            height: min(90vw, 500px);
-            background-image: url('./clock/clock-bkg.jpg'); /* Path to your image */
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
-            opacity: 0.4; /* Slightly higher opacity for visibility */
-            pointer-events: none;
-            z-index: -1;
-            transition: opacity 0.3s ease-out; /* Add transition for fade */
-        }
-
-        @keyframes fadeOutClock {
-            from { opacity: 0.05; }
-            to { opacity: 0; }
-        }
-
-        .fade-out-clock {
-            animation: fadeOutClock 0.3s ease-out forwards;
-            pointer-events: none;
         }
     </style>
 </head>
 <body>
-    <div id="backgroundClock"></div>
     <main class="game" id="game">
         <div class="level-display" id="levelDisplay" role="status" aria-live="polite">Nivel 1</div>
         
@@ -511,9 +422,6 @@
         <!-- Message Area -->
         <div class="message" id="message" role="status" aria-live="polite">Elige la hora correcta</div>
 
-        <!-- Start Button -->
-        <button class="start-button" id="startButton">Empezar Juego</button>
-        
         <!-- Instructions (Initially hidden) -->
         <div id="instructions">¡Toca para continuar!</div>
     </main>
@@ -533,7 +441,7 @@
                 this.#initializeElements();
                 this.#initializeState();
                 this.#bindEventListeners();
-                this.#showInitialMessage(); 
+                this.#startGameDirectly(); // Start game immediately
             }
             
             #initializeNumberWords() {
@@ -585,7 +493,6 @@
                     minuteHand: document.getElementById('minuteHand'),
                     timeChoices: document.getElementById('timeChoices'),
                     message: document.getElementById('message'),
-                    startButton: document.getElementById('startButton'),
                     levelDisplay: document.getElementById('levelDisplay'),
                     choiceButtons: document.querySelectorAll('.choice-button'),
                     instructions: document.getElementById('instructions') // Added instructions element
@@ -600,23 +507,7 @@
                 }
             }
             
-            #showInitialMessage() {
-                // Set initial clock hands to 12:00
-                this.#updateClockHands(12, 0);
-                // Hide clock initially
-                this.#elements.analogClock.closest('#analogClockContainer').style.visibility = 'hidden'; 
-                this.#elements.message.textContent = "Aprende a decir la hora"; // Welcome message
-                this.#elements.message.classList.add('message-welcome'); // Apply special positioning
-                this.#elements.timeChoices.classList.add('hidden'); // Hide choices initially
-            }
-
             #bindEventListeners() {
-                if (this.#elements.startButton) {
-                    this.#elements.startButton.addEventListener('click', () => this.#startGame());
-                } else {
-                    console.error("Start button not found, cannot bind listener.");
-                }
-
                 if (this.#elements.timeChoices) {
                      this.#elements.timeChoices.addEventListener('click', (e) => {
                          if (e.target.matches('.choice-button') && !this.#state.waitingForTap) {
@@ -637,32 +528,14 @@
                  }, false); // Use capture phase false (default)
             }
 
-            #startGame() {
-                console.log("Starting game...");
-                if (!this.#elements.startButton) return; 
-                
+            #startGameDirectly() {
+                console.log("Starting game directly...");
                 this.#state.isPlaying = true;
                 this.#state.level = 1;
-                this.#elements.startButton.classList.add('fade-out');
-                
-                // Fade out background clock
-                const backgroundClock = document.getElementById('backgroundClock');
-                if (backgroundClock) {
-                    backgroundClock.classList.add('fade-out-clock');
-                    // Remove after animation
-                    setTimeout(() => backgroundClock.remove(), this.#config.ANIMATION_DURATION.FADE_OUT_DURATION); 
-                }
-
-                setTimeout(() => {
-                    // Check again in case it was removed by something else
-                    if (this.#elements.startButton) {
-                        this.#elements.startButton.remove();
-                        // Nullify to prevent errors if accessed again
-                        this.#elements.startButton = null; 
-                    }
-                }, this.#config.ANIMATION_DURATION.FADE_OUT_DURATION); 
-                
-                this.#elements.timeChoices.classList.remove('hidden'); // Show choices container
+                this.#elements.message.textContent = 'Elige la hora correcta'; // Set initial message
+                this.#elements.analogClock.closest('#analogClockContainer').style.visibility = 'visible'; // Ensure clock is visible
+                this.#elements.timeChoices.style.visibility = 'visible'; // Ensure choices are visible
+                this.#elements.timeChoices.style.opacity = '1';
                 this.#generateProblem();
             }
             
@@ -673,6 +546,7 @@
             // --- Core Game Logic ---
             #generateProblem() {
                  console.log("Generating new problem...");
+                 this.#elements.message.innerHTML = 'Elige la hora correcta'; // Reset message
                  this.#state.hadErrorThisRound = false; // Reset error flag
                  this.#state.waitingForTap = false; // Not waiting for tap initially
                  this.#elements.instructions.style.display = 'none'; // Hide instructions
@@ -712,14 +586,11 @@
                      button.dataset.phrase = this.#state.choices[index]; 
                  });
 
-                 // Restore message and show clock
-                 this.#elements.message.classList.remove('message-welcome'); // Remove special positioning
-                 this.#elements.message.textContent = 'Elige la hora correcta'; // Reset message content
-                 this.#elements.analogClock.closest('#analogClockContainer').style.visibility = 'visible'; // Show clock
+                 // Ensure elements are visible (handled in #startGameDirectly now)
 
                  this.#elements.levelDisplay.textContent = `Nivel ${this.#state.level}`;
                  this.#elements.timeChoices.style.opacity = '1'; // Ensure choices are fully visible
-                 this.#elements.timeChoices.style.visibility = 'visible'; // Ensure visibility is set back if needed
+                 this.#elements.timeChoices.style.visibility = 'visible'; // Ensure visibility is set back
             }
             
             #timeToSpanishPhrase(hour, minute) {
@@ -736,11 +607,15 @@
                  };
 
                  // Determine verb, article, and hour word based on context (y vs menos)
-                 if (minute >= 45 && minute !== 0) { // Use next hour for 'menos'
+                 if (minute > 30 && minute !== 45) { // Use next hour for 'menos [number]' cases
                      parts.verb = (nextHour === 1) ? 'Es' : 'Son';
                      parts.article = (nextHour === 1) ? 'la' : 'las';
                      parts.hourWord = hourWord(nextHour);
-                 } else { // Use current hour for 'y' or 'en punto'
+                 } else if (minute === 45) { // Special 'menos cuarto' case, still uses next hour
+                     parts.verb = (nextHour === 1) ? 'Es' : 'Son';
+                     parts.article = (nextHour === 1) ? 'la' : 'las';
+                     parts.hourWord = hourWord(nextHour);
+                 } else { // Use current hour for 'y', 'en punto', 'y cuarto', 'y media'
                      parts.verb = (hour === 1) ? 'Es' : 'Son';
                      parts.article = (hour === 1) ? 'la' : 'las';
                      parts.hourWord = hourWord(hour);
@@ -750,13 +625,14 @@
                      case 0:  parts.minuteWord = 'en punto'; break;
                      case 15: parts.connector = 'y'; parts.minuteWord = 'cuarto'; break;
                      case 30: parts.connector = 'y'; parts.minuteWord = 'media'; break;
-                     case 45: parts.connector = 'menos'; parts.minuteWord = 'cuarto'; break;
+                     case 45: parts.connector = 'menos'; parts.minuteWord = 'cuarto'; break; // Already handled hour logic above
                      default:
-                          if (minute < 30) {
+                          if (minute > 0 && minute < 30) { // Changed from <= 30 to < 30
                              parts.connector = 'y';
                              parts.minuteWord = minuteWord(minute);
-                          } else {
-                               // Use 'menos [number]' for minutes 31-59 (now 35, 40, 50, 55)
+                          } else if (minute > 30) { // Changed from >= 31 to > 30
+                              // Use 'menos [number]' for minutes 31-59 (now 35, 40, 50, 55 etc.)
+                              // Hour logic is already handled above
                               const minutesRemaining = 60 - minute;
                               parts.connector = 'menos';
                               parts.minuteWord = minuteWord(minutesRemaining);

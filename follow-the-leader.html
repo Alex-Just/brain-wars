@@ -85,26 +85,6 @@
       width: 100%;
       margin-top: 20px;
     }
-    #startButton {
-      position: relative;
-      margin: 0;
-      width: min(85vw, 360px);
-      padding: clamp(12px, 3vw, 20px) clamp(24px, 6vw, 48px);
-      font-size: clamp(18px, 4.5vw, 22px);
-      min-height: 48px;
-      border: none;
-      border-radius: min(2vw, 5px);
-      background-color: #60ACBD;
-      color: white;
-      cursor: pointer;
-      touch-action: manipulation;
-      user-select: none;
-      -webkit-user-select: none;
-      box-shadow: 0 4px 12px rgba(96, 172, 189, 0.4);
-    }
-    #startButton:hover {
-      background-color: #4d8a98;
-    }
     /* Add new CSS for tap animation */
     @keyframes tapAnimation {
       0% {
@@ -182,29 +162,6 @@
       animation: particleBurst var(--animation-speed-slow) ease-out forwards;
     }
 
-    /* Update the fadeOut animation and create a separate one for the logo */
-    @keyframes fadeOut {
-      from { opacity: 1; }
-      to { opacity: 0; }
-    }
-
-    @keyframes fadeOutLogo {
-      from { opacity: 0.03; }
-      to { opacity: 0; }
-    }
-
-    /* Update the fade-out classes */
-    .fade-out {
-      animation: fadeOut 0.3s ease-out forwards;
-      pointer-events: none;
-      visibility: hidden; /* Instead of removing element */
-    }
-
-    .fade-out-logo {
-      animation: fadeOutLogo 0.3s ease-out forwards;
-      pointer-events: none;
-    }
-
     /* Media query for very small screens */
     @media (max-width: 320px) {
       body {
@@ -225,24 +182,6 @@
       body {
         padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
       }
-    }
-
-    /* Update background logo styles to use a separate element instead of pseudo-element */
-    #backgroundLogo {
-      content: '';
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: min(90vw, 500px);
-      height: min(90vw, 500px);
-      background-image: url('transformers-logo.svg');
-      background-size: contain;
-      background-repeat: no-repeat;
-      background-position: center;
-      opacity: 0.03;
-      pointer-events: none;
-      z-index: -1;
     }
 
     /* Add CSS custom properties for consistent values */
@@ -335,10 +274,7 @@
 
     /* Add media query for very small screens */
     @media (max-width: 360px) {
-      #startButton {
-        min-width: 160px;
-        padding: 10px 20px;
-      }
+      /* Removed start button rules */
     }
   </style>
 </head>
@@ -356,12 +292,10 @@
     <div class="square" data-index="7"></div>
     <div class="square" data-index="8"></div>
   </div>
-  <div id="message">Запомните последовательность</div>
+  <div id="message">Запомни порядок появления квадратов и повтори его</div>
   <div id="buttonContainer">
-  <button id="startButton">Начать игру</button>
+    <!-- Start Button Removed -->
   </div>
-
-  <div id="backgroundLogo"></div>
 
   <script>
     // Use modern class syntax for game management
@@ -391,7 +325,6 @@
         // Move initialization logic here
         this.squares = document.querySelectorAll('.square');
         this.messageEl = document.getElementById('message');
-        this.startButton = document.getElementById('startButton');
         this.levelDisplayEl = document.getElementById('levelDisplay');
 
         this.sequence = [];
@@ -424,18 +357,8 @@
             });
         });
 
-        // Update start button listener too
-        this.startButton.addEventListener('touchstart', (e) => {
-            if (e.cancelable) {
-                e.preventDefault();
-            }
-            this.startGame();
-        });
-        
-        this.startButton.addEventListener('mousedown', (e) => {
-            e.preventDefault();
-            this.startGame();
-        });
+        // Start the game directly after initializing listeners
+        this.startGameDirectly();
       }
 
       // Update game logic to use constants
@@ -470,19 +393,11 @@
       }
 
       // Update startGame method
-      async startGame() {
-        // Add fade out animations with different classes
-        this.startButton.classList.add('fade-out');
-        document.getElementById('backgroundLogo').classList.add('fade-out-logo');
-        
-        // Remove only the background logo after animation
-        setTimeout(() => {
-            document.getElementById('backgroundLogo').remove();
-            // Don't remove the button, just leave it hidden
-        }, 300);
+      async startGameDirectly() {
+        console.log("Starting game directly...");
 
         this.resetGame();
-        this.messageEl.textContent = "Запомните последовательность";
+        this.messageEl.textContent = "Запомни порядок появления квадратов";
         
         const initialSquares = this.calculateTotalSquares(1);
         while (this.sequence.length < initialSquares) {
@@ -556,7 +471,7 @@
           this.squares[squareIndex].classList.add('ready');
         });
 
-        this.messageEl.textContent = "Запомните последовательность";
+        this.messageEl.textContent = "Повтори порядок появления квадратов";
         this.isPlayerTurn = true;
       }
 
