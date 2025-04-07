@@ -120,7 +120,8 @@
             text-align: center;
             position: relative;
             color: var(--color-primary);
-            font-size: var(--font-size-base);
+            font-size: clamp(18px, 4.5vw, 20px); /* Increased base font size */
+            font-weight: bold;
             min-height: 50px; /* Ensure minimum height */
             transition: transform 0.1s ease-out, background-color 0.2s, color 0.2s;
         }
@@ -320,7 +321,7 @@
              }
 
              .choice-button {
-                  font-size: clamp(18px, 4.2vw, 18px); /* Increased font size */
+                  font-size: clamp(17px, 4.2vw, 19px); /* Adjust relative to new base */
                   padding: 10px 15px;
              }
 
@@ -384,7 +385,7 @@
                  padding: 10px 20px;
              }
              .choice-button {
-                 font-size: 15px; /* Increased font size for narrow screens */
+                 font-size: 16px; /* Adjust relative to new base */
                  min-height: 45px;
                  padding: 8px 12px;
              }
@@ -440,7 +441,7 @@
         
         <!-- Analog Clock Display Area -->
         <div id="analogClockContainer" style="aspect-ratio: 1; margin-top: clamp(40px, 10vh, 120px); margin-bottom: 20px;">
-             <svg id="analogClock" viewBox="-5 -5 110 110" style="width: 100%; height: 100%;">
+             <svg id="analogClock" viewBox="-10 -10 120 120" style="width: 100%; height: 100%;">
                 <defs>
                     <!-- Define markers for the end of the hands -->
                     <marker id="hourArrowhead" markerWidth="4" markerHeight="3.5" refX="3" refY="1.75" orient="auto" markerUnits="strokeWidth">
@@ -477,23 +478,24 @@
                 <line id="minuteHand" x1="50" y1="50" x2="50" y2="15" stroke="var(--color-primary)" stroke-width="2" stroke-linecap="round" marker-end="url(#minuteArrowhead)" style="transform-origin: 50% 50%;"/>
 
                 <!-- Hour Numbers -->
-                <g id="hourNumbers" font-family="system-ui, sans-serif" font-size="8" text-anchor="middle" dominant-baseline="central" fill="var(--color-text)">
+                <g id="hourNumbers" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" dominant-baseline="central" fill="var(--color-text)">
                      <!-- Calculations: Center (50,50), Radius R=50 -->
                      <!-- Angle(h) = (h / 12) * 360 deg. SVG Y-axis is inverted, 0 deg is East. -->
                      <!-- AngleRad(h) = ((h / 12 * 360) - 90) * PI / 180 -->
                      <!-- x = 50 + R * cos(AngleRad), y = 50 + R * sin(AngleRad) -->
-                    <text x="50.0" y="0.0">12</text>  <!-- h=12, angle=270 -->
-                    <text x="75.0" y="6.7">1</text>   <!-- h=1, angle=300 -->
-                    <text x="93.3" y="25.0">2</text>  <!-- h=2, angle=330 -->
-                    <text x="100.0" y="50.0">3</text> <!-- h=3, angle=0 -->
-                    <text x="93.3" y="75.0">4</text>  <!-- h=4, angle=30 -->
-                    <text x="75.0" y="93.3">5</text>  <!-- h=5, angle=60 -->
-                    <text x="50.0" y="100.0">6</text> <!-- h=6, angle=90 -->
-                    <text x="25.0" y="93.3">7</text>  <!-- h=7, angle=120 -->
-                    <text x="6.7" y="75.0">8</text>   <!-- h=8, angle=150 -->
-                    <text x="0.0" y="50.0">9</text>   <!-- h=9, angle=180 -->
-                    <text x="6.7" y="25.0">10</text>  <!-- h=10, angle=210 -->
-                    <text x="25.0" y="6.7">11</text>  <!-- h=11, angle=240 -->
+                     <!-- Using R=38 for the original positions, now using R=40 to move numbers farther -->
+                    <text x="50.0" y="-5.0">12</text>  <!-- h=12, angle=270 -->
+                    <text x="78.0" y="2.7">1</text>   <!-- h=1, angle=300 -->
+                    <text x="97.3" y="22.0">2</text>  <!-- h=2, angle=330 -->
+                    <text x="105.0" y="50.0">3</text> <!-- h=3, angle=0 -->
+                    <text x="97.3" y="78.0">4</text>  <!-- h=4, angle=30 -->
+                    <text x="78.0" y="97.3">5</text>  <!-- h=5, angle=60 -->
+                    <text x="50.0" y="105.0">6</text> <!-- h=6, angle=90 -->
+                    <text x="22.0" y="97.3">7</text>  <!-- h=7, angle=120 -->
+                    <text x="2.7" y="78.0">8</text>   <!-- h=8, angle=150 -->
+                    <text x="-5.0" y="50.0">9</text>   <!-- h=9, angle=180 -->
+                    <text x="2.7" y="22.0">10</text>  <!-- h=10, angle=210 -->
+                    <text x="22.0" y="2.7">11</text>  <!-- h=11, angle=240 -->
                 </g>
             </svg>
         </div>
