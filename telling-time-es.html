@@ -805,8 +805,6 @@
                     setTimeout(() => {
                          this.#state.waitingForTap = true;
                          this.#elements.instructions.style.display = 'block'; // Show instructions
-                         // Also disable buttons while waiting
-                         this.#elements.choiceButtons.forEach(button => button.disabled = true);
                     }, ANIMATION_DURATION.CORRECT_TAP + 300); // Wait for animation + extra delay
 
 
@@ -837,9 +835,6 @@
                          this.#state.waitingForTap = true;
                          this.#elements.instructions.style.display = 'block'; // Show instructions
                          // Keep choices visible so user can see the correct answer highlight
-                         
-                         // Also disable buttons while waiting
-                         this.#elements.choiceButtons.forEach(button => button.disabled = true);
                     }, ANIMATION_DURATION.WRONG_TAP + 300); // Wait for animation + extra delay
                 }
             }
