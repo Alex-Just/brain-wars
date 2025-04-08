@@ -125,6 +125,15 @@
              transform: scale(0.98);
         }
 
+        /* Style for disabled buttons */
+        .choice-button:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+          background-color: #e0e0e0; /* Light gray background */
+          color: #9e9e9e;       /* Lighter text color */
+          box-shadow: none;
+        }
+
         /* Message display */
         #message {
             font-size: var(--font-size-lg);
@@ -481,7 +490,8 @@
                     correctPhrase: '',
                     choices: [],
                     hadErrorThisRound: false,
-                    waitingForTap: false // Flag to check if waiting for tap to proceed
+                    waitingForTap: false, // Flag to check if waiting for tap to proceed
+                    processingClick: false // Flag to prevent multiple clicks being processed per round
                 };
             }
 
@@ -521,8 +531,9 @@
                 // Add listener for "Tap to continue" - attach to the entire body.
                 // This ensures any click/tap anywhere proceeds when waiting.
                 document.body.addEventListener('click', (e) => {
-                    // If waiting for tap, any click anywhere proceeds
+                    // Double-check the flag right before proceeding to prevent race conditions
                     if (this.#state.waitingForTap) {
+                        if (!this.#state.waitingForTap) return;
                         this.#proceedToNext();
                     }
                  }, false); // Use capture phase false (default)
@@ -546,6 +557,7 @@
             // --- Core Game Logic ---
             #generateProblem() {
                  console.log("Generating new problem...");
+                 this.#state.processingClick = false; // Reset click processing flag for new round
                  this.#elements.message.innerHTML = 'Elige la hora correcta'; // Reset message
                  this.#state.hadErrorThisRound = false; // Reset error flag
                  this.#state.waitingForTap = false; // Not waiting for tap initially
@@ -759,7 +771,17 @@
              }
 
              #handleChoiceClick(event) {
+                // If already processing a click for this round, ignore subsequent clicks
+                if (this.#state.processingClick) {
+                    console.log("Ignoring click, already processing.");
+                    return;
+                }
+                // If not playing, or waiting for tap to continue, ignore clicks (redundant but safe)
                 if (!this.#state.isPlaying || this.#state.waitingForTap) return;
+
+                // Set flag to true to lock further clicks this round
+                this.#state.processingClick = true;
+                console.log("Processing click, flag set to true.");
 
                 const button = event.target;
                 const selectedPhrase = button.dataset.phrase; // Get phrase from data attribute
@@ -783,7 +805,8 @@
                     setTimeout(() => {
                          this.#state.waitingForTap = true;
                          this.#elements.instructions.style.display = 'block'; // Show instructions
-                         this.#elements.timeChoices.style.opacity = '0';
+                         // Also disable buttons while waiting
+                         this.#elements.choiceButtons.forEach(button => button.disabled = true);
                     }, ANIMATION_DURATION.CORRECT_TAP + 300); // Wait for animation + extra delay
 
 
@@ -815,13 +838,18 @@
                          this.#elements.instructions.style.display = 'block'; // Show instructions
                          // Keep choices visible so user can see the correct answer highlight
                          
+                         // Also disable buttons while waiting
+                         this.#elements.choiceButtons.forEach(button => button.disabled = true);
                     }, ANIMATION_DURATION.WRONG_TAP + 300); // Wait for animation + extra delay
                 }
             }
             
             #proceedToNext() {
+                // Immediately set waitingForTap to false to prevent multiple rapid clicks
+                if (!this.#state.waitingForTap) return; // Exit if already processing a tap
+                this.#state.waitingForTap = false; 
                 console.log("Proceeding to next problem...");
-                this.#state.waitingForTap = false;
+
                 this.#elements.instructions.style.display = 'none';
                 this.#generateProblem(); // Load the next question
             }
