@@ -557,6 +557,9 @@
                     btn.disabled = false; // Re-enable buttons
                  });
 
+                 // Disable buttons initially
+                 this.#elements.choiceButtons.forEach(button => button.disabled = true);
+
                  // Generate random time
                  const hour = this.#getRandomInt(1, 12);
                  // Generate minute that is a multiple of 5
@@ -591,6 +594,12 @@
                  this.#elements.levelDisplay.textContent = `Nivel ${this.#state.level}`;
                  this.#elements.timeChoices.style.opacity = '1'; // Ensure choices are fully visible
                  this.#elements.timeChoices.style.visibility = 'visible'; // Ensure visibility is set back
+
+                 // Enable buttons after 3 seconds
+                 setTimeout(() => {
+                     console.log("Enabling choice buttons after delay.");
+                     this.#elements.choiceButtons.forEach(button => button.disabled = false);
+                 }, 3000); // 3000 milliseconds = 3 seconds
             }
             
             #timeToSpanishPhrase(hour, minute) {
@@ -764,10 +773,10 @@
                     this.#elements.message.innerHTML = `¡Correcto! ${coloredPhraseHtml}`; // Use innerHTML, add ¡Correcto!
 
                     if (this.#state.hadErrorThisRound) {
-                        // Level stays same or decreases slightly if needed (optional)
-                        // this.#state.level = Math.max(1, this.#state.level - 1); 
+                        // Level stays the same if it was already wrong this round
                     } else {
                         this.#state.level++; // Increase level only on first try correct
+                        this.#elements.levelDisplay.textContent = `Nivel ${this.#state.level}`; // Update display immediately
                     }
                     
                     // Wait a bit, then show "Tap to continue"
@@ -794,7 +803,11 @@
                     const coloredPhraseHtml = this.#getColoredPhraseHtml(this.#state.currentTime.hour, this.#state.currentTime.minute);
                     this.#elements.message.innerHTML = `Correcto: ${coloredPhraseHtml}`; // Use innerHTML
 
-                    this.#state.hadErrorThisRound = true; 
+                    this.#state.hadErrorThisRound = true;
+
+                    // Decrease level on every mistake, but not below 1
+                    this.#state.level = Math.max(1, this.#state.level - 1);
+                    this.#elements.levelDisplay.textContent = `Nivel ${this.#state.level}`; // Update display immediately
                     
                      // Wait a bit, then show "Tap to continue"
                     setTimeout(() => {
