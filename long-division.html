@@ -252,8 +252,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            border-left: 4px solid var(--color-primary);
-            transition: border-color 0.3s ease, background-color 0.3s ease;
+            transition: background-color 0.3s ease;
         }
 
         .instruction-text {
@@ -468,40 +467,6 @@
             100% { transform: translateY(0); opacity: 1; }
         }
 
-        /* Input Status Display */
-        .input-preview-bar {
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            min-height: 38px;
-            margin: 4px 0 10px 0;
-        }
-
-        .input-preview-box {
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--color-text);
-            min-width: 60px;
-            height: 36px;
-            padding: 0 12px;
-            background: #F1F5F9;
-            border: 2px solid #CBD5E1;
-            border-radius: var(--radius-sm);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            letter-spacing: 2px;
-            font-variant-numeric: tabular-nums;
-        }
-
-        .input-preview-box.has-value {
-            border-color: var(--color-primary);
-            background: #E0F2FE;
-            color: var(--color-primary-dark);
-        }
-
         /* On-Screen Touch Numpad */
         .numpad-grid {
             display: grid;
@@ -534,23 +499,9 @@
             background: #e2e8f0;
         }
 
-        .numpad-btn.action-btn {
-            font-size: 18px;
-            font-weight: 700;
-        }
-
-        .numpad-btn.backspace {
-            color: var(--color-error-dark);
-        }
-
-        .numpad-btn.submit {
-            background: var(--color-primary-dark);
-            color: white;
-            border-color: #3b6d78;
-        }
-
-        .numpad-btn.submit:active {
-            background: #3b6d78;
+        /* Keep the zero centered after removing the ⌫ / ✓ buttons */
+        .numpad-btn[data-key="0"] {
+            grid-column: 2;
         }
 
         /* Custom equation CTA */
@@ -563,15 +514,15 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
-            background: white;
+            background: transparent;
             color: var(--color-primary-text);
-            border: 2px dashed rgba(96, 172, 189, 0.6);
+            border: none;
             border-radius: 12px;
             font-family: inherit;
             font-size: 15px;
             font-weight: 600;
             cursor: pointer;
-            transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+            transition: background-color 0.15s ease, transform 0.1s ease;
         }
 
         .custom-eq-btn:active {
@@ -933,9 +884,6 @@
                 background: #f8fafc;
                 border-color: rgba(0,0,0,0.15);
             }
-            .numpad-btn.submit:hover {
-                background: #3b6d78;
-            }
             .modal-close-btn:hover {
                 color: var(--color-text);
             }
@@ -951,7 +899,6 @@
             }
             .custom-eq-btn:hover {
                 background: #f0f9fb;
-                border-color: var(--color-primary);
             }
             .custom-solve-btn:hover {
                 background: #3b6d78;
@@ -1004,12 +951,6 @@
             </div>
         </div>
 
-        <!-- Current input preview display -->
-        <div class="input-preview-bar">
-            <span style="font-size: 14px; color: var(--color-text-secondary); font-weight: 500;" data-i18n="ld_input_label">Ввод:</span>
-            <div class="input-preview-box" id="inputPreviewBox"></div>
-        </div>
-
         <!-- Touch Numpad -->
         <div class="numpad-grid" id="numpadGrid" role="group" data-i18n-aria-label="ld_numpad_aria" aria-label="Цифровая клавиатура">
             <button type="button" class="numpad-btn" data-key="1">1</button>
@@ -1021,9 +962,7 @@
             <button type="button" class="numpad-btn" data-key="7">7</button>
             <button type="button" class="numpad-btn" data-key="8">8</button>
             <button type="button" class="numpad-btn" data-key="9">9</button>
-            <button type="button" class="numpad-btn action-btn backspace" data-key="backspace" data-i18n-aria-label="ld_backspace_aria" aria-label="Стереть">⌫</button>
             <button type="button" class="numpad-btn" data-key="0">0</button>
-            <button type="button" class="numpad-btn action-btn submit" data-key="enter" data-i18n-aria-label="ld_enter_aria" aria-label="Подтвердить ввод">✓</button>
         </div>
 
         <!-- Custom equation CTA -->
@@ -1240,12 +1179,10 @@
                     levelText: document.getElementById('levelText'),
                     levelMenu: document.getElementById('levelMenu'),
                     boardContainer: document.querySelector('.board-container'),
-                    instructionBox: document.getElementById('instructionBox'),
                     instructionText: document.getElementById('instructionText'),
                     instructionHint: document.getElementById('instructionHint'),
                     mathGrid: document.getElementById('mathGrid'),
                     arcContainer: document.getElementById('arcContainer'),
-                    inputPreviewBox: document.getElementById('inputPreviewBox'),
                     numpadGrid: document.getElementById('numpadGrid'),
                     termsModal: document.getElementById('termsModal'),
                     hintModalBtn: document.getElementById('hintModalBtn'),
@@ -1548,7 +1485,6 @@
                 this.#state.isCustomRound = !!isCustomRound;
                 this.#state.hadErrorThisRound = false;
                 this.#state.currentInput = '';
-                this.#updateInputPreview();
 
                 this.#state.dividendDigits = problem.dividendDigits;
                 this.#state.dividendDecimals = problem.dividendDecimals;
@@ -1996,7 +1932,6 @@
                 if (!step) return;
 
                 this.#state.currentInput = '';
-                this.#updateInputPreview();
                 this.#elements.instructionHint.classList.remove('is-error');
 
                 const d = this.#state.divisor;
@@ -2076,8 +2011,7 @@
             #handleKeyPress(key) {
                 if (key === 'backspace') {
                     this.#state.currentInput = this.#state.currentInput.slice(0, -1);
-                    this.#updateInputPreview();
-                    this.#renderTypingPreview();
+                        this.#renderTypingPreview();
                     return;
                 }
 
@@ -2090,8 +2024,7 @@
                     if (this.#state.currentInput.length >= this.#state.expectedAnswer.length) return;
                     this.#elements.instructionHint.classList.remove('is-error');
                     this.#state.currentInput += key;
-                    this.#updateInputPreview();
-                    this.#renderTypingPreview();
+                        this.#renderTypingPreview();
 
                     if (this.#state.currentInput.length === this.#state.expectedAnswer.length) {
                         setTimeout(() => this.#submitCurrentInput(), 80);
@@ -2115,16 +2048,6 @@
                         cell.classList.remove('typing-preview');
                     }
                 });
-            }
-
-            #updateInputPreview() {
-                const box = this.#elements.inputPreviewBox;
-                box.textContent = this.#state.currentInput;
-                if (this.#state.currentInput.length > 0) {
-                    box.classList.add('has-value');
-                } else {
-                    box.classList.remove('has-value');
-                }
             }
 
             #submitCurrentInput() {
@@ -2211,17 +2134,14 @@
                     setTimeout(() => cell.classList.remove('error-shake'), 600);
                 });
 
-                this.#elements.instructionBox.style.borderColor = 'var(--color-error)';
                 this.#elements.instructionHint.classList.add('is-error');
                 this.#elements.instructionHint.textContent = I18n.t('ld_wrong_hint');
 
                 setTimeout(() => {
-                    this.#elements.instructionBox.style.borderColor = 'var(--color-primary)';
                     this.#elements.instructionHint.classList.remove('is-error');
                 }, 1200);
 
                 this.#state.currentInput = '';
-                this.#updateInputPreview();
                 this.#renderTypingPreview();
             }
 
