@@ -2,16 +2,18 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>¿Qué hora es?</title>
+    <script src="i18n.js"></script>
     <style>
         /* Add CSS variables at the root */
         :root {
             /* Colors */
             --color-primary: #60ACBD;
             --color-primary-dark: #4d8a98;
-            --color-success: #4CAF50;
-            --color-error: #FF6B6B;
+            --color-primary-text: #3B6D78;
+            --color-success: #2E7D32;
+            --color-error: #D32F2F;
             --color-text: #333;
             --color-text-secondary: #666;
             --color-background: #f5f5f5;
@@ -40,27 +42,40 @@
         }
 
         /* Basic reset and centering */
+        :focus-visible {
+            outline: 3px solid var(--color-primary-text);
+            outline-offset: 2px;
+        }
+
         body {
             font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background-color: var(--color-background);
             margin: 0;
             padding: 0;
             min-height: 100vh;
+            min-height: 100dvh;
             height: 100vh;
+            height: 100dvh;
             max-height: 100vh;
+            max-height: 100dvh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            justify-content: safe center;
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
-            overflow: hidden;
+            overflow-x: hidden;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
             position: fixed;
             width: 100%;
             user-select: none;
             -webkit-user-select: none; /* Safari */
             -moz-user-select: none;    /* Firefox (older) */
             -ms-user-select: none;     /* IE/Edge */
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
         }
 
         /* Game container */
@@ -72,6 +87,7 @@
             padding: 0;
             margin: 0;
             min-height: 100vh;
+            min-height: 100dvh;
             padding-bottom: env(safe-area-inset-bottom, 20px); /* Add safe area padding */
         }
 
@@ -114,7 +130,7 @@
             justify-content: center;
             text-align: center;
             position: relative;
-            color: var(--color-primary);
+            color: var(--color-primary-text);
             font-size: clamp(18px, 4.5vw, 20px); /* Increased base font size */
             font-weight: bold;
             min-height: 50px; /* Ensure minimum height */
@@ -243,14 +259,14 @@
             animation:
                 correctTapAnimation var(--animation-speed-normal) ease-out forwards,
                 feedbackRipple var(--animation-speed-normal) ease-out;
-            --ripple-color: rgba(76, 175, 80, 0.3); /* Green ripple */
+            --ripple-color: rgba(46, 125, 50, 0.3); /* Green ripple */
         }
 
         .choice-button.wrong {
             animation:
                 wrongTapAnimation var(--animation-speed-slow) ease-out forwards,
                 feedbackRipple var(--animation-speed-slow) ease-out;
-             --ripple-color: rgba(255, 107, 107, 0.3); /* Red ripple */
+             --ripple-color: rgba(211, 47, 47, 0.3); /* Red ripple */
         }
         
         /* Digital time shake for wrong answer */
@@ -353,9 +369,11 @@
         *, *::before, *::after {
             box-sizing: border-box;
         }
+
     </style>
 </head>
 <body>
+    <div data-lang-toggle style="position: fixed; top: max(15px, env(safe-area-inset-top)); left: max(15px, env(safe-area-inset-left)); z-index: 1000;"></div>
     <main class="game" id="game">
         <div class="level-display" id="levelDisplay" role="status" aria-live="polite">Nivel 1</div>
         
@@ -421,7 +439,7 @@
         </div>
 
         <!-- Time Choices Area -->
-        <div id="timeChoices" role="group" aria-label="Opciones de hora">
+        <div id="timeChoices" role="group" data-i18n-aria-label="tt_choices_aria" aria-label="Opciones de hora">
             <button class="choice-button" data-choice="1"></button>
             <button class="choice-button" data-choice="2"></button>
             <button class="choice-button" data-choice="3"></button>
@@ -429,10 +447,10 @@
         </div>
 
         <!-- Message Area -->
-        <div class="message" id="message" role="status" aria-live="polite">Elige la hora correcta</div>
+        <div class="message" id="message" role="status" aria-live="polite" data-i18n="tt_choose_time">Elige la hora correcta</div>
 
         <!-- Instructions (Initially hidden) -->
-        <div id="instructions">¡Toca para continuar!</div>
+        <div id="instructions" data-i18n="tt_tap_continue">¡Toca para continuar!</div>
     </main>
 
     <script>
@@ -441,36 +459,17 @@
             #state;
             #elements;
             #config;
-            #numberWordsEs; // Store Spanish number words
 
             constructor() {
                 console.log("Initializing TellingTimeEsGame...");
-                this.#initializeNumberWords();
                 this.#initializeConfig();
                 this.#initializeElements();
                 this.#initializeState();
                 this.#bindEventListeners();
+                this.#subscribeToLanguageChanges();
                 this.#startGameDirectly(); // Start game immediately
             }
             
-            #initializeNumberWords() {
-                 this.#numberWordsEs = {
-                    1: 'una', 2: 'dos', 3: 'tres', 4: 'cuatro', 5: 'cinco',
-                    6: 'seis', 7: 'siete', 8: 'ocho', 9: 'nueve', 10: 'diez',
-                    11: 'once', 12: 'doce', 13: 'trece', 14: 'catorce', 15: 'quince',
-                    16: 'dieciséis', 17: 'diecisiete', 18: 'dieciocho', 19: 'diecinueve',
-                    20: 'veinte', 21: 'veintiuno', 22: 'veintidós', 23: 'veintitrés', 
-                    24: 'veinticuatro', 25: 'veinticinco', 26: 'veintiséis', 27: 'veintisiete',
-                    28: 'veintiocho', 29: 'veintinueve', 30: 'treinta',
-                    // Add words needed for minutes > 30 (multiples of 5)
-                    35: 'treinta y cinco',
-                    40: 'cuarenta',
-                    // 45 is 'menos cuarto'
-                    50: 'cincuenta',
-                    55: 'cincuenta y cinco'
-                 };
-            }
-
             #initializeConfig() {
                 this.#config = {
                     ANIMATION_DURATION: {
@@ -491,7 +490,9 @@
                     choices: [],
                     hadErrorThisRound: false,
                     waitingForTap: false, // Flag to check if waiting for tap to proceed
-                    processingClick: false // Flag to prevent multiple clicks being processed per round
+                    processingClick: false, // Flag to prevent multiple clicks being processed per round
+                    lastResult: null, // 'correct' | 'wrong' | null for re-rendering messages
+                    enableTimer: null // Timeout id for re-enabling choice buttons
                 };
             }
 
@@ -543,7 +544,6 @@
                 console.log("Starting game directly...");
                 this.#state.isPlaying = true;
                 this.#state.level = 1;
-                this.#elements.message.textContent = 'Elige la hora correcta'; // Set initial message
                 this.#elements.analogClock.closest('#analogClockContainer').style.visibility = 'visible'; // Ensure clock is visible
                 this.#elements.timeChoices.style.visibility = 'visible'; // Ensure choices are visible
                 this.#elements.timeChoices.style.opacity = '1';
@@ -558,19 +558,10 @@
             #generateProblem() {
                  console.log("Generating new problem...");
                  this.#state.processingClick = false; // Reset click processing flag for new round
-                 this.#elements.message.innerHTML = 'Elige la hora correcta'; // Reset message
                  this.#state.hadErrorThisRound = false; // Reset error flag
                  this.#state.waitingForTap = false; // Not waiting for tap initially
+                 this.#state.lastResult = null;
                  this.#elements.instructions.style.display = 'none'; // Hide instructions
-
-                 // Reset button styles
-                 this.#elements.choiceButtons.forEach(btn => {
-                    btn.classList.remove('tapped', 'wrong');
-                    btn.disabled = false; // Re-enable buttons
-                 });
-
-                 // Disable buttons initially
-                 this.#elements.choiceButtons.forEach(button => button.disabled = true);
 
                  // Generate random time
                  const hour = this.#getRandomInt(1, 12);
@@ -583,188 +574,110 @@
                  // Update analog clock hands
                  this.#updateClockHands(hour, minute);
                  
-                 // Generate correct phrase
-                 const phraseParts = this.#timeToSpanishPhrase(hour, minute);
-                 this.#state.correctPhrase = this.#formatPhrase(phraseParts);
+                 // Build choices in the active language
+                 this.#renderChoicesForCurrentTime();
+                 this.#renderLevel();
+                 this.#renderMessage();
+
                  console.log(`Correct phrase: ${this.#state.correctPhrase}`);
 
-                 // Generate distractors
-                 const distractors = this.#generateDistractors(hour, minute, this.#state.correctPhrase);
-                 
-                 // Combine and shuffle choices
-                 this.#state.choices = this.#shuffleArray([this.#state.correctPhrase, ...distractors]);
-                 
-                 // Update buttons
-                 this.#elements.choiceButtons.forEach((button, index) => {
-                     button.textContent = this.#state.choices[index];
-                     // Store the actual phrase in a data attribute for checking
-                     button.dataset.phrase = this.#state.choices[index]; 
-                 });
-
-                 // Ensure elements are visible (handled in #startGameDirectly now)
-
-                 this.#elements.levelDisplay.textContent = `Nivel ${this.#state.level}`;
                  this.#elements.timeChoices.style.opacity = '1'; // Ensure choices are fully visible
                  this.#elements.timeChoices.style.visibility = 'visible'; // Ensure visibility is set back
-
-                 // Enable buttons after 3 seconds
-                 setTimeout(() => {
-                     console.log("Enabling choice buttons after delay.");
-                     this.#elements.choiceButtons.forEach(button => button.disabled = false);
-                 }, 3000); // 3000 milliseconds = 3 seconds
+                 this.#scheduleButtonEnable();
             }
+
+             #renderChoicesForCurrentTime() {
+                 const { hour, minute } = this.#state.currentTime;
+                 const correctPhrase = I18n.timePhrase(I18n.getLang(), hour, minute);
+                 this.#state.correctPhrase = correctPhrase;
+
+                 const distractors = this.#generateDistractors(hour, minute, correctPhrase);
+                 this.#state.choices = this.#shuffleArray([correctPhrase, ...distractors]);
+
+                 this.#elements.choiceButtons.forEach((button, index) => {
+                     button.textContent = this.#state.choices[index];
+                     button.dataset.phrase = this.#state.choices[index];
+                     button.classList.remove('tapped', 'wrong');
+                     button.disabled = true;
+                 });
+             }
+
+             #renderLevel() {
+                 this.#elements.levelDisplay.textContent = I18n.t('level_label', { n: this.#state.level });
+             }
+
+             #renderMessage() {
+                 if (this.#state.lastResult) {
+                     const coloredPhraseHtml = this.#getColoredPhraseHtml(
+                         this.#state.currentTime.hour,
+                         this.#state.currentTime.minute
+                     );
+                     const prefix = this.#state.lastResult === 'correct'
+                         ? I18n.t('tt_correct')
+                         : I18n.t('tt_correct_answer');
+                     this.#elements.message.innerHTML = `${prefix} ${coloredPhraseHtml}`;
+                 } else {
+                     this.#elements.message.textContent = I18n.t('tt_choose_time');
+                 }
+             }
+
+             #scheduleButtonEnable() {
+                 if (this.#state.enableTimer) {
+                     clearTimeout(this.#state.enableTimer);
+                     this.#state.enableTimer = null;
+                 }
+                 this.#elements.choiceButtons.forEach((button) => { button.disabled = true; });
+                 this.#state.enableTimer = setTimeout(() => {
+                     this.#state.enableTimer = null;
+                     this.#elements.choiceButtons.forEach((button) => { button.disabled = false; });
+                 }, 3000); // 3000 milliseconds = 3 seconds
+             }
+
+             #subscribeToLanguageChanges() {
+                 I18n.subscribe(() => {
+                     if (!this.#state.isPlaying) return;
+                     this.#renderLevel();
+                     this.#renderMessage();
+                     if (this.#state.processingClick) return;
+                     this.#renderChoicesForCurrentTime();
+                     this.#scheduleButtonEnable();
+                 });
+             }
             
-            #timeToSpanishPhrase(hour, minute) {
-                 const hourWord = (h) => this.#numberWordsEs[h] || h.toString();
-                 const minuteWord = (m) => this.#numberWordsEs[m] || m.toString();
-                 let nextHour = (hour % 12) + 1;
-
-                 let parts = {
-                     verb: '',        // Es / Son
-                     article: '',     // la / las
-                     hourWord: '',    // una, dos, tres...
-                     connector: null, // y / menos / null
-                     minuteWord: null // cinco, cuarto, media...
-                 };
-
-                 // Determine verb, article, and hour word based on context (y vs menos)
-                 if (minute > 30 && minute !== 45) { // Use next hour for 'menos [number]' cases
-                     parts.verb = (nextHour === 1) ? 'Es' : 'Son';
-                     parts.article = (nextHour === 1) ? 'la' : 'las';
-                     parts.hourWord = hourWord(nextHour);
-                 } else if (minute === 45) { // Special 'menos cuarto' case, still uses next hour
-                     parts.verb = (nextHour === 1) ? 'Es' : 'Son';
-                     parts.article = (nextHour === 1) ? 'la' : 'las';
-                     parts.hourWord = hourWord(nextHour);
-                 } else { // Use current hour for 'y', 'en punto', 'y cuarto', 'y media'
-                     parts.verb = (hour === 1) ? 'Es' : 'Son';
-                     parts.article = (hour === 1) ? 'la' : 'las';
-                     parts.hourWord = hourWord(hour);
-                 }
-
-                 switch (minute) {
-                     case 0:  parts.minuteWord = 'en punto'; break;
-                     case 15: parts.connector = 'y'; parts.minuteWord = 'cuarto'; break;
-                     case 30: parts.connector = 'y'; parts.minuteWord = 'media'; break;
-                     case 45: parts.connector = 'menos'; parts.minuteWord = 'cuarto'; break; // Already handled hour logic above
-                     default:
-                          if (minute > 0 && minute < 30) { // Changed from <= 30 to < 30
-                             parts.connector = 'y';
-                             parts.minuteWord = minuteWord(minute);
-                          } else if (minute > 30) { // Changed from >= 31 to > 30
-                              // Use 'menos [number]' for minutes 31-59 (now 35, 40, 50, 55 etc.)
-                              // Hour logic is already handled above
-                              const minutesRemaining = 60 - minute;
-                              parts.connector = 'menos';
-                              parts.minuteWord = minuteWord(minutesRemaining);
-                          }
-                          break;
-                 }
-                 return parts;
-             }
-             
-             #formatPhrase(parts) {
-                 let phrase = `${parts.verb} ${parts.article} ${parts.hourWord}`;
-                 if (parts.connector) {
-                     phrase += ` ${parts.connector} ${parts.minuteWord}`;
-                 } else if (parts.minuteWord) { // For 'en punto'
-                     phrase += ` ${parts.minuteWord}`;
-                 }
-                 return phrase;
-             }
-             
              #generateDistractors(hour, minute, correctPhrase) {
                  const distractors = new Set();
-                 let attempts = 0; // Corrected variable name
-                 const maxAttempts = 30; 
+                 const lang = I18n.getLang();
 
-                 while (distractors.size < 3 && attempts < maxAttempts) {
-                     attempts++; // Increment attempts
-                     let dHour = hour;
-                     let dMinute = minute;
-                     const type = this.#getRandomInt(1, 5); // Type of variation
-
-                     switch (type) {
-                         case 1: // Wrong hour (+/- 1)
-                             dHour = (hour + this.#getRandomInt(0, 1) * 2 - 1 + 12) % 12;
-                             if (dHour === 0) dHour = 12;
-                             break;
-                         case 2: // Wrong minute (+/- 5 or 10, ensuring multiple of 5)
-                             let minuteOffset = (this.#getRandomInt(0, 1) * 2 - 1) * (this.#getRandomInt(1,2) * 5);
-                             dMinute = (minute + minuteOffset + 60) % 60;
-                             // Ensure it's different from original minute
-                             if (dMinute === minute) {
-                                 dMinute = (minute + minuteOffset * 2 + 60) % 60; // Try double offset
-                             }
-                             break;
-                         case 3: // Swap 'y' and 'menos' logic
-                              if (minute > 30 && minute !== 45) { // If 'menos' was correct
-                                 // Try to construct the swapped 'y' version
-                                 if (this.#numberWordsEs[hour] && this.#numberWordsEs[minute]) {
-                                      const swappedParts = { 
-                                          verb: hour === 1 ? 'Es' : 'Son', 
-                                          article: hour === 1 ? 'la' : 'las', 
-                                          hourWord: this.#numberWordsEs[hour],
-                                          connector: 'y', 
-                                          minuteWord: this.#numberWordsEs[minute] 
-                                      };
-                                      const phrase = this.#formatPhrase(swappedParts);
-                                      if (phrase !== correctPhrase) distractors.add(phrase);
-                                 }
-                              } else if (minute < 30 && minute !== 15 && minute !== 0) { // If 'y' was correct
-                                  let nextHour = (hour % 12) + 1;
-                                  const minutesRemaining = 60 - minute;
-                                  // Try to construct the swapped 'menos' version
-                                   if (this.#numberWordsEs[nextHour] && this.#numberWordsEs[minutesRemaining]) {
-                                        const swappedParts = { 
-                                           verb: nextHour === 1 ? 'Es' : 'Son', 
-                                           article: nextHour === 1 ? 'la' : 'las', 
-                                           hourWord: this.#numberWordsEs[nextHour],
-                                           connector: 'menos', 
-                                           minuteWord: this.#numberWordsEs[minutesRemaining] 
-                                       };
-                                       const phrase = this.#formatPhrase(swappedParts);
-                                       if (phrase !== correctPhrase) distractors.add(phrase);
-                                   }
-                              }
-                              continue; // Always continue after this case attempt
-                          case 4: // Use 'cuarto'/'media'/'en punto' at wrong times
-                              const specialMinutes = [0, 15, 30, 45];
-                              dMinute = specialMinutes[this.#getRandomInt(0, 3)];
-                              break;
-                         case 5: // Completely random time (multiple of 5)
-                             dHour = this.#getRandomInt(1, 12);
-                             dMinute = this.#getRandomInt(0, 11) * 5;
-                             break;
-                     }
-
-                     // Ensure we didn't accidentally recreate the original time
-                     if (dHour === hour && dMinute === minute) continue; 
-
-                     // Generate parts and format to string
-                     const distractorParts = this.#timeToSpanishPhrase(dHour, dMinute);
-                     const distractorPhrase = this.#formatPhrase(distractorParts);
-
-                     // Add only if it's different from the correct phrase and not already added
-                     if (distractorPhrase !== correctPhrase) {
-                         distractors.add(distractorPhrase);
-                     }
+                 const candidates = [];
+                 [5, 10, 15, 30, -5, -10, -15, -30].forEach((offset) => {
+                     candidates.push({ hour, minute: (minute + offset + 60) % 60 });
+                 });
+                 [1, 2, 10, 11].forEach((offset) => {
+                     candidates.push({ hour: ((hour - 1 + offset) % 12) + 1, minute });
+                 });
+                 for (let i = 0; i < 12; i++) {
+                     candidates.push({
+                         hour: this.#getRandomInt(1, 12),
+                         minute: this.#getRandomInt(0, 11) * 5
+                     });
                  }
-                 
-                 // If we couldn't generate enough unique distractors, add some simple fixed ones
-                 const fixedDistractors = [
-                    "Son las dos y diez", 
-                    "Es la una y media", 
-                    "Son las cinco menos cuarto",
-                    "Son las ocho en punto"
-                 ];
-                 let fixedIdx = 0;
-                 while (distractors.size < 3 && fixedIdx < fixedDistractors.length) {
-                    if (fixedDistractors[fixedIdx] !== correctPhrase) {
-                        distractors.add(fixedDistractors[fixedIdx]);
-                    }
-                    fixedIdx++;
-                 }
+
+                 candidates.forEach((candidate) => {
+                     if (distractors.size >= 3) return;
+                     const phrase = I18n.timePhrase(lang, candidate.hour, candidate.minute);
+                     if (phrase !== correctPhrase) distractors.add(phrase);
+                 });
+
+                 const fixedDistractors = {
+                     en: ["It's ten past two", "It's half past one", "It's quarter to five", "It's eight o'clock"],
+                     es: ["Son las dos y diez", "Es la una y media", "Son las cinco menos cuarto", "Son las ocho en punto"],
+                     ru: ["Десять минут третьего", "Половина второго", "Без четверти пять", "Двадцать минут восьмого"]
+                 };
+                 const fallbacks = fixedDistractors[lang] || fixedDistractors.ru;
+                 fallbacks.forEach((phrase) => {
+                     if (distractors.size >= 3) return;
+                     if (phrase !== correctPhrase) distractors.add(phrase);
+                 });
 
                  console.log("Generated distractors:", Array.from(distractors));
                  return Array.from(distractors);
@@ -789,18 +702,16 @@
 
                 if (selectedPhrase === this.#state.correctPhrase) {
                     button.classList.add('tapped');
-
-                    // Display correct phrase with colored parts, even for correct answers
-                    const coloredPhraseHtml = this.#getColoredPhraseHtml(this.#state.currentTime.hour, this.#state.currentTime.minute);
-                    this.#elements.message.innerHTML = `¡Correcto! ${coloredPhraseHtml}`; // Use innerHTML, add ¡Correcto!
+                    this.#state.lastResult = 'correct';
 
                     if (this.#state.hadErrorThisRound) {
                         // Level stays the same if it was already wrong this round
                     } else {
                         this.#state.level++; // Increase level only on first try correct
-                        this.#elements.levelDisplay.textContent = `Nivel ${this.#state.level}`; // Update display immediately
                     }
-                    
+                    this.#renderLevel();
+                    this.#renderMessage();
+
                     // Wait a bit, then show "Tap to continue"
                     setTimeout(() => {
                          this.#state.waitingForTap = true;
@@ -820,15 +731,13 @@
                         }
                      });
 
-                    // Display correct phrase with colored parts
-                    const coloredPhraseHtml = this.#getColoredPhraseHtml(this.#state.currentTime.hour, this.#state.currentTime.minute);
-                    this.#elements.message.innerHTML = `Correcto: ${coloredPhraseHtml}`; // Use innerHTML
-
+                    this.#state.lastResult = 'wrong';
                     this.#state.hadErrorThisRound = true;
 
                     // Decrease level on every mistake, but not below 1
                     this.#state.level = Math.max(1, this.#state.level - 1);
-                    this.#elements.levelDisplay.textContent = `Nivel ${this.#state.level}`; // Update display immediately
+                    this.#renderLevel();
+                    this.#renderMessage();
                     
                      // Wait a bit, then show "Tap to continue"
                     setTimeout(() => {
@@ -881,29 +790,26 @@
              }
 
              #getColoredPhraseHtml(hour, minute) {
-                 const parts = this.#timeToSpanishPhrase(hour, minute);
+                 const tokens = I18n.timePhraseTokens(I18n.getLang(), hour, minute);
 
                  const hourColor = 'purple';
                  const minuteColor = 'var(--color-primary)';
 
-                 const coloredHourPart = `<span style="color:${hourColor}; font-weight: bold;">${parts.article} ${parts.hourWord}</span>`;
-                 let coloredMinutePart = '';
-                 if (parts.minuteWord) {
-                     coloredMinutePart = `<span style="color:${minuteColor}; font-weight: bold;">${parts.minuteWord}</span>`;
-                 }
-
-                 let colored12hPhrase = `${parts.verb} ${coloredHourPart}`;
-                 if (parts.connector) {
-                     colored12hPhrase += ` ${parts.connector} ${coloredMinutePart}`;
-                 } else if (coloredMinutePart) { // For 'en punto'
-                     colored12hPhrase += ` ${coloredMinutePart}`;
-                 }
+                 const coloredPhrase = tokens.map((token) => {
+                     if (token.type === 'hour') {
+                         return `<span style="color:${hourColor}; font-weight: bold;">${token.text}</span>`;
+                     }
+                     if (token.type === 'minute') {
+                         return `<span style="color:${minuteColor}; font-weight: bold;">${token.text}</span>`;
+                     }
+                     return token.text;
+                 }).join(' ');
 
                  const paddedHour = hour.toString().padStart(2, '0');
                  const paddedMinute = minute.toString().padStart(2, '0');
                  const coloredDigitalPhrase = `(<span style="color:${hourColor}; font-weight: bold;">${paddedHour}</span>:<span style="color:${minuteColor}; font-weight: bold;">${paddedMinute}</span>)`;
 
-                 return `${colored12hPhrase} ${coloredDigitalPhrase}`;
+                 return `${coloredPhrase} ${coloredDigitalPhrase}`;
              }
         }
 

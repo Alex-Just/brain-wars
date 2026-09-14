@@ -2,8 +2,9 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Повтори за мной</title>
+  <script src="i18n.js"></script>
   <style>
     /* Basic reset and centering */
     body {
@@ -12,21 +13,29 @@
       margin: 0;
       padding: 0; /* Remove padding */
       min-height: 100vh;
-      height: 100vh; /* Fix height */
-      max-height: 100vh; /* Prevent overflow */
+      min-height: 100dvh;
+      height: 100vh;
+      height: 100dvh;
+      max-height: 100vh;
+      max-height: 100dvh;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
+      justify-content: safe center;
       touch-action: manipulation; /* Disable double-tap zoom */
       -webkit-tap-highlight-color: transparent; /* Remove tap highlight on iOS */
-      overflow: hidden; /* Prevent scrolling */
+      overflow-x: hidden; /* Prevent horizontal overflow */
+      overflow-y: auto; /* Allow scrolling on short viewports */
+      -webkit-overflow-scrolling: touch;
       position: fixed; /* Lock viewport */
       width: 100%; /* Full width */
       user-select: none; /* Prevent text selection */
       -webkit-user-select: none; /* Safari */
       -moz-user-select: none;    /* Firefox (older) */
       -ms-user-select: none;     /* IE/Edge */
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
     }
     h1 {
       margin-bottom: 10px;
@@ -47,6 +56,9 @@
       height: 100%;
       background-color: transparent;
       border: none;
+      padding: 0;
+      -webkit-appearance: none;
+      appearance: none;
       border-radius: min(2vw, 8px);
       cursor: pointer;
       transition: all 0.2s ease;
@@ -67,8 +79,9 @@
       pointer-events: auto; /* Enable interactions only when ready */
     }
     /* Hover effect when ready */
-    .square.ready:hover {
-      transform: scale(0.95);
+    .square:focus-visible {
+      outline: 3px solid #3B6D78;
+      outline-offset: 3px;
     }
     /* Message and button styles */
     #message {
@@ -251,10 +264,6 @@
       background-color: var(--color-primary);
     }
 
-    .square.ready:hover {
-      transform: scale(var(--scale-hover));
-    }
-
     /* Remove hover shadow effect */
     .square.ready:hover {
       /* Remove box-shadow line */
@@ -276,21 +285,29 @@
     @media (max-width: 360px) {
       /* Removed start button rules */
     }
+
+    @media (hover: hover) {
+      .square.ready:hover {
+        transform: scale(var(--scale-hover));
+      }
+    }
+
   </style>
 </head>
 <body>
+  <div data-lang-toggle style="position: fixed; top: max(15px, env(safe-area-inset-top)); left: max(15px, env(safe-area-inset-left)); z-index: 1000;"></div>
   <div id="levelDisplay">Уровень 1</div>
   <!-- Game grid: 3x3 layout -->
   <div id="game">
-    <div class="square" data-index="0"></div>
-    <div class="square" data-index="1"></div>
-    <div class="square" data-index="2"></div>
-    <div class="square" data-index="3"></div>
-    <div class="square" data-index="4"></div>
-    <div class="square" data-index="5"></div>
-    <div class="square" data-index="6"></div>
-    <div class="square" data-index="7"></div>
-    <div class="square" data-index="8"></div>
+    <button type="button" class="square" data-index="0"></button>
+    <button type="button" class="square" data-index="1"></button>
+    <button type="button" class="square" data-index="2"></button>
+    <button type="button" class="square" data-index="3"></button>
+    <button type="button" class="square" data-index="4"></button>
+    <button type="button" class="square" data-index="5"></button>
+    <button type="button" class="square" data-index="6"></button>
+    <button type="button" class="square" data-index="7"></button>
+    <button type="button" class="square" data-index="8"></button>
   </div>
   <div id="message">Запомни порядок появления квадратов и повтори его</div>
   <div id="buttonContainer">
@@ -327,14 +344,29 @@
         this.messageEl = document.getElementById('message');
         this.levelDisplayEl = document.getElementById('levelDisplay');
 
+        this.squares.forEach((square, index) => {
+          square.setAttribute('aria-label', I18n.t('ftl_square_aria', { n: index + 1 }));
+          square.tabIndex = -1;
+        });
+
         this.sequence = [];
         this.playerSequence = [];
         this.level = 0;
         this.isPlayerTurn = false;
         this.speed = this.INITIAL_SPEED;
         this.consecutiveErrors = 0;
+        this.messageKey = 'ftl_remember';
+        this.messageParams = null;
 
         this.bindEventListeners();
+
+        I18n.subscribe(() => {
+          this.setMessage(this.messageKey, this.messageParams);
+          this.levelDisplayEl.textContent = I18n.t('level_label', { n: Math.max(1, this.level) });
+          this.squares.forEach((square, index) => {
+            square.setAttribute('aria-label', I18n.t('ftl_square_aria', { n: index + 1 }));
+          });
+        });
       }
 
       bindEventListeners() {
@@ -355,10 +387,23 @@
                 e.preventDefault();
                 this.handleSquareClick(e);
             });
+
+            square.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    this.handleSquareClick(e);
+                }
+            });
         });
 
         // Start the game directly after initializing listeners
         this.startGameDirectly();
+      }
+
+      setMessage(key, params = null) {
+        this.messageKey = key;
+        this.messageParams = params;
+        this.messageEl.textContent = I18n.t(key, params);
       }
 
       // Update game logic to use constants
@@ -374,8 +419,9 @@
         this.consecutiveErrors = 0;
         this.squares.forEach(square => {
           square.classList.remove('sequence', 'ready');
+          square.tabIndex = -1;
         });
-        this.levelDisplayEl.textContent = 'Level 1';
+        this.levelDisplayEl.textContent = I18n.t('level_label', { n: 1 });
       }
 
       // Add new helper method for better randomization
@@ -397,7 +443,7 @@
         console.log("Starting game directly...");
 
         this.resetGame();
-        this.messageEl.textContent = "Запомни порядок появления квадратов";
+        this.setMessage('ftl_remember');
         
         const initialSquares = this.calculateTotalSquares(1);
         while (this.sequence.length < initialSquares) {
@@ -407,14 +453,14 @@
           }
         }
         this.level = 1;
-        this.levelDisplayEl.textContent = 'Level 1';
+        this.levelDisplayEl.textContent = I18n.t('level_label', { n: 1 });
         await this.playSequence();
       }
 
       // Update nextLevel method
       async nextLevel() {
         this.level++;
-        this.levelDisplayEl.textContent = `Level ${this.level}`;
+        this.levelDisplayEl.textContent = I18n.t('level_label', { n: this.level });
         
         // Calculate if we're adding a new square this level
         const previousSquares = this.calculateTotalSquares(this.level - 2);
@@ -428,7 +474,7 @@
           this.speed = Math.max(this.MIN_SPEED, this.INITIAL_SPEED - (this.level - 1) * currentSpeedIncrease);
         }
         
-        this.messageEl.textContent = `Level ${this.level}: Запомните последовательность`;
+        this.setMessage('ftl_remember_next', { n: this.level });
         this.playerSequence = [];
 
         // Generate completely new sequence
@@ -469,9 +515,10 @@
         this.sequence.forEach(squareIndex => {
           this.squares[squareIndex].classList.remove('sequence');
           this.squares[squareIndex].classList.add('ready');
+          this.squares[squareIndex].tabIndex = 0;
         });
 
-        this.messageEl.textContent = "Повтори порядок появления квадратов";
+        this.setMessage('ftl_your_turn');
         this.isPlayerTurn = true;
       }
 
@@ -499,6 +546,7 @@
       async handleWrongMove(square) {
         this.isPlayerTurn = false;
         this.consecutiveErrors++;
+        this.setMessage('ftl_try_again');
         
         square.classList.add('wrong');
         
@@ -517,6 +565,7 @@
         // Clean up all squares
         this.squares.forEach(square => {
           square.classList.remove('wrong', 'tapped', 'ready');
+          square.tabIndex = -1;
         });
         
         // Check if we need to go back a level
@@ -524,7 +573,7 @@
           this.consecutiveErrors = 0;
           if (this.level > 1) {
             this.level--;
-            this.levelDisplayEl.textContent = `Level ${this.level}`;
+            this.levelDisplayEl.textContent = I18n.t('level_label', { n: this.level });
           }
         }
         
@@ -544,7 +593,7 @@
         this.sequence = this.sequence.sort(() => Math.random() - 0.5);
         
         this.playerSequence = [];
-        this.messageEl.textContent = "Запомните последовательность";
+        this.setMessage('ftl_remember');
         await this.playSequence();
       }
 
@@ -553,6 +602,7 @@
         this.consecutiveErrors = 0;
         
         square.classList.add('tapped');
+        square.tabIndex = -1;
         setTimeout(() => {
           square.classList.remove('tapped', 'ready');
         }, 300);
@@ -561,6 +611,7 @@
 
         if (this.playerSequence.length === this.sequence.length) {
           this.isPlayerTurn = false;
+          this.setMessage('ftl_great_job');
           
           // Get the position of the last tapped square for the particle effect
           const rect = square.getBoundingClientRect();
@@ -573,6 +624,7 @@
           this.squares.forEach(s => {
             if (s !== square) {
               s.classList.remove('ready');
+              s.tabIndex = -1;
             }
           });
           

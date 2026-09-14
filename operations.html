@@ -2,16 +2,20 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Математика</title>
+    <script src="i18n.js"></script>
     <style>
         /* Add CSS variables at the root */
         :root {
             /* Colors */
             --color-primary: #60ACBD;
             --color-primary-dark: #4d8a98;
+            --color-primary-text: #3B6D78;
             --color-success: #4CAF50;
+            --color-success-dark: #2E7D32;
             --color-error: #FF6B6B;
+            --color-error-dark: #D32F2F;
             --color-text: #333;
             --color-text-secondary: #666;
             --color-background: #f5f5f5;
@@ -40,27 +44,40 @@
         }
 
         /* Basic reset and centering */
+        :focus-visible {
+            outline: 3px solid var(--color-primary-text);
+            outline-offset: 2px;
+        }
+
         body {
             font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background-color: #f5f5f5;  /* Light gray background */
             margin: 0;
             padding: 0;
             min-height: 100vh;
+            min-height: 100dvh;
             height: 100vh;
+            height: 100dvh;
             max-height: 100vh;
+            max-height: 100dvh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            justify-content: safe center;
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
-            overflow: hidden;
+            overflow-x: hidden;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
             position: fixed;
             width: 100%;
             user-select: none;
             -webkit-user-select: none; /* Safari */
             -moz-user-select: none;    /* Firefox (older) */
             -ms-user-select: none;     /* IE/Edge */
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
         }
 
         /* Game container */
@@ -72,6 +89,7 @@
             padding: 0;
             margin: 0;
             min-height: 100vh;
+            min-height: 100dvh;
             padding-bottom: env(safe-area-inset-bottom, 20px); /* Add safe area padding */
         }
 
@@ -126,7 +144,7 @@
             align-items: center;
             justify-content: center;
             position: relative;
-            color: #60ACBD;
+            color: var(--color-primary-dark);
             font-family: 'Cambria Math', 'Times New Roman', serif;
             font-style: italic;
         }
@@ -184,7 +202,7 @@
         }
 
         .operator.selected {
-            background-color: #60ACBD;
+            background-color: var(--color-primary-dark);
             color: white;
         }
 
@@ -236,22 +254,22 @@
             0% {
                 transform: scale(1);
                 background-color: white;
-                color: #60ACBD;
+                color: #3B6D78;
             }
             50% {
                 transform: scale(0.95);
-                background-color: #4CAF50;
+                background-color: #2E7D32;
                 color: white;
             }
             75% {
                 transform: scale(0.98);
-                background-color: #4CAF50;
+                background-color: #2E7D32;
                 color: white;
             }
             100% {
                 transform: scale(1);
                 background-color: white;
-                color: #60ACBD;
+                color: #3B6D78;
             }
         }
 
@@ -259,11 +277,11 @@
             0% {
                 transform: scale(1);
                 background-color: white;
-                color: #60ACBD;
+                color: #3B6D78;
             }
             15% {
                 transform: scale(0.95) translateX(-4px);
-                background-color: #FF6B6B;
+                background-color: #D32F2F;
                 color: white;
             }
             30% {
@@ -277,13 +295,13 @@
             }
             75% {
                 transform: scale(1);
-                background-color: #FF6B6B;
+                background-color: #D32F2F;
                 color: white;
             }
             100% {
                 transform: scale(1);
                 background-color: white;
-                color: #60ACBD;
+                color: #3B6D78;
             }
         }
 
@@ -291,15 +309,15 @@
         @keyframes wrongRipple {
             0% {
                 box-shadow: 0 8px 24px rgba(0,0,0,0.1),
-                            0 0 0 0 rgba(255, 107, 107, 0.3);
+                            0 0 0 0 rgba(211, 47, 47, 0.3);
             }
             30% {
                 box-shadow: 0 4px 12px rgba(0,0,0,0.08),
-                            0 0 0 20px rgba(255, 107, 107, 0);
+                            0 0 0 20px rgba(211, 47, 47, 0);
             }
             100% {
                 box-shadow: 0 8px 24px rgba(0,0,0,0.1),
-                            0 0 0 0 rgba(255, 107, 107, 0);
+                            0 0 0 0 rgba(211, 47, 47, 0);
             }
         }
 
@@ -307,15 +325,15 @@
         @keyframes correctRipple {
             0% {
                 box-shadow: 0 8px 24px rgba(0,0,0,0.1),
-                            0 0 0 0 rgba(76, 175, 80, 0.3);
+                            0 0 0 0 rgba(46, 125, 50, 0.3);
             }
             30% {
                 box-shadow: 0 4px 12px rgba(0,0,0,0.08),
-                            0 0 0 20px rgba(76, 175, 80, 0);
+                            0 0 0 20px rgba(46, 125, 50, 0);
             }
             100% {
                 box-shadow: 0 8px 24px rgba(0,0,0,0.1),
-                            0 0 0 0 rgba(76, 175, 80, 0);
+                            0 0 0 0 rgba(46, 125, 50, 0);
             }
         }
 
@@ -324,16 +342,16 @@
             0% {
                 transform: scale(1);
                 background-color: white;
-                color: #60ACBD;
+                color: #3B6D78;
             }
             50% {
                 transform: scale(0.95);
-                background-color: #4CAF50;
+                background-color: #2E7D32;
                 color: white;
             }
             100% {
                 transform: scale(1);
-                background-color: #4CAF50; /* Stay green */
+                background-color: #2E7D32; /* Stay green */
                 color: white; /* Stay white text */
             }
         }
@@ -430,7 +448,7 @@
 
         .russian-equation {
             font-size: clamp(18px, 5vw, 26px);
-            color: #4CAF50;
+            color: var(--color-success-dark);
             text-align: center;
             margin-top: 20px;
             display: none;
@@ -465,6 +483,11 @@
             max-width: 600px;
             margin: 0 auto;
             padding: 5px 0;
+        }
+
+        .translation-line.active-lang {
+            background: rgba(96, 172, 189, 0.10);
+            border-radius: 8px;
         }
 
         .translation-line .flag {
@@ -547,9 +570,11 @@
         @media (max-width: 360px) {
             /* Removed start button specific rules */
         }
+
     </style>
 </head>
 <body>
+    <div data-lang-toggle style="position: fixed; top: max(15px, env(safe-area-inset-top)); left: max(15px, env(safe-area-inset-left)); z-index: 1000;"></div>
     <main class="game" id="game">
         <div class="level-display" id="levelDisplay" role="status" aria-live="polite">Уровень 1</div>
         <div class="equation" id="equation" aria-live="polite">
@@ -559,13 +584,13 @@
             <span>=</span>
             <span>6</span>
         </div>
-        <div class="operators" id="operators" role="group" aria-label="математические операторы">
-            <button class="operator" data-operator="+" aria-label="плюс"></button>
-            <button class="operator" data-operator="−" aria-label="минус"></button>
-            <button class="operator" data-operator="×" aria-label="умножить"></button>
-            <button class="operator" data-operator="÷" aria-label="разделить"></button>
+        <div class="operators" id="operators" role="group" data-i18n-aria-label="ops_operators_aria" aria-label="математические операторы">
+            <button class="operator" data-operator="+" data-i18n-aria-label="ops_plus" aria-label="плюс"></button>
+            <button class="operator" data-operator="−" data-i18n-aria-label="ops_minus" aria-label="минус"></button>
+            <button class="operator" data-operator="×" data-i18n-aria-label="ops_times" aria-label="умножить"></button>
+            <button class="operator" data-operator="÷" data-i18n-aria-label="ops_divide" aria-label="разделить"></button>
         </div>
-        <div class="message" id="message" role="status" aria-live="polite">Выбери правильный знак</div>
+        <div class="message" id="message" role="status" aria-live="polite" data-i18n="ops_choose_sign">Выбери правильный знак</div>
     </main>
 
     <script>
@@ -579,6 +604,7 @@
                 this.#initializeElements();
                 this.#initializeState();
                 this.#bindEventListeners();
+                this.#subscribeToLanguageChanges();
                 this.#startGameDirectly();
             }
 
@@ -598,9 +624,9 @@
                         divide: '÷'
                     },
                     colors: {
-                        CORRECT: '#4CAF50',
-                        ERROR: '#FF6B6B',
-                        PRIMARY: '#60ACBD'
+                        CORRECT: '#2E7D32',
+                        ERROR: '#D32F2F',
+                        PRIMARY: '#3B6D78'
                     },
                     ANIMATION_DURATION: {
                         WRONG_TAP: 600,
@@ -615,7 +641,8 @@
                     isPlaying: true,
                     currentProblem: null,
                     operationsQueue: [],
-                    hadErrorThisRound: false
+                    hadErrorThisRound: false,
+                    lastTranslation: null
                 };
             }
 
@@ -757,9 +784,9 @@
                 this.#elements.equation.innerHTML = '';
                 this.#elements.equation.appendChild(equationContainer);
 
-                this.#elements.message.textContent = 'Выбери правильный знак';
+                this.#elements.message.textContent = I18n.t('ops_choose_sign');
                 this.#elements.message.style.display = '';
-                this.#elements.levelDisplay.textContent = `Уровень ${this.#state.level}`;
+                this.#elements.levelDisplay.textContent = I18n.t('level_label', { n: this.#state.level });
             }
 
             #handleOperatorClick(event) {
@@ -804,20 +831,18 @@
 
                         // Show translations after operator animation
                         const russianText = equationContainer.querySelector('.russian-equation');
-                        russianText.innerHTML = `
-                            <div class="translation-line">
-                                <span class="flag">🇷🇺</span>
-                                <span class="translation-text">${this.#getNumberWord(this.#state.currentProblem.a)} ${this.#getOperatorWord(selectedOperator)} ${this.#getNumberWord(this.#state.currentProblem.b)} равно ${this.#getNumberWord(this.#state.currentProblem.result)}</span>
-                            </div>
-                            <div class="translation-line">
-                                <span class="flag">🇬🇧</span>
-                                <span class="translation-text">${this.#getNumberWordEn(this.#state.currentProblem.a)} ${this.#getOperatorWordEn(selectedOperator)} ${this.#getNumberWordEn(this.#state.currentProblem.b)} equals ${this.#getNumberWordEn(this.#state.currentProblem.result)}</span>
-                            </div>
-                            <div class="translation-line">
-                                <span class="flag">🇪🇸</span>
-                                <span class="translation-text">${this.#getNumberWordEs(this.#state.currentProblem.a)} ${this.#getOperatorWordEs(selectedOperator)} ${this.#getNumberWordEs(this.#state.currentProblem.b)} es igual a ${this.#getNumberWordEs(this.#state.currentProblem.result)}</span>
-                            </div>
-                        `;
+                        this.#state.lastTranslation = {
+                            a: this.#state.currentProblem.a,
+                            b: this.#state.currentProblem.b,
+                            result: this.#state.currentProblem.result,
+                            operator: selectedOperator
+                        };
+                        russianText.innerHTML = this.#renderTranslationLines(
+                            this.#state.lastTranslation.a,
+                            this.#state.lastTranslation.b,
+                            this.#state.lastTranslation.result,
+                            this.#state.lastTranslation.operator
+                        );
                         russianText.classList.add('visible');
 
                         // Hide the message during equation display
@@ -829,6 +854,7 @@
                             button.classList.remove('tapped');
                             this.#elements.operators.classList.remove('hidden');
                             this.#elements.message.style.display = '';
+                            this.#state.lastTranslation = null;
                             this.#generateProblem();
                         };
 
@@ -873,6 +899,42 @@
                     case '×': return 'por';
                     case '÷': return 'entre';
                     default: return '';
+                }
+            }
+
+            #renderTranslationLines(a, b, result, operator) {
+                const activeLang = I18n.getLang();
+                const flags = { en: '🇬🇧', es: '🇪🇸', ru: '🇷🇺' };
+                const equals = { en: 'equals', es: 'es igual a', ru: 'равно' };
+                const words = {
+                    ru: (n) => this.#getNumberWord(n),
+                    en: (n) => this.#getNumberWordEn(n),
+                    es: (n) => this.#getNumberWordEs(n)
+                };
+                const ops = {
+                    ru: (op) => this.#getOperatorWord(op),
+                    en: (op) => this.#getOperatorWordEn(op),
+                    es: (op) => this.#getOperatorWordEs(op)
+                };
+                const order = [activeLang].concat(['en', 'es', 'ru'].filter((lang) => lang !== activeLang));
+
+                return order.map((lang) => {
+                    const text = `${words[lang](a)} ${ops[lang](operator)} ${words[lang](b)} ${equals[lang]} ${words[lang](result)}`;
+                    const activeClass = lang === activeLang ? ' active-lang' : '';
+                    return `<div class="translation-line${activeClass}"><span class="flag">${flags[lang]}</span><span class="translation-text">${text}</span></div>`;
+                }).join('');
+            }
+
+            #subscribeToLanguageChanges() {
+                I18n.subscribe(() => this.#handleLanguageChange());
+            }
+
+            #handleLanguageChange() {
+                this.#elements.levelDisplay.textContent = I18n.t('level_label', { n: this.#state.level });
+                if (this.#state.lastTranslation && document.querySelector('.russian-equation.visible')) {
+                    const { a, b, result, operator } = this.#state.lastTranslation;
+                    document.querySelector('.russian-equation').innerHTML =
+                        this.#renderTranslationLines(a, b, result, operator);
                 }
             }
 

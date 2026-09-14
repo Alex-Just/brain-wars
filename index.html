@@ -2,8 +2,9 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Выбор игры</title>
+    <script src="i18n.js"></script>
     <style>
         /* Basic reset and centering */
         body {
@@ -11,11 +12,17 @@
             background-color: #f5f5f5;
             margin: 0;
             min-height: 100vh;
+            min-height: 100svh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            justify-content: safe center;
             padding: 20px;
+            touch-action: manipulation;
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+            -webkit-tap-highlight-color: transparent;
         }
 
         h1 {
@@ -51,12 +58,16 @@
         }
 
         .game-card.active {
-            outline: 3px solid #60ACBD;
+            outline: 3px solid #4d8a98;
         }
 
-        .game-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        .game-card:active {
+            transform: scale(0.98);
+        }
+
+        .game-card:focus-visible {
+            outline: 3px solid #4d8a98;
+            outline-offset: 3px;
         }
 
         .game-icon {
@@ -147,10 +158,39 @@
                          max(20px, env(safe-area-inset-left));
             }
         }
+
+        /* Keep the fixed language toggle clear of the title on narrow screens */
+        @media (max-width: 480px) {
+            body {
+                padding-top: max(88px, env(safe-area-inset-top));
+            }
+        }
+
+        .lang-bar {
+            position: fixed;
+            top: max(12px, env(safe-area-inset-top));
+            right: max(12px, env(safe-area-inset-right));
+            z-index: 100;
+        }
+
+        @media (hover: hover) {
+            .game-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            }
+        }
+
+        @media (min-width: 768px) {
+            .game-grid {
+                max-width: 720px;
+            }
+        }
+
     </style>
 </head>
 <body>
-    <h1>Выбор игры</h1>
+    <div class="lang-bar" data-lang-toggle></div>
+    <h1 data-i18n="hub_title">Выбор игры</h1>
     <div class="game-grid">
         <a href="./follow-the-leader.html" class="game-card active">
             <div class="game-icon">
@@ -161,7 +201,7 @@
                     <div class="square active"></div>
                 </div>
             </div>
-            <div class="game-title">Повтори за мной</div>
+            <div class="game-title" data-i18n="game_follow">Повтори за мной</div>
         </a>
         <a href="./operations.html" class="game-card">
             <div class="game-icon">
@@ -172,7 +212,7 @@
                     <div class="operator">÷</div>
                 </div>
             </div>
-            <div class="game-title">Математика</div>
+            <div class="game-title" data-i18n="game_operations">Математика</div>
         </a>
         <a href="./telling-time-es.html" class="game-card">
             <div class="game-icon">
@@ -182,7 +222,37 @@
                      <path d="M50 25 V50 L75 65"/> <!-- Clock hands pointing roughly to 3:00 -->
                  </svg>
             </div>
-            <div class="game-title">¿Qué hora es?</div>
+            <div class="game-title" data-i18n="game_time">¿Qué hora es?</div>
+        </a>
+        <a href="./long-division.html" class="game-card">
+            <div class="game-icon">
+                <!-- Russian Long Division Bracket Icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" style="width: 80%; height: 80%;">
+                    <defs>
+                        <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#E2E8F0" stroke-width="1"/>
+                        </pattern>
+                    </defs>
+                    <rect width="100" height="100" rx="14" fill="#F8FAFC"/>
+                    <rect width="100" height="100" rx="14" fill="url(#grid)"/>
+
+                    <!-- Arc over incomplete dividend 12 -->
+                    <path d="M 18 30 Q 32 18 46 30" fill="none" stroke="#7B61FF" stroke-width="3.5" stroke-linecap="round"/>
+
+                    <!-- Dividend 12 -->
+                    <text x="18" y="52" font-family="system-ui, sans-serif" font-size="24" font-weight="700" fill="#334155">12</text>
+
+                    <!-- Russian Division Corner Bracket: Vertical & Horizontal -->
+                    <path d="M 54 24 L 54 80 M 54 48 L 88 48" fill="none" stroke="#60ACBD" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+                    <!-- Divisor 2 -->
+                    <text x="64" y="42" font-family="system-ui, sans-serif" font-size="22" font-weight="700" fill="#60ACBD">2</text>
+
+                    <!-- Quotient 6 -->
+                    <text x="64" y="74" font-family="system-ui, sans-serif" font-size="22" font-weight="700" fill="#4CAF50">6</text>
+                </svg>
+            </div>
+            <div class="game-title" data-i18n="game_division">Деление в столбик</div>
         </a>
     </div>
 </body>
