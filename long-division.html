@@ -256,18 +256,6 @@
             transition: border-color 0.3s ease, background-color 0.3s ease;
         }
 
-        .instruction-step {
-            font-size: 12px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--color-primary-text);
-            margin-bottom: 4px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
         .instruction-text {
             font-size: clamp(14px, 3.8vw, 16px);
             font-weight: 500;
@@ -565,6 +553,120 @@
             background: #3b6d78;
         }
 
+        /* Custom equation CTA */
+        .custom-eq-btn {
+            margin-top: 12px;
+            width: 100%;
+            max-width: 310px;
+            min-height: 48px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: white;
+            color: var(--color-primary-text);
+            border: 2px dashed rgba(96, 172, 189, 0.6);
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+        }
+
+        .custom-eq-btn:active {
+            transform: scale(0.98);
+            background: #f0f9fb;
+        }
+
+        /* Custom equation form */
+        .custom-form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .custom-field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .custom-field label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+        }
+
+        .custom-field input {
+            font-family: inherit;
+            font-size: 16px; /* keeps iOS from zooming on focus */
+            min-height: 44px;
+            padding: 10px 12px;
+            border: 2px solid #CBD5E1;
+            border-radius: 10px;
+            background: #F8FAFC;
+            color: var(--color-text);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .custom-field input:focus {
+            outline: 3px solid var(--color-primary-text);
+            outline-offset: 2px;
+            border-color: var(--color-primary);
+            background: white;
+        }
+
+        .custom-error {
+            min-height: 20px;
+            color: var(--color-error-dark);
+            font-size: 13px;
+            font-weight: 600;
+            line-height: 1.4;
+        }
+
+        .custom-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .custom-solve-btn {
+            flex: 1;
+            min-height: 48px;
+            border: none;
+            border-radius: 12px;
+            background: var(--color-primary-dark);
+            color: white;
+            font-family: inherit;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.15s ease, transform 0.1s ease;
+        }
+
+        .custom-solve-btn:active {
+            transform: scale(0.98);
+            background: #3b6d78;
+        }
+
+        .custom-cancel-btn {
+            min-height: 48px;
+            padding: 0 18px;
+            border: 1px solid #CBD5E1;
+            border-radius: 12px;
+            background: white;
+            color: var(--color-text-secondary);
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .custom-cancel-btn:active {
+            background: #f1f5f9;
+        }
+
         /* Educational Hints Modal */
         .modal-backdrop {
             position: fixed;
@@ -847,6 +949,16 @@
             .level-menu-item:hover:not(.current) {
                 background: #eef2f7;
             }
+            .custom-eq-btn:hover {
+                background: #f0f9fb;
+                border-color: var(--color-primary);
+            }
+            .custom-solve-btn:hover {
+                background: #3b6d78;
+            }
+            .custom-cancel-btn:hover {
+                background: #f1f5f9;
+            }
         }
 
     </style>
@@ -854,7 +966,6 @@
 <body>
     <!-- Top Navigation -->
     <header class="top-nav">
-        <a href="./index.html" class="nav-btn icon-btn" data-i18n-aria-label="ld_back_aria" aria-label="Вернуться к списку игр">←</a>
         <button id="hintModalBtn" class="nav-btn hint-toggle-btn icon-btn" data-i18n-aria-label="ld_terms_btn_aria" aria-label="Показать подсказки и алгоритм">❓</button>
         <div data-lang-toggle></div>
         <div class="level-picker">
@@ -870,7 +981,6 @@
     <main class="game-card">
         <!-- Step instruction banner -->
         <div class="instruction-box" id="instructionBox" role="status" aria-live="polite">
-            <div class="instruction-step" id="instructionStep">Шаг 1</div>
             <div class="instruction-text" id="instructionText">Определи первое неполное делимое</div>
             <div class="instruction-hint" id="instructionHint"></div>
         </div>
@@ -915,6 +1025,9 @@
             <button type="button" class="numpad-btn" data-key="0">0</button>
             <button type="button" class="numpad-btn action-btn submit" data-key="enter" data-i18n-aria-label="ld_enter_aria" aria-label="Подтвердить ввод">✓</button>
         </div>
+
+        <!-- Custom equation CTA -->
+        <button type="button" class="custom-eq-btn" id="customEqBtn" data-i18n="ld_custom_btn">✏️ Своё выражение</button>
     </main>
 
     <!-- Educational Terms & Algorithm Modal -->
@@ -966,6 +1079,33 @@
                         <li><div class="step-content" data-i18n-html="ld_algo_6"><strong>Снести следующую цифру</strong> делимого рядом с остатком. Повторять шаги 2–6!</div></li>
                     </ol>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Equation Modal -->
+    <div class="modal-backdrop" id="customModal" role="dialog" aria-modal="true" aria-labelledby="customModalTitle">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="customModalTitle" data-i18n="ld_custom_title">Своё выражение</div>
+                <button type="button" class="modal-close-btn" id="customCloseBtn" data-i18n-aria-label="ld_custom_close_aria" aria-label="Закрыть окно">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form class="custom-form" id="customForm" novalidate>
+                    <div class="custom-field">
+                        <label for="customDividend" data-i18n="ld_custom_dividend">Делимое</label>
+                        <input id="customDividend" name="dividend" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="124">
+                    </div>
+                    <div class="custom-field">
+                        <label for="customDivisor" data-i18n="ld_custom_divisor">Делитель</label>
+                        <input id="customDivisor" name="divisor" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="2">
+                    </div>
+                    <div class="custom-error" id="customError" role="alert"></div>
+                    <div class="custom-actions">
+                        <button type="submit" class="custom-solve-btn" data-i18n="ld_custom_solve">Решить</button>
+                        <button type="button" class="custom-cancel-btn" id="customCancelBtn" data-i18n="ld_custom_cancel">Отмена</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -1101,7 +1241,6 @@
                     levelMenu: document.getElementById('levelMenu'),
                     boardContainer: document.querySelector('.board-container'),
                     instructionBox: document.getElementById('instructionBox'),
-                    instructionStep: document.getElementById('instructionStep'),
                     instructionText: document.getElementById('instructionText'),
                     instructionHint: document.getElementById('instructionHint'),
                     mathGrid: document.getElementById('mathGrid'),
@@ -1113,7 +1252,15 @@
                     modalCloseBtn: document.getElementById('modalCloseBtn'),
                     completionOverlay: document.getElementById('completionOverlay'),
                     completionEquation: document.getElementById('completionEquation'),
-                    nextProblemBtn: document.getElementById('nextProblemBtn')
+                    nextProblemBtn: document.getElementById('nextProblemBtn'),
+                    customEqBtn: document.getElementById('customEqBtn'),
+                    customModal: document.getElementById('customModal'),
+                    customCloseBtn: document.getElementById('customCloseBtn'),
+                    customCancelBtn: document.getElementById('customCancelBtn'),
+                    customForm: document.getElementById('customForm'),
+                    customDividend: document.getElementById('customDividend'),
+                    customDivisor: document.getElementById('customDivisor'),
+                    customError: document.getElementById('customError')
                 };
             }
 
@@ -1128,6 +1275,8 @@
                     quotientDecimals: 0,
                     integerDigitCount: 3,
                     integerQuotientDigits: 2,
+                    quotientLeadingZeros: 0,
+                    isCustomRound: false,
                     currentInput: '',
                     steps: [],
                     currentStepIndex: 0,
@@ -1157,6 +1306,10 @@
                 window.addEventListener('keydown', (e) => {
                     if (this.#elements.termsModal.classList.contains('open')) {
                         if (e.key === 'Escape') this.#toggleModal(false);
+                        return;
+                    }
+                    if (this.#elements.customModal.classList.contains('open')) {
+                        if (e.key === 'Escape') this.#toggleCustomModal(false);
                         return;
                     }
                     if (this.#elements.levelMenu.classList.contains('open')) {
@@ -1209,6 +1362,18 @@
                 // Completion next button
                 this.#elements.nextProblemBtn.addEventListener('click', () => this.#startNewRound());
 
+                // Custom equation modal
+                this.#elements.customEqBtn.addEventListener('click', () => this.#toggleCustomModal(true));
+                this.#elements.customCloseBtn.addEventListener('click', () => this.#toggleCustomModal(false));
+                this.#elements.customCancelBtn.addEventListener('click', () => this.#toggleCustomModal(false));
+                this.#elements.customModal.addEventListener('click', (e) => {
+                    if (e.target === this.#elements.customModal) this.#toggleCustomModal(false);
+                });
+                this.#elements.customForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.#submitCustomProblem();
+                });
+
                 // Level picker
                 this.#elements.levelDisplay.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -1252,6 +1417,66 @@
                 } else {
                     this.#elements.termsModal.classList.remove('open');
                 }
+            }
+
+            #toggleCustomModal(open) {
+                this.#elements.customModal.classList.toggle('open', open);
+                this.#elements.customError.textContent = '';
+                if (open) {
+                    this.#elements.customDividend.value =
+                        this.#formatNumberText(this.#state.dividendDigits, this.#state.dividendDecimals);
+                    this.#elements.customDivisor.value = String(this.#state.divisor);
+                    this.#elements.customDividend.focus();
+                    this.#elements.customDividend.select();
+                }
+            }
+
+            #showCustomError(key) {
+                this.#elements.customError.textContent = I18n.t(key);
+            }
+
+            #submitCustomProblem() {
+                const rawDividend = String(this.#elements.customDividend.value).trim().replace(/\s+/g, '');
+                const rawDivisor = String(this.#elements.customDivisor.value).trim();
+
+                const dividendMatch = rawDividend.match(/^(\d{1,5})(?:[.,](\d{1,2}))?$/);
+                if (!dividendMatch || Number(dividendMatch[1]) < 1) {
+                    this.#showCustomError('ld_custom_err_dividend');
+                    return;
+                }
+
+                const divisorMatch = rawDivisor.match(/^\d{1,2}$/);
+                const divisor = divisorMatch ? Number(rawDivisor) : NaN;
+                if (!divisorMatch || divisor < 2 || divisor > 99) {
+                    this.#showCustomError('ld_custom_err_divisor');
+                    return;
+                }
+
+                const baseDigits = dividendMatch[1] + (dividendMatch[2] || '');
+                const userDecimals = (dividendMatch[2] || '').length;
+                const scaledDividend = Number(baseDigits);
+
+                let extraDecimals = 0;
+                while (extraDecimals <= 3 && (scaledDividend * Math.pow(10, extraDecimals)) % divisor !== 0) {
+                    extraDecimals++;
+                }
+                if (extraDecimals > 3) {
+                    this.#showCustomError('ld_custom_err_not_exact');
+                    return;
+                }
+
+                const dividendDigits = baseDigits + '0'.repeat(extraDecimals);
+                if (dividendDigits.length > 8) {
+                    this.#showCustomError('ld_custom_err_too_big');
+                    return;
+                }
+
+                this.#toggleCustomModal(false);
+                this.#beginRound({
+                    dividendDigits,
+                    dividendDecimals: userDecimals + extraDecimals,
+                    divisor
+                }, true);
             }
 
             #subscribeToLanguageChanges() {
@@ -1315,12 +1540,15 @@
             }
 
             #startNewRound() {
+                this.#beginRound(this.#createProblem(this.#state.level), false);
+            }
+
+            #beginRound(problem, isCustomRound) {
                 this.#elements.completionOverlay.classList.remove('show');
+                this.#state.isCustomRound = !!isCustomRound;
                 this.#state.hadErrorThisRound = false;
                 this.#state.currentInput = '';
                 this.#updateInputPreview();
-
-                const problem = this.#createProblem(this.#state.level);
 
                 this.#state.dividendDigits = problem.dividendDigits;
                 this.#state.dividendDecimals = problem.dividendDecimals;
@@ -1415,6 +1643,8 @@
                 this.#state.quotientLen = 1 + (s.length - idx);
                 this.#state.quotientDecimals = decimals;
                 this.#state.integerQuotientDigits = Math.max(0, 1 + (integerDigitCount - idx));
+                this.#state.quotientLeadingZeros =
+                    (this.#state.integerQuotientDigits === 0 && decimals > 0) ? 1 : 0;
                 const steps = [];
 
                 let currVal = incVal;
@@ -1457,11 +1687,40 @@
             }
 
             #quotientColOfStep(stepIndex) {
-                return this.#state.quotientColStart + stepIndex + (stepIndex >= this.#state.integerQuotientDigits ? 1 : 0);
+                return this.#state.quotientColStart
+                    + this.#state.quotientLeadingZeros
+                    + stepIndex
+                    + (stepIndex >= this.#state.integerQuotientDigits ? 1 : 0);
             }
 
             #quotientCommaCol() {
-                return this.#state.quotientColStart + this.#state.integerQuotientDigits;
+                return this.#state.quotientColStart
+                    + this.#state.quotientLeadingZeros
+                    + this.#state.integerQuotientDigits;
+            }
+
+            // Places the decimal separator in the quotient right before the first
+            // fraction digit is divided (works also when the first partial dividend
+            // already starts in the decimal part, e.g. 3,00 : 4).
+            #ensureQuotientSeparator(stepIndex) {
+                if (!this.#state.dividendDecimals) return;
+
+                const step = this.#state.steps[stepIndex];
+                const lastIndex = (stepIndex === 0)
+                    ? String(step.incVal).length - 1
+                    : (step.digitIndexWhenBroughtDown - 1);
+
+                if (lastIndex < this.#state.integerDigitCount) return;
+
+                if (stepIndex > 0) {
+                    const previous = this.#state.steps[stepIndex - 1];
+                    const previousLastIndex = (stepIndex === 1)
+                        ? String(previous.incVal).length - 1
+                        : (previous.digitIndexWhenBroughtDown - 1);
+                    if (previousLastIndex >= this.#state.integerDigitCount) return;
+                }
+
+                this.#setCellValue(1, this.#quotientCommaCol(), I18n.t('decimal_separator'), ['decimal-comma']);
             }
 
             #getPartialRange(stepIndex) {
@@ -1516,10 +1775,13 @@
             }
 
             #renderCompletionEquation() {
+                const quotientText = this.#state.quotientLeadingZeros
+                    ? '0' + this.#formatNumberText(this.#state.quotientDigits, this.#state.quotientDecimals)
+                    : this.#formatNumberText(this.#state.quotientDigits, this.#state.quotientDecimals);
                 this.#elements.completionEquation.textContent =
                     `${this.#formatNumberText(this.#state.dividendDigits, this.#state.dividendDecimals)}` +
                     ` : ${this.#state.divisor} = ` +
-                    `${this.#formatNumberText(this.#state.quotientDigits, this.#state.quotientDecimals)}`;
+                    quotientText;
             }
 
             #updateDecimalSeparators() {
@@ -1540,10 +1802,11 @@
                 const qLen = this.#state.quotientLen;
                 const decimals = this.#state.dividendDecimals;
                 const commaOffset = decimals > 0 ? 1 : 0;
+                const leadingZeros = this.#state.quotientLeadingZeros;
 
                 const dividendColStart = 1;
                 const divisorCol = dividendColStart + sDividend.length + commaOffset;
-                const totalCols = divisorCol + Math.max(sDivisor.length, qLen + commaOffset) + 1;
+                const totalCols = divisorCol + Math.max(sDivisor.length, qLen + commaOffset + leadingZeros) + 1;
                 const totalRows = 1 + (this.#state.steps.length * 2) + 1;
 
                 this.#state.dividendColStart = dividendColStart;
@@ -1580,6 +1843,11 @@
 
                 // Divisor vertical line extends into quotient row (Row 1)
                 matrix[1][divisorCol].classes.push('divisor-v-border');
+
+                // Leading zero in the quotient (e.g. 3 : 4 = 0,75)
+                if (leadingZeros) {
+                    matrix[1][this.#state.quotientColStart].char = '0';
+                }
 
                 // Place initial dots in quotient row (the separator slot stays empty)
                 for (let i = 0; i < qLen; i++) {
@@ -1733,10 +2001,7 @@
 
                 const d = this.#state.divisor;
 
-                this.#elements.instructionStep.textContent = I18n.t('ld_step_of', {
-                    n: stepIndex + 1,
-                    total: this.#state.steps.length
-                });
+                this.#ensureQuotientSeparator(stepIndex);
 
                 const quotientRow = 1;
                 const quotientCol = this.#quotientColOfStep(stepIndex);
@@ -1931,11 +2196,6 @@
                     const bringDownCol = this.#dividendColOfDigit(step.digitIndexWhenBroughtDown);
                     this.#setCellValue(remRow, bringDownCol, step.nextDigit, ['brought-down', 'correct-flash']);
 
-                    // First fractional digit: place the decimal separator in the quotient
-                    if (step.digitIndexWhenBroughtDown === this.#state.integerDigitCount) {
-                        this.#setCellValue(1, this.#quotientCommaCol(), I18n.t('decimal_separator'), ['decimal-comma']);
-                    }
-
                     this.#state.currentStepIndex++;
                     this.#state.subStepType = 'Q_DIGIT';
                     this.#promptCurrentSubStep();
@@ -1979,10 +2239,13 @@
                 this.#clearActiveHighlight();
                 this.#elements.arcContainer.innerHTML = '';
 
-                if (this.#state.hadErrorThisRound) {
-                    this.#state.level = Math.max(1, this.#state.level - 1);
-                } else {
-                    this.#state.level = Math.min(this.#config.maxLevel, this.#state.level + 1);
+                // Custom equations don't affect the level progression
+                if (!this.#state.isCustomRound) {
+                    if (this.#state.hadErrorThisRound) {
+                        this.#state.level = Math.max(1, this.#state.level - 1);
+                    } else {
+                        this.#state.level = Math.min(this.#config.maxLevel, this.#state.level + 1);
+                    }
                 }
 
                 this.#renderCompletionEquation();

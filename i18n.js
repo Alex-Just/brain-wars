@@ -43,10 +43,8 @@
             tt_correct_answer: 'Correct:',
             tt_choices_aria: 'Time options',
 
-            ld_back_aria: 'Back to the list of games',
             ld_terms_btn_aria: 'Show hints and algorithm',
             ld_level_menu_aria: 'Choose level',
-            ld_step_of: 'Step {n} of {total}',
             ld_term_dividend: 'Dividend',
             ld_term_dividend_title: 'The number we are dividing',
             ld_term_divisor: 'Divisor',
@@ -81,7 +79,18 @@
             ld_algo_5: '<strong>Check</strong> that the remainder is less than the divisor.',
             ld_algo_6: '<strong>Bring down the next digit</strong> of the dividend next to the remainder. Repeat steps 2–6!',
             ld_done_title: 'Well done!',
-            ld_done_next: 'Next problem →'
+            ld_done_next: 'Next problem →',
+            ld_custom_btn: '✏️ Custom equation',
+            ld_custom_title: 'Custom equation',
+            ld_custom_dividend: 'Dividend',
+            ld_custom_divisor: 'Divisor',
+            ld_custom_solve: 'Solve',
+            ld_custom_cancel: 'Cancel',
+            ld_custom_close_aria: 'Close dialog',
+            ld_custom_err_dividend: 'Enter a dividend: a whole number or a decimal, e.g. 124 or 12.5',
+            ld_custom_err_divisor: 'The divisor must be a whole number from 2 to 99',
+            ld_custom_err_too_big: 'The number is too big. Maximum 8 digits.',
+            ld_custom_err_not_exact: 'This division does not come out even. Try another equation.'
         },
         es: {
             lang_selector_aria: 'Selección de idioma',
@@ -114,10 +123,8 @@
             tt_correct_answer: 'Correcto:',
             tt_choices_aria: 'Opciones de hora',
 
-            ld_back_aria: 'Volver a la lista de juegos',
             ld_terms_btn_aria: 'Mostrar pistas y algoritmo',
             ld_level_menu_aria: 'Elige el nivel',
-            ld_step_of: 'Paso {n} de {total}',
             ld_term_dividend: 'Dividendo',
             ld_term_dividend_title: 'El número que dividimos',
             ld_term_divisor: 'Divisor',
@@ -152,7 +159,18 @@
             ld_algo_5: '<strong>Comprueba</strong> que el resto sea menor que el divisor.',
             ld_algo_6: '<strong>Baja la siguiente cifra</strong> del dividendo junto al resto. ¡Repite los pasos 2–6!',
             ld_done_title: '¡Bien hecho!',
-            ld_done_next: 'Siguiente ejemplo →'
+            ld_done_next: 'Siguiente ejemplo →',
+            ld_custom_btn: '✏️ Ecuación propia',
+            ld_custom_title: 'Ecuación propia',
+            ld_custom_dividend: 'Dividendo',
+            ld_custom_divisor: 'Divisor',
+            ld_custom_solve: 'Resolver',
+            ld_custom_cancel: 'Cancelar',
+            ld_custom_close_aria: 'Cerrar la ventana',
+            ld_custom_err_dividend: 'Introduce el dividendo: un número entero o decimal, por ejemplo 124 o 12,5',
+            ld_custom_err_divisor: 'El divisor debe ser un número entero entre 2 y 99',
+            ld_custom_err_too_big: 'El número es demasiado grande. Máximo 8 cifras.',
+            ld_custom_err_not_exact: 'Esta división no es exacta. Prueba otra ecuación.'
         },
         ru: {
             lang_selector_aria: 'Выбор языка',
@@ -185,10 +203,8 @@
             tt_correct_answer: 'Правильно:',
             tt_choices_aria: 'Варианты времени',
 
-            ld_back_aria: 'Вернуться к списку игр',
             ld_terms_btn_aria: 'Показать подсказки и алгоритм',
             ld_level_menu_aria: 'Выберите уровень',
-            ld_step_of: 'Шаг {n} из {total}',
             ld_term_dividend: 'Делимое',
             ld_term_dividend_title: 'Число, которое мы делим',
             ld_term_divisor: 'Делитель',
@@ -223,7 +239,18 @@
             ld_algo_5: '<strong>Проверить</strong>, что остаток меньше делителя.',
             ld_algo_6: '<strong>Снести следующую цифру</strong> делимого рядом с остатком. Повторять шаги 2–6!',
             ld_done_title: 'Отлично решено!',
-            ld_done_next: 'Следующий пример →'
+            ld_done_next: 'Следующий пример →',
+            ld_custom_btn: '✏️ Своё выражение',
+            ld_custom_title: 'Своё выражение',
+            ld_custom_dividend: 'Делимое',
+            ld_custom_divisor: 'Делитель',
+            ld_custom_solve: 'Решить',
+            ld_custom_cancel: 'Отмена',
+            ld_custom_close_aria: 'Закрыть окно',
+            ld_custom_err_dividend: 'Введи делимое: целое число или десятичную дробь, например 124 или 12,5',
+            ld_custom_err_divisor: 'Делитель — целое число от 2 до 99',
+            ld_custom_err_too_big: 'Слишком большое число. Максимум 8 цифр.',
+            ld_custom_err_not_exact: 'Такой пример не делится нацело. Попробуй другое выражение.'
         }
     };
 
