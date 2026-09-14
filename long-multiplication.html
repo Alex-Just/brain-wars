@@ -1,0 +1,1978 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Умножение в столбик</title>
+    <script src="i18n.js"></script>
+    <style>
+        :root {
+            /* Palette matching the other Brain Wars games */
+            --color-primary: #60ACBD;
+            --color-primary-dark: #4d8a98;
+            --color-primary-text: #3B6D78;
+            --color-primary-light: #e0f2fe;
+            --color-success: #4CAF50;
+            --color-success-dark: #2E7D32;
+            --color-error: #FF6B6B;
+            --color-error-dark: #D32F2F;
+            --color-text: #333333;
+            --color-text-secondary: #666666;
+            --color-background: #f5f5f5;
+
+            --color-purple: #7B61FF;
+            --color-purple-text: #6D4FD8;
+            --color-purple-light: #EDE9FE;
+            --color-purple-dark: #5B21B6;
+
+            /* Notebook grid colors */
+            --grid-line-color: #e2e8f0;
+            --grid-border-color: #334155;
+            --cell-size: clamp(32px, 7vw, 40px);
+
+            --radius-sm: 6px;
+            --radius-md: 12px;
+            --radius-lg: 20px;
+            --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :focus-visible {
+            outline: 3px solid var(--color-primary-text);
+            outline-offset: 2px;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--color-background);
+            color: var(--color-text);
+            min-height: 100vh;
+            min-height: 100svh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 12px 8px;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+            overflow-x: hidden;
+            overflow-y: auto;
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+        }
+
+        @supports (padding: max(0px)) {
+            body {
+                padding-top: max(12px, env(safe-area-inset-top));
+                padding-bottom: max(12px, env(safe-area-inset-bottom));
+                padding-left: max(8px, env(safe-area-inset-left));
+                padding-right: max(8px, env(safe-area-inset-right));
+            }
+        }
+
+        /* Header Navigation */
+        .top-nav {
+            width: min(94vw, 380px);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            gap: 8px;
+            flex-wrap: wrap;
+            z-index: 10;
+        }
+
+        .nav-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border: 1px solid rgba(0,0,0,0.08);
+            color: var(--color-text-secondary);
+            border-radius: 10px;
+            min-height: 44px;
+            padding: 10px 14px;
+            font-size: 14px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .nav-btn:active {
+            background-color: #f8fafc;
+            color: var(--color-primary-dark);
+            transform: scale(0.97);
+        }
+
+        .icon-btn {
+            min-width: 44px;
+            padding: 10px 12px;
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        .icon-btn.hint-toggle-btn {
+            font-size: 17px;
+        }
+
+        .hint-toggle-btn {
+            background: var(--color-purple-light);
+            color: var(--color-purple-dark);
+            border: 1px solid rgba(123, 97, 255, 0.2);
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .hint-toggle-btn:active {
+            background: #E0E7FF;
+            color: var(--color-purple-dark);
+        }
+
+        .level-picker {
+            position: relative;
+        }
+
+        .level-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(0, 0, 0, 0.08);
+            color: var(--color-text-secondary);
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 600;
+            min-height: 44px;
+            padding: 10px 12px;
+            border: 1px solid transparent;
+            border-radius: 10px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background-color 0.15s ease;
+        }
+
+        .level-badge:active,
+        .level-badge[aria-expanded="true"] {
+            background: rgba(0, 0, 0, 0.14);
+        }
+
+        .level-caret {
+            font-size: 11px;
+            line-height: 1;
+            color: var(--color-primary-text);
+        }
+
+        .level-menu {
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            z-index: 30;
+            display: none;
+            grid-template-columns: repeat(4, 44px);
+            gap: 6px;
+            padding: 8px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+            max-height: min(60vh, 60dvh);
+            overflow-y: auto;
+        }
+
+        .level-menu.open {
+            display: grid;
+        }
+
+        .level-menu-item {
+            width: 44px;
+            height: 44px;
+            padding: 0;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            background: #f8fafc;
+            color: var(--color-text);
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.15s ease, transform 0.1s ease;
+        }
+
+        .level-menu-item:active {
+            transform: scale(0.95);
+        }
+
+        .level-menu-item.current {
+            background: var(--color-primary-dark);
+            border-color: var(--color-primary-dark);
+            color: white;
+        }
+
+        /* Main Container */
+        .game-card {
+            width: min(94vw, 380px);
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-card);
+            padding: 16px 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        /* Instruction Banner */
+        .instruction-box {
+            width: 100%;
+            background: #f8fafc;
+            border-radius: var(--radius-md);
+            padding: 10px 12px;
+            margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: background-color 0.3s ease;
+        }
+
+
+        .instruction-hint {
+            font-size: 13px;
+            color: var(--color-purple-text);
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .instruction-hint.is-error {
+            color: var(--color-error) !important;
+        }
+
+        /* Terminology Tags Strip */
+        .terms-strip {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .term-badge {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 10px 14px;
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+            border-radius: 22px;
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+        }
+
+        .term-badge:active {
+            transform: scale(0.96);
+        }
+
+        .term-badge.multiplicand {
+            background-color: #E0F2FE;
+            color: #0369A1;
+        }
+
+        .term-badge.multiplier {
+            background-color: #FEF3C7;
+            color: #B45309;
+        }
+
+        .term-badge.product {
+            background-color: #DCFCE7;
+            color: #15803D;
+        }
+
+        .term-badge.partial {
+            background-color: var(--color-purple-light);
+            color: var(--color-purple-dark);
+            border: 1px solid rgba(123, 97, 255, 0.3);
+        }
+
+        /* Math Notebook Grid Board */
+        .board-container {
+            width: 100%;
+            overflow-x: auto;
+            display: flex;
+            justify-content: center;
+            padding: 16px 0 10px 0;
+            position: relative;
+        }
+
+        .grid-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .math-grid {
+            display: inline-grid;
+            gap: 0;
+            background-color: #ffffff;
+            background-image:
+                linear-gradient(to right, var(--grid-line-color) 1px, transparent 1px),
+                linear-gradient(to bottom, var(--grid-line-color) 1px, transparent 1px);
+            background-size: var(--cell-size) var(--cell-size);
+            border: 1px solid var(--grid-line-color);
+            border-radius: 4px;
+            padding: 1px;
+            position: relative;
+        }
+
+        .grid-cell {
+            width: var(--cell-size);
+            height: var(--cell-size);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--cell-font-size, clamp(18px, 4.5vw, 24px));
+            font-weight: 600;
+            color: var(--color-text);
+            position: relative;
+            font-variant-numeric: tabular-nums;
+            transition: background-color 0.2s ease;
+        }
+
+        .grid-cell.operator-sign {
+            color: var(--color-primary-dark);
+            font-weight: 700;
+        }
+
+        .grid-cell.subtraction-line {
+            border-bottom: 2px solid var(--grid-border-color);
+        }
+
+        .grid-cell.active-input {
+            background-color: #FEF08A !important;
+            border: 2px dashed #EAB308 !important;
+            border-radius: 4px;
+            animation: pulseActive 1.4s infinite;
+            z-index: 2;
+        }
+
+        .grid-cell.typing-preview {
+            color: var(--color-primary-dark);
+            font-weight: 700;
+        }
+
+        .grid-cell.typing-preview.multi {
+            font-size: calc(var(--cell-font-size, 20px) * 0.62);
+            letter-spacing: -1px;
+        }
+
+        @keyframes pulseActive {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.4);
+            }
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.3);
+            }
+        }
+
+        .grid-cell.correct-flash {
+            animation: flashGreen 0.4s ease-out;
+        }
+
+        @keyframes flashGreen {
+            0% { background-color: var(--color-success); color: white; }
+            100% { background-color: transparent; }
+        }
+
+        .grid-cell.term-highlight-blue {
+            background-color: #BAE6FD !important;
+        }
+        .grid-cell.term-highlight-amber {
+            background-color: #FDE68A !important;
+        }
+        .grid-cell.term-highlight-green {
+            background-color: #BBF7D0 !important;
+        }
+        .grid-cell.term-highlight-purple {
+            background-color: var(--color-purple-light) !important;
+        }
+
+        .grid-cell.error-shake {
+            animation: shakeError 0.5s ease-out;
+        }
+
+        @keyframes shakeError {
+            0%, 100% { transform: translateX(0); background-color: transparent; }
+            20%, 60% { transform: translateX(-4px); background-color: #FEE2E2; color: var(--color-error-dark); }
+            40%, 80% { transform: translateX(4px); background-color: #FEE2E2; color: var(--color-error-dark); }
+        }
+
+        .carry-badge {
+            position: absolute;
+            top: 1px;
+            right: 2px;
+            font-size: 10px;
+            font-weight: 700;
+            line-height: 1;
+            color: var(--color-error-dark);
+            pointer-events: none;
+        }
+
+        /* Decimal separator overlay (rendered on cell borders) */
+        .comma-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .comma-overlay {
+            position: absolute;
+            width: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(16px, 4.5vw, 22px);
+            font-weight: 700;
+            color: var(--grid-border-color);
+            transform: translateX(-50%);
+        }
+
+        /* On-Screen Touch Numpad */
+        .numpad-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            width: 100%;
+            max-width: 310px;
+            margin-top: 6px;
+        }
+
+        .numpad-btn {
+            background: white;
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 12px;
+            height: clamp(44px, 11vw, 52px);
+            font-size: clamp(20px, 5vw, 24px);
+            font-weight: 600;
+            color: var(--color-text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            transition: all 0.1s ease;
+            user-select: none;
+        }
+
+        .numpad-btn:active {
+            transform: scale(0.94);
+            background: #e2e8f0;
+        }
+
+        /* Keep the zero centered */
+        .numpad-btn[data-key="0"] {
+            grid-column: 2;
+        }
+
+        /* Custom equation CTA */
+        .custom-eq-btn {
+            margin-top: 12px;
+            width: 100%;
+            max-width: 310px;
+            min-height: 48px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: transparent;
+            color: var(--color-primary-text);
+            border: none;
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.15s ease, transform 0.1s ease;
+        }
+
+        .custom-eq-btn:active {
+            transform: scale(0.98);
+            background: #f0f9fb;
+        }
+
+        /* Modal */
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 16px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+
+        .modal-backdrop.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: white;
+            width: min(92vw, 390px);
+            max-width: 390px;
+            max-height: 85vh;
+            max-height: 85dvh;
+            border-radius: var(--radius-lg);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transform: scale(0.92);
+            transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .modal-backdrop.open .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 14px;
+            border-bottom: 1px solid #e2e8f0;
+            background: #f8fafc;
+        }
+
+        .modal-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--color-text);
+        }
+
+        .modal-close-btn {
+            background: none;
+            border: none;
+            width: 44px;
+            height: 44px;
+            flex: 0 0 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            line-height: 1;
+            color: #64748B;
+            cursor: pointer;
+            padding: 0;
+            border-radius: 10px;
+        }
+
+        .modal-body {
+            padding: 16px 18px;
+            overflow-y: auto;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #475569;
+        }
+
+        .hint-section {
+            margin-bottom: 18px;
+        }
+
+        .hint-section h3 {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--color-purple-dark);
+            margin-bottom: 8px;
+        }
+
+        .terms-diagram-box {
+            background: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            border-radius: var(--radius-md);
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            margin: 10px 0;
+        }
+
+        .terms-equation {
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--color-purple);
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .terms-pointers {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .pointer-card {
+            background: white;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            padding: 6px 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .pointer-card.p1 { color: #0369A1; }
+        .pointer-card.p2 { color: #B45309; }
+        .pointer-card.p3 { color: #15803D; }
+
+        .algo-steps-list {
+            list-style: none;
+            counter-reset: algo-counter;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .algo-steps-list li {
+            counter-increment: algo-counter;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            background: #F8FAFC;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .algo-steps-list .step-content {
+            flex: 1;
+            line-height: 1.4;
+        }
+
+        .algo-steps-list li::before {
+            content: counter(algo-counter);
+            background: var(--color-purple);
+            color: white;
+            font-weight: 700;
+            font-size: 12px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        /* Custom equation form */
+        .custom-form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .custom-field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .custom-field label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+        }
+
+        .custom-field input {
+            font-family: inherit;
+            font-size: 16px; /* keeps iOS from zooming on focus */
+            min-height: 44px;
+            padding: 10px 12px;
+            border: 2px solid #CBD5E1;
+            border-radius: 10px;
+            background: #F8FAFC;
+            color: var(--color-text);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .custom-field input:focus {
+            outline: 3px solid var(--color-primary-text);
+            outline-offset: 2px;
+            border-color: var(--color-primary);
+            background: white;
+        }
+
+        .custom-error {
+            min-height: 20px;
+            color: var(--color-error-dark);
+            font-size: 13px;
+            font-weight: 600;
+            line-height: 1.4;
+        }
+
+        .custom-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .custom-solve-btn {
+            flex: 1;
+            min-height: 48px;
+            border: none;
+            border-radius: 12px;
+            background: var(--color-primary-dark);
+            color: white;
+            font-family: inherit;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.15s ease, transform 0.1s ease;
+        }
+
+        .custom-solve-btn:active {
+            transform: scale(0.98);
+            background: #3b6d78;
+        }
+
+        .custom-cancel-btn {
+            min-height: 48px;
+            padding: 0 18px;
+            border: 1px solid #CBD5E1;
+            border-radius: 12px;
+            background: white;
+            color: var(--color-text-secondary);
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .custom-cancel-btn:active {
+            background: #f1f5f9;
+        }
+
+        /* Success Completion Overlay */
+        .completion-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 500;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .completion-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .completion-icon {
+            font-size: 64px;
+            margin-bottom: 12px;
+            animation: bounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0); }
+            60% { transform: scale(1.15); }
+            100% { transform: scale(1); }
+        }
+
+        .completion-title {
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--color-success-dark);
+            margin-bottom: 8px;
+        }
+
+        .completion-equation {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--color-text);
+            margin: 12px 0 20px 0;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .completion-next-btn {
+            background: var(--color-primary-dark);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 14px 32px;
+            font-size: 20px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(77, 138, 152, 0.4);
+            transition: transform 0.15s ease, background-color 0.2s;
+        }
+
+        .completion-next-btn:active {
+            transform: scale(0.96);
+        }
+
+        @media (hover: hover) {
+            .nav-btn:hover {
+                background-color: #f8fafc;
+                color: var(--color-primary-dark);
+                transform: translateY(-1px);
+            }
+            .hint-toggle-btn:hover {
+                background: #E0E7FF;
+                color: var(--color-purple);
+            }
+            .term-badge:hover {
+                transform: scale(1.06);
+                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            }
+            .numpad-btn:hover {
+                background: #f8fafc;
+                border-color: rgba(0,0,0,0.15);
+            }
+            .modal-close-btn:hover {
+                color: var(--color-text);
+            }
+            .completion-next-btn:hover {
+                background: #3b6d78;
+                transform: translateY(-2px);
+            }
+            .level-badge:hover {
+                background: rgba(0, 0, 0, 0.12);
+            }
+            .level-menu-item:hover:not(.current) {
+                background: #eef2f7;
+            }
+            .custom-eq-btn:hover {
+                background: #f0f9fb;
+            }
+            .custom-solve-btn:hover {
+                background: #3b6d78;
+            }
+            .custom-cancel-btn:hover {
+                background: #f1f5f9;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navigation -->
+    <header class="top-nav">
+        <button id="hintModalBtn" class="nav-btn hint-toggle-btn icon-btn" data-i18n-aria-label="lm_terms_btn_aria" aria-label="Показать подсказки и алгоритм">❓</button>
+        <div data-lang-toggle></div>
+        <div class="level-picker">
+            <button type="button" id="levelDisplay" class="level-badge" aria-haspopup="listbox" aria-expanded="false">
+                <span id="levelText" aria-live="polite">Уровень 1</span>
+                <span class="level-caret" aria-hidden="true">▾</span>
+            </button>
+            <div class="level-menu" id="levelMenu" role="listbox" data-i18n-aria-label="lm_level_menu_aria" aria-label="Выберите уровень"></div>
+        </div>
+    </header>
+
+    <!-- Main Game Card -->
+    <main class="game-card">
+        <!-- Step instruction banner -->
+        <div class="instruction-box" id="instructionBox" role="status" aria-live="polite">
+            <div class="instruction-hint" id="instructionHint"></div>
+        </div>
+
+        <!-- Terminology Tags / Quick reminder -->
+        <div class="terms-strip">
+            <span class="term-badge multiplicand" data-term="multiplicand" data-i18n="lm_term_multiplicand" data-i18n-title="lm_term_multiplicand_title" title="Число, которое умножаем">Множимое</span>
+            <span class="term-badge multiplier" data-term="multiplier" data-i18n="lm_term_multiplier" data-i18n-title="lm_term_multiplier_title" title="Число, на которое умножаем">Множитель</span>
+            <span class="term-badge product" data-term="product" data-i18n="lm_term_product" data-i18n-title="lm_term_product_title" title="Результат умножения">Произведение</span>
+            <span class="term-badge partial" data-term="partial" data-i18n="lm_term_partial" data-i18n-title="lm_term_partial_title" title="Строка произведения для одной цифры множителя">Неполное произведение</span>
+        </div>
+
+        <!-- Math Notebook Grid Board -->
+        <div class="board-container">
+            <div class="grid-wrapper" id="gridWrapper">
+                <div class="math-grid" id="mathGrid">
+                    <!-- Dynamically generated squared cells -->
+                </div>
+                <!-- Decimal separators drawn on cell borders -->
+                <div class="comma-layer" id="commaLayer"></div>
+            </div>
+        </div>
+
+        <!-- Touch Numpad -->
+        <div class="numpad-grid" id="numpadGrid" role="group" data-i18n-aria-label="lm_numpad_aria" aria-label="Цифровая клавиатура">
+            <button type="button" class="numpad-btn" data-key="1">1</button>
+            <button type="button" class="numpad-btn" data-key="2">2</button>
+            <button type="button" class="numpad-btn" data-key="3">3</button>
+            <button type="button" class="numpad-btn" data-key="4">4</button>
+            <button type="button" class="numpad-btn" data-key="5">5</button>
+            <button type="button" class="numpad-btn" data-key="6">6</button>
+            <button type="button" class="numpad-btn" data-key="7">7</button>
+            <button type="button" class="numpad-btn" data-key="8">8</button>
+            <button type="button" class="numpad-btn" data-key="9">9</button>
+            <button type="button" class="numpad-btn" data-key="0">0</button>
+        </div>
+
+        <!-- Custom equation CTA -->
+        <button type="button" class="custom-eq-btn" id="customEqBtn" data-i18n="lm_custom_btn">✏️ Своё выражение</button>
+    </main>
+
+    <!-- Educational Guide Modal -->
+    <div class="modal-backdrop" id="termsModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="modalTitle" data-i18n="lm_modal_title">📖 Памятка: Умножение в столбик</div>
+                <button type="button" class="modal-close-btn" id="modalCloseBtn" aria-label="Закрыть памятку">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="hint-section">
+                    <h3 data-i18n="lm_hint_terms_h3">Термины при умножении</h3>
+                    <div class="terms-diagram-box">
+                        <div class="terms-equation">
+                            <span>123</span>
+                            <span style="color:#64748B">×</span>
+                            <span>45</span>
+                            <span style="color:#64748B">=</span>
+                            <span>5535</span>
+                        </div>
+                        <div class="terms-pointers">
+                            <div class="pointer-card p1">↑<br><span data-i18n="lm_term_multiplicand">Множимое</span></div>
+                            <div class="pointer-card p2">↑<br><span data-i18n="lm_term_multiplier">Множитель</span></div>
+                            <div class="pointer-card p3">↑<br><span data-i18n="lm_term_product">Произведение</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hint-section">
+                    <h3 data-i18n="lm_hint_partial_h3">Неполные произведения</h3>
+                    <p style="background: #F8FAFC; padding: 8px; border-radius: 6px; font-size: 13px;" data-i18n-html="lm_hint_partial_p1">
+                        <strong>Неполные произведения</strong> — это результаты умножения на каждую цифру множителя. Каждое следующее неполное произведение записывают на одну позицию левее.
+                    </p>
+                </div>
+
+                <div class="hint-section">
+                    <h3 data-i18n="lm_hint_algo_h3">Алгоритм умножения в столбик</h3>
+                    <ol class="algo-steps-list">
+                        <li><div class="step-content" data-i18n-html="lm_algo_1"><strong>Запиши множители</strong> друг под другом, выравнивая цифры справа.</div></li>
+                        <li><div class="step-content" data-i18n-html="lm_algo_2"><strong>Умножь на цифру единиц</strong> множителя справа налево, запоминая перенос.</div></li>
+                        <li><div class="step-content" data-i18n-html="lm_algo_3"><strong>Умножь на следующую цифру</strong> и запиши строку со сдвигом на одну позицию влево.</div></li>
+                        <li><div class="step-content" data-i18n-html="lm_algo_4"><strong>Сложи неполные произведения</strong> по столбикам.</div></li>
+                        <li><div class="step-content" data-i18n-html="lm_algo_5"><strong>Проверь результат.</strong></div></li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Equation Modal -->
+    <div class="modal-backdrop" id="customModal" role="dialog" aria-modal="true" aria-labelledby="customModalTitle">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="customModalTitle" data-i18n="lm_custom_title">Своё выражение</div>
+                <button type="button" class="modal-close-btn" id="customCloseBtn" data-i18n-aria-label="lm_custom_close_aria" aria-label="Закрыть окно">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form class="custom-form" id="customForm" novalidate>
+                    <div class="custom-field">
+                        <label for="customFactor1" data-i18n="lm_custom_factor1">Первый множитель</label>
+                        <input id="customFactor1" name="factor1" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="123">
+                    </div>
+                    <div class="custom-field">
+                        <label for="customFactor2" data-i18n="lm_custom_factor2">Второй множитель</label>
+                        <input id="customFactor2" name="factor2" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="45">
+                    </div>
+                    <div class="custom-error" id="customError" role="alert"></div>
+                    <div class="custom-actions">
+                        <button type="submit" class="custom-solve-btn" data-i18n="lm_custom_solve">Решить</button>
+                        <button type="button" class="custom-cancel-btn" id="customCancelBtn" data-i18n="lm_custom_cancel">Отмена</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Completion Overlay -->
+    <div class="completion-overlay" id="completionOverlay" role="dialog" aria-modal="true">
+        <div class="completion-icon">🌟</div>
+        <div class="completion-title" data-i18n="lm_done_title">Отлично решено!</div>
+        <div class="completion-equation" id="completionEquation">24 × 3 = 72</div>
+        <button type="button" class="completion-next-btn" id="nextProblemBtn" data-i18n="lm_done_next">Следующий пример →</button>
+    </div>
+
+    <!-- Game Engine -->
+    <script>
+        class LongMultiplicationGame {
+            #state;
+            #elements;
+            #config;
+
+            constructor() {
+                this.#initConfig();
+                this.#initElements();
+                this.#initState();
+                this.#bindEvents();
+                this.#subscribeToLanguageChanges();
+                this.#startNewRound();
+            }
+
+            #initConfig() {
+                this.#config = {
+                    maxLevel: 20,
+                    maxProductDigits: 8
+                };
+            }
+
+            #initElements() {
+                this.#elements = {
+                    levelDisplay: document.getElementById('levelDisplay'),
+                    levelText: document.getElementById('levelText'),
+                    levelMenu: document.getElementById('levelMenu'),
+                    boardContainer: document.querySelector('.board-container'),
+                    instructionHint: document.getElementById('instructionHint'),
+                    mathGrid: document.getElementById('mathGrid'),
+                    commaLayer: document.getElementById('commaLayer'),
+                    numpadGrid: document.getElementById('numpadGrid'),
+                    termsModal: document.getElementById('termsModal'),
+                    hintModalBtn: document.getElementById('hintModalBtn'),
+                    modalCloseBtn: document.getElementById('modalCloseBtn'),
+                    completionOverlay: document.getElementById('completionOverlay'),
+                    completionEquation: document.getElementById('completionEquation'),
+                    nextProblemBtn: document.getElementById('nextProblemBtn'),
+                    customEqBtn: document.getElementById('customEqBtn'),
+                    customModal: document.getElementById('customModal'),
+                    customCloseBtn: document.getElementById('customCloseBtn'),
+                    customCancelBtn: document.getElementById('customCancelBtn'),
+                    customForm: document.getElementById('customForm'),
+                    customFactor1: document.getElementById('customFactor1'),
+                    customFactor2: document.getElementById('customFactor2'),
+                    customError: document.getElementById('customError')
+                };
+            }
+
+            #initState() {
+                this.#state = {
+                    level: 1,
+                    isCustomRound: false,
+                    hadErrorThisRound: false,
+                    multiplicandDigits: '24',
+                    multiplicandDecimals: 0,
+                    multiplierDigits: '3',
+                    multiplierDecimals: 0,
+                    productDigits: '72',
+                    productDecimals: 0,
+                    steps: [],
+                    stepIndex: 0,
+                    partialRows: [],
+                    partialLengths: [],
+                    currentInput: '',
+                    expectedAnswer: '',
+                    gridMatrix: [],
+                    numRows: 0,
+                    numCols: 0,
+                    baseCol: 0,
+                    resultRow: 0,
+                    activeTargetCells: []
+                };
+            }
+
+            #bindEvents() {
+                // Numpad clicks
+                this.#elements.numpadGrid.addEventListener('click', (e) => {
+                    const btn = e.target.closest('.numpad-btn');
+                    if (!btn) return;
+                    this.#handleKeyPress(btn.dataset.key);
+                });
+
+                // Physical keyboard support
+                window.addEventListener('keydown', (e) => {
+                    if (this.#elements.termsModal.classList.contains('open')) {
+                        if (e.key === 'Escape') this.#toggleModal(false);
+                        return;
+                    }
+                    if (this.#elements.customModal.classList.contains('open')) {
+                        if (e.key === 'Escape') this.#toggleCustomModal(false);
+                        return;
+                    }
+                    if (this.#elements.levelMenu.classList.contains('open')) {
+                        if (e.key === 'Escape') {
+                            this.#toggleLevelMenu(false);
+                            this.#elements.levelDisplay.focus();
+                        }
+                        return;
+                    }
+                    if (this.#elements.completionOverlay.classList.contains('show')) {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            this.#startNewRound();
+                        }
+                        return;
+                    }
+
+                    const isControlFocused = e.target instanceof HTMLElement &&
+                        (e.target.tagName === 'BUTTON' || e.target.tagName === 'A');
+                    if (isControlFocused && (e.key === 'Enter' || e.key === ' ')) {
+                        return; // Let the focused control handle its own activation
+                    }
+
+                    if (e.key >= '0' && e.key <= '9') {
+                        this.#handleKeyPress(e.key);
+                    } else if (e.key === 'Backspace') {
+                        this.#handleKeyPress('backspace');
+                    } else if (e.key === 'Enter') {
+                        this.#handleKeyPress('enter');
+                    }
+                });
+
+                // Terminology badge interactive highlights
+                document.querySelectorAll('.term-badge').forEach(badge => {
+                    badge.addEventListener('click', () => {
+                        this.#highlightTerm(badge.dataset.term);
+                    });
+                });
+
+                // Window resize for comma alignment
+                window.addEventListener('resize', () => this.#renderCommas());
+
+                // Hint modal toggle
+                this.#elements.hintModalBtn.addEventListener('click', () => this.#toggleModal(true));
+                this.#elements.modalCloseBtn.addEventListener('click', () => this.#toggleModal(false));
+                this.#elements.termsModal.addEventListener('click', (e) => {
+                    if (e.target === this.#elements.termsModal) this.#toggleModal(false);
+                });
+
+                // Completion next button
+                this.#elements.nextProblemBtn.addEventListener('click', () => this.#startNewRound());
+
+                // Custom equation modal
+                this.#elements.customEqBtn.addEventListener('click', () => this.#toggleCustomModal(true));
+                this.#elements.customCloseBtn.addEventListener('click', () => this.#toggleCustomModal(false));
+                this.#elements.customCancelBtn.addEventListener('click', () => this.#toggleCustomModal(false));
+                this.#elements.customModal.addEventListener('click', (e) => {
+                    if (e.target === this.#elements.customModal) this.#toggleCustomModal(false);
+                });
+                this.#elements.customForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.#submitCustomProblem();
+                });
+
+                // Level picker
+                this.#elements.levelDisplay.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.#toggleLevelMenu();
+                });
+                this.#elements.levelMenu.addEventListener('click', (e) => {
+                    const item = e.target.closest('.level-menu-item');
+                    if (!item) return;
+                    e.stopPropagation();
+                    this.#selectLevel(Number(item.dataset.level));
+                });
+                this.#elements.levelMenu.addEventListener('keydown', (e) => {
+                    const items = Array.from(this.#elements.levelMenu.querySelectorAll('.level-menu-item'));
+                    const index = items.indexOf(document.activeElement);
+                    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        const next = items[Math.min(items.length - 1, index + 1)];
+                        if (next) next.focus();
+                    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        const prev = items[Math.max(0, index - 1)];
+                        if (prev) prev.focus();
+                    } else if (e.key === 'Home') {
+                        e.preventDefault();
+                        items[0].focus();
+                    } else if (e.key === 'End') {
+                        e.preventDefault();
+                        items[items.length - 1].focus();
+                    }
+                });
+                document.addEventListener('click', (e) => {
+                    if (!this.#elements.levelMenu.classList.contains('open')) return;
+                    if (e.target.closest('.level-picker')) return;
+                    this.#toggleLevelMenu(false);
+                });
+            }
+
+            #subscribeToLanguageChanges() {
+                I18n.subscribe(() => this.#handleLanguageChange());
+            }
+
+            #handleLanguageChange() {
+                this.#renderLevelBadge();
+                if (this.#elements.levelMenu.classList.contains('open')) {
+                    this.#renderLevelMenu();
+                }
+                this.#renderCommas();
+                this.#renderCompletionEquation();
+                if (!this.#elements.completionOverlay.classList.contains('show')) {
+                    this.#promptCurrentStep();
+                }
+            }
+
+            // ---------------------------------------------------------------
+            // Problem generation
+            // ---------------------------------------------------------------
+
+            #randomInt(min, max) {
+                return Math.floor(Math.random() * (max - min + 1)) + min;
+            }
+
+            #randomDigits(length, big) {
+                let digits = '';
+                for (let i = 0; i < length; i++) {
+                    const min = big ? 4 : (i === 0 ? 1 : 0);
+                    digits += String(this.#randomInt(min, 9));
+                }
+                return digits;
+            }
+
+            #hasCarry(multiplicand, multiplier) {
+                for (let j = 0; j < multiplier.length; j++) {
+                    const b = Number(multiplier[multiplier.length - 1 - j]);
+                    for (let i = 0; i < multiplicand.length; i++) {
+                        const a = Number(multiplicand[multiplicand.length - 1 - i]);
+                        if (a * b >= 10) return true;
+                    }
+                }
+                return false;
+            }
+
+            // Difficulty grows with digit counts, then with decimals on one
+            // factor (levels 11-15) and on both factors (levels 16-20).
+            #getLevelConfig(level) {
+                const table = [
+                    { mMin: 2, mMax: 2, nMin: 1, nMax: 1, noCarry: true },
+                    { mMin: 2, mMax: 2, nMin: 1, nMax: 1 },
+                    { mMin: 3, mMax: 3, nMin: 1, nMax: 1 },
+                    { mMin: 2, mMax: 2, nMin: 2, nMax: 2 },
+                    { mMin: 3, mMax: 3, nMin: 2, nMax: 2 },
+                    { mMin: 3, mMax: 3, nMin: 2, nMax: 2, bigDigits: true },
+                    { mMin: 4, mMax: 4, nMin: 2, nMax: 2 },
+                    { mMin: 3, mMax: 3, nMin: 3, nMax: 3 },
+                    { mMin: 4, mMax: 4, nMin: 3, nMax: 3 },
+                    { mMin: 4, mMax: 4, nMin: 3, nMax: 3, bigDigits: true },
+                    { mMin: 3, mMax: 3, nMin: 2, nMax: 2, k1: 1 },
+                    { mMin: 3, mMax: 3, nMin: 2, nMax: 2, k2: 1 },
+                    { mMin: 4, mMax: 4, nMin: 2, nMax: 2, k1: 1 },
+                    { mMin: 3, mMax: 3, nMin: 3, nMax: 3, k1: 1 },
+                    { mMin: 4, mMax: 4, nMin: 3, nMax: 3, k1: 1 },
+                    { mMin: 3, mMax: 3, nMin: 2, nMax: 2, k1: 1, k2: 1 },
+                    { mMin: 4, mMax: 4, nMin: 2, nMax: 2, k1: 1, k2: 1 },
+                    { mMin: 3, mMax: 3, nMin: 3, nMax: 3, k1: 1, k2: 1 },
+                    { mMin: 4, mMax: 4, nMin: 3, nMax: 3, k1: 1, k2: 1 },
+                    { mMin: 4, mMax: 4, nMin: 3, nMax: 3, k1: 2, k2: 1 }
+                ];
+                const index = Math.min(Math.max(level, 1), table.length) - 1;
+                return table[index];
+            }
+
+            #createProblem(level) {
+                const cfg = this.#getLevelConfig(level);
+
+                for (let attempt = 0; attempt < 600; attempt++) {
+                    let m = this.#randomInt(cfg.mMin, cfg.mMax);
+                    let n = this.#randomInt(cfg.nMin, cfg.nMax);
+                    if (n > m) {
+                        const swap = m;
+                        m = n;
+                        n = swap;
+                    }
+
+                    const k1 = cfg.k1 || 0;
+                    const k2 = cfg.k2 || 0;
+                    const multiplicand = this.#randomDigits(m, cfg.bigDigits);
+                    const multiplier = this.#randomDigits(n, cfg.bigDigits);
+
+                    const product = String(Number(multiplicand) * Number(multiplier));
+                    if (product.length > this.#config.maxProductDigits) continue;
+                    if (cfg.noCarry && this.#hasCarry(multiplicand, multiplier)) continue;
+                    if (n >= 2 && multiplier[multiplier.length - 1] === '0') continue;
+                    if (k1 > 0 && multiplicand[multiplicand.length - 1] === '0') continue;
+                    if (k2 > 0 && multiplier[multiplier.length - 1] === '0') continue;
+
+                    return {
+                        multiplicandDigits: multiplicand,
+                        multiplicandDecimals: k1,
+                        multiplierDigits: multiplier,
+                        multiplierDecimals: k2
+                    };
+                }
+
+                return { multiplicandDigits: '24', multiplicandDecimals: 0, multiplierDigits: '3', multiplierDecimals: 0 };
+            }
+
+            // ---------------------------------------------------------------
+            // Round setup
+            // ---------------------------------------------------------------
+
+            #startNewRound() {
+                this.#beginRound(this.#createProblem(this.#state.level), false);
+            }
+
+            #beginRound(problem, isCustomRound) {
+                this.#elements.completionOverlay.classList.remove('show');
+                this.#state.isCustomRound = !!isCustomRound;
+                this.#state.hadErrorThisRound = false;
+                this.#state.currentInput = '';
+                this.#state.multiplicandDigits = problem.multiplicandDigits;
+                this.#state.multiplicandDecimals = problem.multiplicandDecimals;
+                this.#state.multiplierDigits = problem.multiplierDigits;
+                this.#state.multiplierDecimals = problem.multiplierDecimals;
+
+                this.#renderLevelBadge();
+                this.#computeGeometry();
+                this.#computePlan();
+                this.#buildGrid();
+                this.#renderCommas();
+
+                this.#state.stepIndex = 0;
+                this.#promptCurrentStep();
+            }
+
+            #computeGeometry() {
+                const s = this.#state;
+                const m = s.multiplicandDigits.length;
+                const n = s.multiplierDigits.length;
+                const k1 = s.multiplicandDecimals;
+                const k2 = s.multiplierDecimals;
+
+                s.productDigits = String(Number(s.multiplicandDigits) * Number(s.multiplierDigits));
+                s.productDecimals = k1 + k2;
+
+                const padding = 1;
+                const leftUnits = Math.max(m, n + m - 1, s.productDigits.length);
+                s.baseCol = padding + leftUnits;
+                s.numCols = padding + leftUnits + 1 + (k1 + k2) + padding;
+
+                if (n === 1) {
+                    // A single-digit multiplier: the partial product IS the
+                    // product, so there is no separate addition phase.
+                    s.numRows = 3;
+                    s.resultRow = 2;
+                } else {
+                    s.numRows = 4 + n;
+                    s.resultRow = 3 + n;
+                }
+            }
+
+            #computePlan() {
+                const s = this.#state;
+                const ad = Array.from(s.multiplicandDigits).map(Number);
+                const bd = Array.from(s.multiplierDigits).map(Number);
+                const m = ad.length;
+                const n = bd.length;
+                const steps = [];
+                const partialDigits = [];
+                const partialLengths = [];
+
+                // Partial products, one row per multiplier digit (right to left)
+                for (let j = 0; j < n; j++) {
+                    const b = bd[n - 1 - j];
+                    const row = 2 + j;
+                    const digits = [];
+                    let carry = 0;
+
+                    for (let i = 0; i < m; i++) {
+                        const a = ad[m - 1 - i];
+                        const carryBefore = carry;
+                        const value = a * b + carryBefore;
+                        const writeDigit = value % 10;
+                        carry = Math.floor(value / 10);
+                        digits.push(writeDigit);
+                        steps.push({
+                            type: 'MUL',
+                            a,
+                            b,
+                            carryBefore,
+                            expected: value,
+                            writeDigit,
+                            row,
+                            col: s.baseCol - j - i,
+                            badge: carry > 0 ? { row: row - 1, col: s.baseCol - j - i - 1 } : null,
+                            carryAfter: carry
+                        });
+                    }
+
+                    if (carry > 0) {
+                        digits.push(carry);
+                        steps.push({
+                            type: 'CARRY',
+                            expected: carry,
+                            writeDigit: carry,
+                            row,
+                            col: s.baseCol - j - m,
+                            badge: null,
+                            carryAfter: 0
+                        });
+                    }
+
+                    partialDigits.push(digits);
+                    partialLengths.push(digits.length);
+                }
+
+                // Column addition of the partial products (only when the
+                // multiplier has more than one digit)
+                if (n > 1) {
+                    const L = s.productDigits.length;
+                    let carry = 0;
+
+                    for (let c = 0; c < L; c++) {
+                        const addends = [];
+                        for (let j = 0; j < n; j++) {
+                            const index = c - j;
+                            if (index >= 0 && index < partialLengths[j]) {
+                                addends.push(partialDigits[j][index]);
+                            }
+                        }
+                        const carryBefore = carry;
+                        const value = addends.reduce((sum, digit) => sum + digit, 0) + carryBefore;
+                        const writeDigit = value % 10;
+                        carry = Math.floor(value / 10);
+                        steps.push({
+                            type: 'ADD',
+                            addends,
+                            carryBefore,
+                            expected: value,
+                            writeDigit,
+                            row: s.resultRow,
+                            col: s.baseCol - c,
+                            badge: carry > 0 ? { row: s.resultRow - 1, col: s.baseCol - c - 1 } : null,
+                            carryAfter: carry
+                        });
+                    }
+                }
+
+                s.steps = steps;
+                s.partialLengths = partialLengths;
+            }
+
+            // ---------------------------------------------------------------
+            // Grid
+            // ---------------------------------------------------------------
+
+            #buildGrid() {
+                const s = this.#state;
+                const m = s.multiplicandDigits.length;
+                const n = s.multiplierDigits.length;
+                const k1 = s.multiplicandDecimals;
+                const k2 = s.multiplierDecimals;
+                const L = s.productDigits.length;
+
+                const matrix = [];
+                for (let r = 0; r < s.numRows; r++) {
+                    const row = [];
+                    for (let c = 0; c < s.numCols; c++) {
+                        row.push({ char: '', classes: [] });
+                    }
+                    matrix.push(row);
+                }
+
+                // Factors
+                for (let i = 0; i < m; i++) {
+                    matrix[0][s.baseCol - i].char = s.multiplicandDigits[m - 1 - i];
+                }
+                for (let j = 0; j < n; j++) {
+                    matrix[1][s.baseCol - j].char = s.multiplierDigits[n - 1 - j];
+                }
+                matrix[1][s.baseCol - Math.max(m, n)].char = '×';
+                matrix[1][s.baseCol - Math.max(m, n)].classes.push('operator-sign');
+
+                // Line under the factors
+                const factorRight = s.baseCol + Math.max(k1, k2);
+                for (let c = s.baseCol - Math.max(m, n) + 1; c <= factorRight; c++) {
+                    matrix[1][c].classes.push('subtraction-line');
+                }
+
+                // Line above the result (spans the partial products and the result)
+                if (n > 1) {
+                    let leftExtent = s.baseCol - (L - 1);
+                    for (let j = 0; j < n; j++) {
+                        leftExtent = Math.min(leftExtent, s.baseCol - j - (s.partialLengths[j] - 1));
+                    }
+                    const lineRow = s.resultRow - 1;
+                    for (let c = leftExtent; c <= s.baseCol + s.productDecimals; c++) {
+                        matrix[lineRow][c].classes.push('subtraction-line');
+                    }
+                }
+
+                s.gridMatrix = matrix;
+                this.#renderGridDOM();
+            }
+
+            #renderGridDOM() {
+                const grid = this.#elements.mathGrid;
+                grid.innerHTML = '';
+
+                if (this.#state.numCols > 12) {
+                    grid.style.setProperty('--cell-size', 'clamp(22px, 5vw, 28px)');
+                    grid.style.setProperty('--cell-font-size', 'clamp(14px, 3.8vw, 18px)');
+                } else if (this.#state.numCols > 9) {
+                    grid.style.setProperty('--cell-size', 'clamp(27px, 6.5vw, 34px)');
+                    grid.style.setProperty('--cell-font-size', 'clamp(16px, 4.2vw, 21px)');
+                } else {
+                    grid.style.setProperty('--cell-size', 'clamp(32px, 7vw, 40px)');
+                    grid.style.setProperty('--cell-font-size', 'clamp(18px, 4.5vw, 24px)');
+                }
+
+                grid.style.gridTemplateColumns = `repeat(${this.#state.numCols}, var(--cell-size))`;
+                grid.style.gridTemplateRows = `repeat(${this.#state.numRows}, var(--cell-size))`;
+
+                for (let r = 0; r < this.#state.numRows; r++) {
+                    for (let c = 0; c < this.#state.numCols; c++) {
+                        const cellData = this.#state.gridMatrix[r][c];
+                        const cellEl = document.createElement('div');
+                        cellEl.className = 'grid-cell ' + cellData.classes.join(' ');
+                        cellEl.id = `cell-${r}-${c}`;
+                        cellEl.textContent = cellData.char;
+                        grid.appendChild(cellEl);
+                    }
+                }
+            }
+
+            #renderCommas() {
+                const layer = this.#elements.commaLayer;
+                layer.innerHTML = '';
+                if (!this.#state.productDecimals && !this.#state.multiplicandDecimals && !this.#state.multiplierDecimals) return;
+
+                const grid = this.#elements.mathGrid;
+                const gridRect = grid.getBoundingClientRect();
+                const separator = I18n.t('decimal_separator');
+
+                const place = (row, decimals) => {
+                    if (!decimals) return;
+                    const cell = document.getElementById(`cell-${row}-${this.#state.baseCol - decimals + 1}`);
+                    if (!cell) return;
+                    const rect = cell.getBoundingClientRect();
+                    const span = document.createElement('span');
+                    span.className = 'comma-overlay';
+                    span.textContent = separator;
+                    span.style.left = (rect.left - gridRect.left) + 'px';
+                    span.style.top = (rect.top - gridRect.top) + 'px';
+                    span.style.height = rect.height + 'px';
+                    layer.appendChild(span);
+                };
+
+                place(0, this.#state.multiplicandDecimals);
+                place(1, this.#state.multiplierDecimals);
+                place(this.#state.resultRow, this.#state.productDecimals);
+            }
+
+            // ---------------------------------------------------------------
+            // Prompting and input
+            // ---------------------------------------------------------------
+
+            #promptCurrentStep() {
+                const step = this.#state.steps[this.#state.stepIndex];
+                if (!step) return;
+
+                this.#state.currentInput = '';
+                this.#state.expectedAnswer = String(step.expected);
+                this.#elements.instructionHint.classList.remove('is-error');
+                this.#syncActiveCell();
+
+                if (step.type === 'MUL') {
+                    this.#elements.instructionHint.textContent = step.carryBefore > 0
+                        ? I18n.t('lm_mul_hint_carry', { a: step.a, b: step.b, carry: step.carryBefore })
+                        : I18n.t('lm_mul_hint', { a: step.a, b: step.b });
+                } else if (step.type === 'CARRY') {
+                    this.#elements.instructionHint.textContent = I18n.t('lm_carry_hint', { carry: step.expected });
+                } else {
+                    const terms = step.addends.join(' + ');
+                    const expression = step.carryBefore > 0 ? `${terms} + ${step.carryBefore}` : terms;
+                    this.#elements.instructionHint.textContent = I18n.t('lm_add_hint', { expr: expression });
+                }
+            }
+
+            #syncActiveCell() {
+                const step = this.#state.steps[this.#state.stepIndex];
+                const previous = this.#state.activeTargetCells;
+                previous.forEach(({ r, c }) => {
+                    const cell = document.getElementById(`cell-${r}-${c}`);
+                    if (cell) {
+                        cell.classList.remove('active-input', 'typing-preview', 'multi');
+                        cell.textContent = this.#state.gridMatrix[r][c].char;
+                    }
+                });
+
+                this.#state.activeTargetCells = [{ r: step.row, c: step.col }];
+                const cell = document.getElementById(`cell-${step.row}-${step.col}`);
+                if (cell) {
+                    cell.classList.add('active-input');
+                    this.#scrollCellIntoView(cell);
+                }
+            }
+
+            #scrollCellIntoView(cell) {
+                const container = this.#elements.boardContainer;
+                if (!cell || !container) return;
+                const cellRect = cell.getBoundingClientRect();
+                const containerRect = container.getBoundingClientRect();
+                const margin = 24;
+                if (cellRect.left < containerRect.left + margin) {
+                    container.scrollLeft -= (containerRect.left + margin - cellRect.left);
+                } else if (cellRect.right > containerRect.right - margin) {
+                    container.scrollLeft += (cellRect.right - containerRect.right + margin);
+                }
+            }
+
+            #handleKeyPress(key) {
+                if (key === 'backspace') {
+                    this.#state.currentInput = this.#state.currentInput.slice(0, -1);
+                    this.#renderTypingPreview();
+                    return;
+                }
+
+                if (key === 'enter') {
+                    this.#submitCurrentInput();
+                    return;
+                }
+
+                if (key >= '0' && key <= '9') {
+                    if (this.#state.currentInput.length >= this.#state.expectedAnswer.length) return;
+                    this.#elements.instructionHint.classList.remove('is-error');
+                    this.#state.currentInput += key;
+                    this.#renderTypingPreview();
+
+                    if (this.#state.currentInput.length === this.#state.expectedAnswer.length) {
+                        setTimeout(() => this.#submitCurrentInput(), 80);
+                    }
+                }
+            }
+
+            #renderTypingPreview() {
+                const input = this.#state.currentInput;
+                const cells = this.#state.activeTargetCells;
+                if (!cells || cells.length === 0) return;
+
+                cells.forEach((pos) => {
+                    const cell = document.getElementById(`cell-${pos.r}-${pos.c}`);
+                    if (!cell) return;
+                    if (input.length > 0) {
+                        cell.textContent = input;
+                        cell.classList.add('typing-preview');
+                        cell.classList.toggle('multi', input.length > 1);
+                    } else {
+                        cell.textContent = this.#state.gridMatrix[pos.r][pos.c].char;
+                        cell.classList.remove('typing-preview', 'multi');
+                    }
+                });
+            }
+
+            #submitCurrentInput() {
+                const userVal = this.#state.currentInput.trim();
+                if (!userVal) return;
+
+                if (userVal === this.#state.expectedAnswer) {
+                    this.#handleCorrectInput();
+                } else {
+                    this.#handleWrongInput();
+                }
+            }
+
+            #handleCorrectInput() {
+                const step = this.#state.steps[this.#state.stepIndex];
+
+                this.#setCellValue(step.row, step.col, String(step.writeDigit), ['correct-flash']);
+                this.#clearCarryBadges();
+                if (step.badge) {
+                    this.#setCarryBadge(step.badge.row, step.badge.col, step.carryAfter);
+                }
+
+                this.#state.stepIndex++;
+                if (this.#state.stepIndex < this.#state.steps.length) {
+                    this.#promptCurrentStep();
+                } else {
+                    this.#finishRound();
+                }
+            }
+
+            #handleWrongInput() {
+                this.#state.hadErrorThisRound = true;
+
+                this.#state.activeTargetCells.forEach(({ r, c }) => {
+                    const cell = document.getElementById(`cell-${r}-${c}`);
+                    if (!cell) return;
+                    cell.classList.add('error-shake');
+                    setTimeout(() => cell.classList.remove('error-shake'), 600);
+                });
+
+                this.#elements.instructionHint.classList.add('is-error');
+                this.#elements.instructionHint.textContent = I18n.t('lm_wrong_hint');
+
+                setTimeout(() => {
+                    this.#elements.instructionHint.classList.remove('is-error');
+                }, 1200);
+
+                this.#state.currentInput = '';
+                this.#renderTypingPreview();
+            }
+
+            #setCellValue(r, c, char, additionalClasses = []) {
+                this.#state.gridMatrix[r][c].char = String(char);
+                const cell = document.getElementById(`cell-${r}-${c}`);
+                if (cell) {
+                    cell.textContent = String(char);
+                    cell.classList.remove('active-input', 'typing-preview', 'multi');
+                    additionalClasses.forEach(cls => cell.classList.add(cls));
+                }
+            }
+
+            #setCarryBadge(r, c, value) {
+                const cell = document.getElementById(`cell-${r}-${c}`);
+                if (!cell) return;
+                const badge = document.createElement('span');
+                badge.className = 'carry-badge';
+                badge.textContent = String(value);
+                cell.appendChild(badge);
+            }
+
+            #clearCarryBadges() {
+                document.querySelectorAll('.carry-badge').forEach(badge => badge.remove());
+            }
+
+            // ---------------------------------------------------------------
+            // Terminology highlights
+            // ---------------------------------------------------------------
+
+            #highlightTerm(term) {
+                const clearHighlight = (cls) => {
+                    document.querySelectorAll('.' + cls).forEach(c => c.classList.remove(cls));
+                };
+
+                if (term === 'multiplicand') {
+                    clearHighlight('term-highlight-blue');
+                    for (let i = 0; i < this.#state.multiplicandDigits.length; i++) {
+                        const cell = document.getElementById(`cell-0-${this.#state.baseCol - i}`);
+                        if (cell) cell.classList.add('term-highlight-blue');
+                    }
+                    setTimeout(() => clearHighlight('term-highlight-blue'), 1000);
+
+                } else if (term === 'multiplier') {
+                    clearHighlight('term-highlight-amber');
+                    for (let j = 0; j < this.#state.multiplierDigits.length; j++) {
+                        const cell = document.getElementById(`cell-1-${this.#state.baseCol - j}`);
+                        if (cell) cell.classList.add('term-highlight-amber');
+                    }
+                    setTimeout(() => clearHighlight('term-highlight-amber'), 1000);
+
+                } else if (term === 'product') {
+                    clearHighlight('term-highlight-green');
+                    for (let c = 0; c < this.#state.productDigits.length; c++) {
+                        const cell = document.getElementById(`cell-${this.#state.resultRow}-${this.#state.baseCol - c}`);
+                        if (cell) cell.classList.add('term-highlight-green');
+                    }
+                    setTimeout(() => clearHighlight('term-highlight-green'), 1000);
+
+                } else if (term === 'partial') {
+                    clearHighlight('term-highlight-purple');
+                    const step = this.#state.steps[Math.min(this.#state.stepIndex, this.#state.steps.length - 1)];
+                    if (step) {
+                        const singleDigitMultiplier = this.#state.multiplierDigits.length === 1;
+                        const partialRow = singleDigitMultiplier
+                            ? this.#state.resultRow
+                            : (step.row < this.#state.resultRow ? step.row : this.#state.resultRow - 2);
+                        for (let c = 0; c < this.#state.numCols; c++) {
+                            const cell = document.getElementById(`cell-${partialRow}-${c}`);
+                            if (cell && cell.textContent) cell.classList.add('term-highlight-purple');
+                        }
+                    }
+                    setTimeout(() => clearHighlight('term-highlight-purple'), 1000);
+                }
+            }
+
+            // ---------------------------------------------------------------
+            // Round completion
+            // ---------------------------------------------------------------
+
+            #formatNumberText(digits, decimals) {
+                if (!decimals) return digits;
+                const cut = digits.length - decimals;
+                return digits.slice(0, cut) + I18n.t('decimal_separator') + digits.slice(cut);
+            }
+
+            #renderCompletionEquation() {
+                this.#elements.completionEquation.textContent =
+                    `${this.#formatNumberText(this.#state.multiplicandDigits, this.#state.multiplicandDecimals)}` +
+                    ` × ${this.#formatNumberText(this.#state.multiplierDigits, this.#state.multiplierDecimals)}` +
+                    ` = ${this.#formatNumberText(this.#state.productDigits, this.#state.productDecimals)}`;
+            }
+
+            #finishRound() {
+                this.#state.activeTargetCells = [];
+                this.#clearCarryBadges();
+
+                // Custom equations don't affect the level progression
+                if (!this.#state.isCustomRound) {
+                    if (this.#state.hadErrorThisRound) {
+                        this.#state.level = Math.max(1, this.#state.level - 1);
+                    } else {
+                        this.#state.level = Math.min(this.#config.maxLevel, this.#state.level + 1);
+                    }
+                }
+
+                this.#renderCompletionEquation();
+
+                setTimeout(() => {
+                    this.#elements.completionOverlay.classList.add('show');
+                }, 400);
+            }
+
+            // ---------------------------------------------------------------
+            // Level picker
+            // ---------------------------------------------------------------
+
+            #renderLevelBadge() {
+                this.#elements.levelText.textContent = I18n.t('level_label', { n: this.#state.level });
+            }
+
+            #renderLevelMenu() {
+                const menu = this.#elements.levelMenu;
+                menu.innerHTML = '';
+                for (let level = 1; level <= this.#config.maxLevel; level++) {
+                    const item = document.createElement('button');
+                    item.type = 'button';
+                    item.className = 'level-menu-item' + (level === this.#state.level ? ' current' : '');
+                    item.dataset.level = String(level);
+                    item.setAttribute('role', 'option');
+                    item.setAttribute('aria-selected', level === this.#state.level ? 'true' : 'false');
+                    item.setAttribute('aria-label', I18n.t('level_label', { n: level }));
+                    item.textContent = String(level);
+                    menu.appendChild(item);
+                }
+            }
+
+            #toggleLevelMenu(open) {
+                const menu = this.#elements.levelMenu;
+                const willOpen = (open !== undefined) ? open : !menu.classList.contains('open');
+                menu.classList.toggle('open', willOpen);
+                this.#elements.levelDisplay.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+
+                if (willOpen) {
+                    this.#renderLevelMenu();
+                    this.#positionLevelMenu();
+                    const current = menu.querySelector('.level-menu-item.current');
+                    if (current) current.focus();
+                }
+            }
+
+            #positionLevelMenu() {
+                const menu = this.#elements.levelMenu;
+                const triggerRect = this.#elements.levelDisplay.getBoundingClientRect();
+                const menuWidth = menu.offsetWidth;
+                const viewportWidth = document.documentElement.clientWidth;
+                const margin = 8;
+
+                menu.style.maxWidth = '';
+                if (triggerRect.right - menuWidth >= margin) {
+                    menu.style.left = 'auto';
+                    menu.style.right = '0';
+                } else {
+                    menu.style.left = '0';
+                    menu.style.right = 'auto';
+                    if (triggerRect.left + menuWidth > viewportWidth - margin) {
+                        menu.style.maxWidth = (viewportWidth - margin * 2) + 'px';
+                    }
+                }
+            }
+
+            #selectLevel(level) {
+                this.#state.level = Math.min(Math.max(level, 1), this.#config.maxLevel);
+                this.#toggleLevelMenu(false);
+                this.#startNewRound();
+            }
+
+            // ---------------------------------------------------------------
+            // Modals
+            // ---------------------------------------------------------------
+
+            #toggleModal(open) {
+                this.#elements.termsModal.classList.toggle('open', open);
+            }
+
+            #toggleCustomModal(open) {
+                this.#elements.customModal.classList.toggle('open', open);
+                this.#elements.customError.textContent = '';
+                if (open) {
+                    this.#elements.customFactor1.value =
+                        this.#formatNumberText(this.#state.multiplicandDigits, this.#state.multiplicandDecimals);
+                    this.#elements.customFactor2.value =
+                        this.#formatNumberText(this.#state.multiplierDigits, this.#state.multiplierDecimals);
+                    this.#elements.customFactor1.focus();
+                    this.#elements.customFactor1.select();
+                }
+            }
+
+            #showCustomError(key) {
+                this.#elements.customError.textContent = I18n.t(key);
+            }
+
+            #parseFactor(raw) {
+                const match = String(raw).trim().replace(/\s+/g, '').match(/^(\d{1,4})(?:[.,](\d{1,2}))?$/);
+                if (!match || Number(match[1]) < 1) return null;
+                let fraction = match[2] || '';
+                while (fraction.endsWith('0')) fraction = fraction.slice(0, -1);
+                return { digits: match[1] + fraction, decimals: fraction.length };
+            }
+
+            #submitCustomProblem() {
+                const factor1 = this.#parseFactor(this.#elements.customFactor1.value);
+                const factor2 = this.#parseFactor(this.#elements.customFactor2.value);
+                if (!factor1 || !factor2) {
+                    this.#showCustomError('lm_custom_err_factor');
+                    return;
+                }
+
+                const product = String(Number(factor1.digits) * Number(factor2.digits));
+                if (product.length > this.#config.maxProductDigits || factor1.decimals + factor2.decimals > 4) {
+                    this.#showCustomError('lm_custom_err_too_big');
+                    return;
+                }
+
+                this.#toggleCustomModal(false);
+                this.#beginRound({
+                    multiplicandDigits: factor1.digits,
+                    multiplicandDecimals: factor1.decimals,
+                    multiplierDigits: factor2.digits,
+                    multiplierDecimals: factor2.decimals
+                }, true);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            new LongMultiplicationGame();
+        });
+    </script>
+</body>
+</html>
