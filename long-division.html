@@ -128,25 +128,6 @@
             line-height: 1;
         }
 
-        .icon-btn.hint-toggle-btn {
-            font-size: 17px;
-        }
-
-        .hint-toggle-btn {
-            background: var(--color-purple-light);
-            color: var(--color-purple-dark);
-            border: 1px solid rgba(123, 97, 255, 0.2);
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .hint-toggle-btn:active {
-            background: #E0E7FF;
-            color: var(--color-purple-dark);
-        }
-
         .level-picker {
             position: relative;
         }
@@ -235,7 +216,7 @@
             background: white;
             border-radius: var(--radius-lg);
             box-shadow: var(--shadow-card);
-            padding: 16px 12px;
+            padding: 12px 10px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -247,8 +228,8 @@
             width: 100%;
             background: #f8fafc;
             border-radius: var(--radius-md);
-            padding: 10px 12px;
-            margin-bottom: 10px;
+            padding: 8px 10px;
+            margin-bottom: 8px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -275,24 +256,26 @@
             color: var(--color-error) !important;
         }
 
-        /* Terminology Tags Strip */
+        /* Terminology Tags Strip — one compact row so the grid keeps the space */
         .terms-strip {
             width: 100%;
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 10px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+            gap: 5px;
+            margin-bottom: 6px;
         }
 
         .term-badge {
-            font-size: 12px;
+            font-size: 11px;
+            line-height: 1.15;
             font-weight: 600;
-            padding: 10px 14px;
-            min-height: 44px;
+            padding: 6px 6px;
+            min-height: 36px;
             display: inline-flex;
             align-items: center;
-            border-radius: 22px;
+            justify-content: center;
+            text-align: center;
+            border-radius: 14px;
             cursor: pointer;
             transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
         }
@@ -328,7 +311,7 @@
             overflow-x: auto;
             display: flex;
             justify-content: center;
-            padding: 32px 0 10px 0;
+            padding: 24px 0 8px 0;
             position: relative;
         }
 
@@ -506,10 +489,10 @@
 
         /* Custom equation CTA */
         .custom-eq-btn {
-            margin-top: 12px;
+            margin-top: 8px;
             width: 100%;
             max-width: 310px;
-            min-height: 48px;
+            min-height: 44px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -700,103 +683,6 @@
             color: #475569;
         }
 
-        .hint-section {
-            margin-bottom: 18px;
-        }
-
-        .hint-section h3 {
-            font-size: 15px;
-            font-weight: 700;
-            color: var(--color-purple-dark);
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .terms-diagram-box {
-            background: #F8FAFC;
-            border: 1px solid #E2E8F0;
-            border-radius: var(--radius-md);
-            padding: 14px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 12px;
-            margin: 10px 0;
-        }
-
-        .terms-equation {
-            font-size: 26px;
-            font-weight: 700;
-            color: var(--color-purple);
-            letter-spacing: 2px;
-            display: flex;
-            align-items: center;
-            gap: 14px;
-        }
-
-        .terms-pointers {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            width: 100%;
-            text-align: center;
-        }
-
-        .pointer-card {
-            background: white;
-            border: 1px solid #E2E8F0;
-            border-radius: 8px;
-            padding: 6px 4px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .pointer-card.p1 { color: #0369A1; }
-        .pointer-card.p2 { color: #B45309; }
-        .pointer-card.p3 { color: #15803D; }
-
-        .algo-steps-list {
-            list-style: none;
-            counter-reset: algo-counter;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .algo-steps-list li {
-            counter-increment: algo-counter;
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            background: #F8FAFC;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 14px;
-        }
-
-        .algo-steps-list .step-content {
-            flex: 1;
-            line-height: 1.4;
-        }
-
-        .algo-steps-list li::before {
-            content: counter(algo-counter);
-            background: var(--color-purple);
-            color: white;
-            font-weight: 700;
-            font-size: 12px;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            margin-top: 1px;
-        }
-
         /* Success Completion Overlay */
         .completion-overlay {
             position: fixed;
@@ -872,10 +758,6 @@
                 color: var(--color-primary-dark);
                 transform: translateY(-1px);
             }
-            .hint-toggle-btn:hover {
-                background: #E0E7FF;
-                color: var(--color-purple);
-            }
             .term-badge:hover {
                 transform: scale(1.06);
                 box-shadow: 0 2px 5px rgba(0,0,0,0.1);
@@ -913,7 +795,7 @@
 <body>
     <!-- Top Navigation -->
     <header class="top-nav">
-        <button id="hintModalBtn" class="nav-btn hint-toggle-btn icon-btn" data-i18n-aria-label="ld_terms_btn_aria" aria-label="Показать подсказки и алгоритм">❓</button>
+        <a id="backBtn" class="nav-btn icon-btn" href="./index.html" data-i18n-aria-label="nav_back" aria-label="Назад к играм">←</a>
         <div data-lang-toggle></div>
         <div class="level-picker">
             <button type="button" id="levelDisplay" class="level-badge" aria-haspopup="listbox" aria-expanded="false">
@@ -968,59 +850,6 @@
         <!-- Custom equation CTA -->
         <button type="button" class="custom-eq-btn" id="customEqBtn" data-i18n="ld_custom_btn">✏️ Своё выражение</button>
     </main>
-
-    <!-- Educational Terms & Algorithm Modal -->
-    <div class="modal-backdrop" id="termsModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div class="modal-title" id="modalTitle" data-i18n="ld_modal_title">📖 Памятка: Деление в столбик</div>
-                <button type="button" class="modal-close-btn" id="modalCloseBtn" aria-label="Закрыть памятку">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="hint-section">
-                    <h3 data-i18n="ld_hint_terms_h3">Термины при делении</h3>
-                    <div class="terms-diagram-box">
-                        <div class="terms-equation">
-                            <span>12</span>
-                            <span style="color:#64748B">:</span>
-                            <span>3</span>
-                            <span style="color:#64748B">=</span>
-                            <span>4</span>
-                        </div>
-                        <div class="terms-pointers">
-                            <div class="pointer-card p1">↑<br><span data-i18n="ld_term_dividend">Делимое</span></div>
-                            <div class="pointer-card p2">↑<br><span data-i18n="ld_term_divisor">Делитель</span></div>
-                            <div class="pointer-card p3">↑<br><span data-i18n="ld_term_quotient">Частное</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="hint-section">
-                    <h3 data-i18n="ld_hint_partial_h3">Неполное делимое</h3>
-                    <p style="margin-bottom: 8px;" data-i18n-html="ld_hint_partial_p1">
-                        <strong>Неполное делимое</strong> — это часть делимого, которая делится на делитель с образованием цифры частного.
-                    </p>
-                    <p style="background: #F8FAFC; padding: 8px; border-radius: 6px; font-size: 13px;" data-i18n-html="ld_hint_partial_p2">
-                        Например, в примере <code>124 : 2</code>:
-                        <br>• Первая цифра <code>1 &lt; 2</code> — разделить не можем.
-                        <br>• Берём две первые цифры — получаем число <code>12 &ge; 2</code> — это первое неполное делимое <strong>12</strong>! Над ним ставим дугу.
-                    </p>
-                </div>
-
-                <div class="hint-section">
-                    <h3 data-i18n="ld_hint_algo_h3">Алгоритм деления в столбик</h3>
-                    <ol class="algo-steps-list">
-                        <li><div class="step-content" data-i18n-html="ld_algo_1"><strong>Определить первое неполное делимое</strong> и узнать, сколько будет цифр в частном.</div></li>
-                        <li><div class="step-content" data-i18n-html="ld_algo_2"><strong>Разделить</strong> неполное делимое на делитель и записать цифру в частное.</div></li>
-                        <li><div class="step-content" data-i18n-html="ld_algo_3"><strong>Умножить</strong> делитель на цифру частного и записать результат под неполным делимым.</div></li>
-                        <li><div class="step-content" data-i18n-html="ld_algo_4"><strong>Найти остаток</strong> вычитанием.</div></li>
-                        <li><div class="step-content" data-i18n-html="ld_algo_5"><strong>Проверить</strong>, что остаток меньше делителя.</div></li>
-                        <li><div class="step-content" data-i18n-html="ld_algo_6"><strong>Снести следующую цифру</strong> делимого рядом с остатком. Повторять шаги 2–6!</div></li>
-                    </ol>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Custom Equation Modal -->
     <div class="modal-backdrop" id="customModal" role="dialog" aria-modal="true" aria-labelledby="customModalTitle">
@@ -1081,7 +910,10 @@
                         ERROR: '#FF6B6B',
                         PURPLE: '#7B61FF'
                     },
-                    maxLevel: 20
+                    maxLevel: 20,
+                    // The notebook grid never uses more than this many columns: with
+                    // more the cells and digits get too small to read on a phone.
+                    maxGridColumns: 12
                 };
             }
 
@@ -1093,6 +925,8 @@
             // and larger dividends. Levels 11-15 add one decimal digit to the
             // quotient, levels 16-20 add two. Decimal levels use divisors coprime
             // to 10 so the dividend keeps exactly the same number of decimals.
+            // Every level stays inside maxGridColumns notebook columns (see
+            // #columnCount): a longer problem would shrink the cells too much.
             #getLevelConfig(level) {
                 const table = [
                     { dMin: 2,  dMax: 4,  qMin: 11,   qMax: 33,   maxDigits: 3 },
@@ -1110,11 +944,11 @@
                     { dMin: 13, dMax: 19, qMin: 150,  qMax: 349,  maxDigits: 5, decimals: 1, coprimeTo10: true },
                     { dMin: 17, dMax: 21, qMin: 180,  qMax: 399,  maxDigits: 5, decimals: 1, coprimeTo10: true },
                     { dMin: 19, dMax: 23, qMin: 200,  qMax: 449,  maxDigits: 5, decimals: 1, coprimeTo10: true },
-                    { dMin: 13, dMax: 17, qMin: 100,  qMax: 199,  maxDigits: 6, decimals: 2, coprimeTo10: true },
-                    { dMin: 17, dMax: 19, qMin: 120,  qMax: 239,  maxDigits: 6, decimals: 2, coprimeTo10: true },
-                    { dMin: 19, dMax: 23, qMin: 140,  qMax: 279,  maxDigits: 6, decimals: 2, coprimeTo10: true },
-                    { dMin: 23, dMax: 27, qMin: 160,  qMax: 319,  maxDigits: 6, decimals: 2, coprimeTo10: true },
-                    { dMin: 27, dMax: 31, qMin: 180,  qMax: 359,  maxDigits: 6, decimals: 2, coprimeTo10: true }
+                    { dMin: 13, dMax: 17, qMin: 12,   qMax: 76,   maxDigits: 5, decimals: 2, coprimeTo10: true },
+                    { dMin: 17, dMax: 19, qMin: 13,   qMax: 58,   maxDigits: 5, decimals: 2, coprimeTo10: true },
+                    { dMin: 19, dMax: 23, qMin: 14,   qMax: 52,   maxDigits: 5, decimals: 2, coprimeTo10: true },
+                    { dMin: 23, dMax: 27, qMin: 15,   qMax: 43,   maxDigits: 5, decimals: 2, coprimeTo10: true },
+                    { dMin: 27, dMax: 31, qMin: 16,   qMax: 37,   maxDigits: 5, decimals: 2, coprimeTo10: true }
                 ];
                 const index = Math.min(Math.max(level, 1), table.length) - 1;
                 return table[index];
@@ -1161,6 +995,9 @@
                     const integerDigits = dividendDigits.length - decimals;
                     if (integerDigits < 1) continue;
                     if (cfg.minIntegerDigits && integerDigits < cfg.minIntegerDigits) continue;
+                    // Keep the notebook grid inside the column budget, otherwise the
+                    // cells get too small to read on a phone.
+                    if (this.#columnCount(dividendDigits, decimals, divisor) > this.#config.maxGridColumns) continue;
 
                     const problem = { dividendDigits, dividendDecimals: decimals, divisor };
                     if (cfg.forceFirst && Number(dividendDigits[0]) >= divisor) {
@@ -1184,9 +1021,6 @@
                     mathGrid: document.getElementById('mathGrid'),
                     arcContainer: document.getElementById('arcContainer'),
                     numpadGrid: document.getElementById('numpadGrid'),
-                    termsModal: document.getElementById('termsModal'),
-                    hintModalBtn: document.getElementById('hintModalBtn'),
-                    modalCloseBtn: document.getElementById('modalCloseBtn'),
                     completionOverlay: document.getElementById('completionOverlay'),
                     completionEquation: document.getElementById('completionEquation'),
                     nextProblemBtn: document.getElementById('nextProblemBtn'),
@@ -1241,10 +1075,6 @@
 
                 // Physical keyboard support
                 window.addEventListener('keydown', (e) => {
-                    if (this.#elements.termsModal.classList.contains('open')) {
-                        if (e.key === 'Escape') this.#toggleModal(false);
-                        return;
-                    }
                     if (this.#elements.customModal.classList.contains('open')) {
                         if (e.key === 'Escape') this.#toggleCustomModal(false);
                         return;
@@ -1286,15 +1116,12 @@
                     });
                 });
 
-                // Window resize for arc alignment
-                window.addEventListener('resize', () => this.#updateArc());
-
-                // Hint modal toggle
-                this.#elements.hintModalBtn.addEventListener('click', () => this.#toggleModal(true));
-                this.#elements.modalCloseBtn.addEventListener('click', () => this.#toggleModal(false));
-                this.#elements.termsModal.addEventListener('click', (e) => {
-                    if (e.target === this.#elements.termsModal) this.#toggleModal(false);
+                // Window resize for arc alignment and cell sizing
+                window.addEventListener('resize', () => {
+                    this.#applyCellSize();
+                    this.#updateArc();
                 });
+
 
                 // Completion next button
                 this.#elements.nextProblemBtn.addEventListener('click', () => this.#startNewRound());
@@ -1348,13 +1175,6 @@
                 });
             }
 
-            #toggleModal(open) {
-                if (open) {
-                    this.#elements.termsModal.classList.add('open');
-                } else {
-                    this.#elements.termsModal.classList.remove('open');
-                }
-            }
 
             #toggleCustomModal(open) {
                 this.#elements.customModal.classList.toggle('open', open);
@@ -1404,6 +1224,13 @@
 
                 const dividendDigits = baseDigits + '0'.repeat(extraDecimals);
                 if (dividendDigits.length > 8) {
+                    this.#showCustomError('ld_custom_err_too_big');
+                    return;
+                }
+
+                // Same column budget as the generated levels: a longer example would
+                // shrink the grid cells until the digits are unreadable.
+                if (this.#columnCount(dividendDigits, userDecimals + extraDecimals, divisor) > this.#config.maxGridColumns) {
                     this.#showCustomError('ld_custom_err_too_big');
                     return;
                 }
@@ -1564,27 +1391,17 @@
                 const s = this.#state.dividendDigits;
                 const d = this.#state.divisor;
                 const decimals = this.#state.dividendDecimals;
-                const integerDigitCount = s.length - decimals;
+                const plan = this.#planSize(s, decimals, d);
 
-                this.#state.integerDigitCount = integerDigitCount;
-
-                let idx = 1;
-                let incVal = Number(s.slice(0, idx));
-
-                while (incVal < d && idx < s.length) {
-                    idx++;
-                    incVal = Number(s.slice(0, idx));
-                }
-
-                this.#state.quotientLen = 1 + (s.length - idx);
+                this.#state.integerDigitCount = plan.integerDigitCount;
+                this.#state.integerQuotientDigits = plan.integerQuotientDigits;
+                this.#state.quotientLen = plan.quotientLen;
                 this.#state.quotientDecimals = decimals;
-                this.#state.integerQuotientDigits = Math.max(0, 1 + (integerDigitCount - idx));
-                this.#state.quotientLeadingZeros =
-                    (this.#state.integerQuotientDigits === 0 && decimals > 0) ? 1 : 0;
+                this.#state.quotientLeadingZeros = plan.quotientLeadingZeros;
                 const steps = [];
 
-                let currVal = incVal;
-                let currentDigitIndex = idx;
+                let currVal = plan.incVal;
+                let currentDigitIndex = plan.idx;
 
                 while (true) {
                     const qDigit = Math.floor(currVal / d);
@@ -1594,7 +1411,7 @@
                     const nextDigit = hasNext ? Number(s[currentDigitIndex]) : null;
 
                     steps.push({
-                        incVal,
+                        incVal: currVal,
                         qDigit,
                         prod,
                         rem,
@@ -1608,7 +1425,6 @@
                     if (hasNext) {
                         currVal = rem * 10 + nextDigit;
                         currentDigitIndex++;
-                        incVal = currVal;
                     } else {
                         break;
                     }
@@ -1616,6 +1432,42 @@
 
                 this.#state.steps = steps;
                 this.#state.quotientDigits = steps.map((step) => String(step.qDigit)).join('');
+            }
+
+            // How many dividend digits the first partial dividend takes and how many
+            // digits (comma excluded) the quotient gets. Shared by the algorithm plan,
+            // the column budget and the grid renderer.
+            #planSize(dividendDigits, decimals, divisor) {
+                let idx = 1;
+                let incVal = Number(dividendDigits.slice(0, idx));
+
+                while (incVal < divisor && idx < dividendDigits.length) {
+                    idx++;
+                    incVal = Number(dividendDigits.slice(0, idx));
+                }
+
+                const integerDigitCount = dividendDigits.length - decimals;
+                const integerQuotientDigits = Math.max(0, 1 + (integerDigitCount - idx));
+
+                return {
+                    idx,
+                    incVal,
+                    integerDigitCount,
+                    integerQuotientDigits,
+                    quotientLen: 1 + (dividendDigits.length - idx),
+                    quotientLeadingZeros: (integerQuotientDigits === 0 && decimals > 0) ? 1 : 0
+                };
+            }
+
+            // Total notebook columns this problem needs: column 0 is the sign gutter,
+            // then the dividend (plus its comma) and finally whichever is wider, the
+            // divisor or the quotient row. Mirrors #buildGrid().
+            #columnCount(dividendDigits, decimals, divisor) {
+                const commaOffset = decimals > 0 ? 1 : 0;
+                const { quotientLen, quotientLeadingZeros } = this.#planSize(dividendDigits, decimals, divisor);
+
+                return 1 + dividendDigits.length + commaOffset +
+                    Math.max(String(divisor).length, quotientLen + commaOffset + quotientLeadingZeros);
             }
 
             #dividendColOfDigit(index) {
@@ -1740,10 +1592,16 @@
                 const commaOffset = decimals > 0 ? 1 : 0;
                 const leadingZeros = this.#state.quotientLeadingZeros;
 
+                // Column 0 is the sign gutter: the "−" of the first subtraction is
+                // written there (the product under the first partial dividend starts
+                // at column 1). No trailing column is reserved — the widest content
+                // is either the divisor or the quotient row.
                 const dividendColStart = 1;
                 const divisorCol = dividendColStart + sDividend.length + commaOffset;
-                const totalCols = divisorCol + Math.max(sDivisor.length, qLen + commaOffset + leadingZeros) + 1;
-                const totalRows = 1 + (this.#state.steps.length * 2) + 1;
+                const totalCols = this.#columnCount(sDividend, decimals, this.#state.divisor);
+                // One row for the dividend, one for the quotient/divisor corner, then
+                // two rows (product, remainder) per division step.
+                const totalRows = 1 + (this.#state.steps.length * 2);
 
                 this.#state.dividendColStart = dividendColStart;
                 this.#state.divisorCol = divisorCol;
@@ -1800,16 +1658,7 @@
                 const grid = this.#elements.mathGrid;
                 grid.innerHTML = '';
 
-                if (this.#state.numCols > 12) {
-                    grid.style.setProperty('--cell-size', 'clamp(22px, 5vw, 28px)');
-                    grid.style.setProperty('--cell-font-size', 'clamp(14px, 3.8vw, 18px)');
-                } else if (this.#state.numCols > 9) {
-                    grid.style.setProperty('--cell-size', 'clamp(27px, 6.5vw, 34px)');
-                    grid.style.setProperty('--cell-font-size', 'clamp(16px, 4.2vw, 21px)');
-                } else {
-                    grid.style.setProperty('--cell-size', 'clamp(32px, 7vw, 40px)');
-                    grid.style.setProperty('--cell-font-size', 'clamp(18px, 4.5vw, 24px)');
-                }
+                this.#applyCellSize();
 
                 grid.style.gridTemplateColumns = `repeat(${this.#state.numCols}, var(--cell-size))`;
                 grid.style.gridTemplateRows = `repeat(${this.#state.numRows}, var(--cell-size))`;
@@ -1826,6 +1675,21 @@
                 }
 
                 this.#updateArc();
+            }
+
+            // The notebook grid is the main content, so cells grow to fill the free
+            // width. They only shrink (down to a readable floor) when a long problem
+            // needs more columns than fit on screen.
+            #applyCellSize() {
+                const grid = this.#elements.mathGrid;
+                const board = this.#elements.boardContainer;
+                const cols = this.#state.numCols || 1;
+                // 6px reserve for the grid border (1px) + padding (1px) plus slack,
+                // so the board never needs a horizontal scrollbar.
+                const available = (board ? board.clientWidth : 360) - 6;
+                const cell = Math.max(20, Math.min(48, Math.floor(available / cols)));
+                grid.style.setProperty('--cell-size', `${cell}px`);
+                grid.style.setProperty('--cell-font-size', `${Math.max(14, Math.min(26, Math.round(cell * 0.58)))}px`);
             }
 
             #updateArc() {

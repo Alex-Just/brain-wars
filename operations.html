@@ -218,6 +218,38 @@
         }
 
         /* Level display */
+        /* Back to the game list + language pill, pinned top-left */
+        .top-left-nav {
+            position: fixed;
+            top: max(15px, env(safe-area-inset-top));
+            left: max(15px, env(safe-area-inset-left));
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 1000;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 44px;
+            min-height: 44px;
+            background: white;
+            border: 1px solid rgba(0,0,0,0.08);
+            border-radius: 10px;
+            color: var(--color-text-secondary, #666);
+            font-size: 20px;
+            line-height: 1;
+            text-decoration: none;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .back-btn:active {
+            background: #f8fafc;
+            transform: scale(0.97);
+        }
+
         #levelDisplay {
             position: fixed;
             top: max(15px, env(safe-area-inset-top));
@@ -574,7 +606,10 @@
     </style>
 </head>
 <body>
-    <div data-lang-toggle style="position: fixed; top: max(15px, env(safe-area-inset-top)); left: max(15px, env(safe-area-inset-left)); z-index: 1000;"></div>
+    <div class="top-left-nav">
+        <a id="backBtn" class="back-btn" href="./index.html" data-i18n-aria-label="nav_back" aria-label="Назад к играм">←</a>
+        <div data-lang-toggle></div>
+    </div>
     <main class="game" id="game">
         <div class="level-display" id="levelDisplay" role="status" aria-live="polite">Уровень 1</div>
         <div class="equation" id="equation" aria-live="polite">

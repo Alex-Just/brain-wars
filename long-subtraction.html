@@ -121,25 +121,6 @@
             line-height: 1;
         }
 
-        .icon-btn.hint-toggle-btn {
-            font-size: 17px;
-        }
-
-        .hint-toggle-btn {
-            background: var(--color-purple-light);
-            color: var(--color-purple-dark);
-            border: 1px solid rgba(123, 97, 255, 0.2);
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .hint-toggle-btn:active {
-            background: #E0E7FF;
-            color: var(--color-purple-dark);
-        }
-
         .level-picker {
             position: relative;
         }
@@ -228,7 +209,7 @@
             background: white;
             border-radius: var(--radius-lg);
             box-shadow: var(--shadow-card);
-            padding: 16px 12px;
+            padding: 12px 10px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -240,8 +221,8 @@
             width: 100%;
             background: #f8fafc;
             border-radius: var(--radius-md);
-            padding: 10px 12px;
-            margin-bottom: 10px;
+            padding: 8px 10px;
+            margin-bottom: 8px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -261,23 +242,26 @@
         }
 
         /* Terminology Tags Strip */
+        /* Terminology Tags Strip — one compact row so the grid keeps the space */
         .terms-strip {
             width: 100%;
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 10px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+            gap: 5px;
+            margin-bottom: 6px;
         }
 
         .term-badge {
-            font-size: 12px;
+            font-size: 11px;
+            line-height: 1.15;
             font-weight: 600;
-            padding: 10px 14px;
-            min-height: 44px;
+            padding: 6px 6px;
+            min-height: 36px;
             display: inline-flex;
             align-items: center;
-            border-radius: 22px;
+            justify-content: center;
+            text-align: center;
+            border-radius: 14px;
             cursor: pointer;
             transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
         }
@@ -313,7 +297,7 @@
             overflow-x: auto;
             display: flex;
             justify-content: center;
-            padding: 16px 0 10px 0;
+            padding: 10px 0 8px 0;
             position: relative;
         }
 
@@ -422,11 +406,12 @@
 
         .carry-badge {
             position: absolute;
-            top: 1px;
+            top: 0;
             right: 2px;
-            font-size: 10px;
+            /* Slightly larger than before and growing with the notebook cell */
+            font-size: clamp(12px, calc(var(--cell-size) * 0.3), 15px);
             font-weight: 700;
-            line-height: 1;
+            line-height: 1.1;
             color: var(--color-error-dark);
             pointer-events: none;
         }
@@ -493,10 +478,10 @@
 
         /* Custom equation CTA */
         .custom-eq-btn {
-            margin-top: 12px;
+            margin-top: 8px;
             width: 100%;
             max-width: 310px;
-            min-height: 48px;
+            min-height: 44px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -597,100 +582,6 @@
             font-size: 14px;
             line-height: 1.5;
             color: #475569;
-        }
-
-        .hint-section {
-            margin-bottom: 18px;
-        }
-
-        .hint-section h3 {
-            font-size: 15px;
-            font-weight: 700;
-            color: var(--color-purple-dark);
-            margin-bottom: 8px;
-        }
-
-        .terms-diagram-box {
-            background: #F8FAFC;
-            border: 1px solid #E2E8F0;
-            border-radius: var(--radius-md);
-            padding: 14px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 12px;
-            margin: 10px 0;
-        }
-
-        .terms-equation {
-            font-size: 26px;
-            font-weight: 700;
-            color: var(--color-purple);
-            letter-spacing: 2px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .terms-pointers {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            width: 100%;
-            text-align: center;
-        }
-
-        .pointer-card {
-            background: white;
-            border: 1px solid #E2E8F0;
-            border-radius: 8px;
-            padding: 6px 4px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .pointer-card.p1 { color: #0369A1; }
-        .pointer-card.p2 { color: #B45309; }
-        .pointer-card.p3 { color: #15803D; }
-
-        .algo-steps-list {
-            list-style: none;
-            counter-reset: algo-counter;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .algo-steps-list li {
-            counter-increment: algo-counter;
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            background: #F8FAFC;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 14px;
-        }
-
-        .algo-steps-list .step-content {
-            flex: 1;
-            line-height: 1.4;
-        }
-
-        .algo-steps-list li::before {
-            content: counter(algo-counter);
-            background: var(--color-purple);
-            color: white;
-            font-weight: 700;
-            font-size: 12px;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            margin-top: 1px;
         }
 
         /* Custom equation form */
@@ -868,10 +759,6 @@
                 color: var(--color-primary-dark);
                 transform: translateY(-1px);
             }
-            .hint-toggle-btn:hover {
-                background: #E0E7FF;
-                color: var(--color-purple);
-            }
             .term-badge:hover {
                 transform: scale(1.06);
                 box-shadow: 0 2px 5px rgba(0,0,0,0.1);
@@ -908,7 +795,7 @@
 <body>
     <!-- Top Navigation -->
     <header class="top-nav">
-        <button id="hintModalBtn" class="nav-btn hint-toggle-btn icon-btn" data-i18n-aria-label="ls_terms_btn_aria" aria-label="Показать подсказки и алгоритм">❓</button>
+        <a id="backBtn" class="nav-btn icon-btn" href="./index.html" data-i18n-aria-label="nav_back" aria-label="Назад к играм">←</a>
         <div data-lang-toggle></div>
         <div class="level-picker">
             <button type="button" id="levelDisplay" class="level-badge" aria-haspopup="listbox" aria-expanded="false">
@@ -962,52 +849,6 @@
         <!-- Custom equation CTA -->
         <button type="button" class="custom-eq-btn" id="customEqBtn" data-i18n="ls_custom_btn">✏️ Своё выражение</button>
     </main>
-
-    <!-- Educational Guide Modal -->
-    <div class="modal-backdrop" id="termsModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div class="modal-title" id="modalTitle" data-i18n="ls_modal_title">📖 Памятка: Вычитание в столбик</div>
-                <button type="button" class="modal-close-btn" id="modalCloseBtn" aria-label="Закрыть памятку">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="hint-section">
-                    <h3 data-i18n="ls_hint_terms_h3">Термины при вычитании</h3>
-                    <div class="terms-diagram-box">
-                        <div class="terms-equation">
-                            <span>12</span>
-                            <span style="color:#64748B">−</span>
-                            <span>5</span>
-                            <span style="color:#64748B">=</span>
-                            <span>7</span>
-                        </div>
-                        <div class="terms-pointers">
-                            <div class="pointer-card p1">↑<br><span data-i18n="ls_term_minuend">Уменьшаемое</span></div>
-                            <div class="pointer-card p2">↑<br><span data-i18n="ls_term_subtrahend">Вычитаемое</span></div>
-                            <div class="pointer-card p3">↑<br><span data-i18n="ls_term_difference">Разность</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="hint-section">
-                    <h3 data-i18n="ls_hint_borrow_h3">Заём</h3>
-                    <p style="background: #F8FAFC; padding: 8px; border-radius: 6px; font-size: 13px;" data-i18n-html="ls_hint_borrow_p1">
-                        Если верхняя цифра меньше нижней, <strong>занимаем десяток</strong> у следующего разряда слева и ставим над ним точку.
-                    </p>
-                </div>
-
-                <div class="hint-section">
-                    <h3 data-i18n="ls_hint_algo_h3">Алгоритм вычитания в столбик</h3>
-                    <ol class="algo-steps-list">
-                        <li><div class="step-content" data-i18n-html="ls_algo_1"><strong>Запиши числа</strong> друг под другом, выравнивая цифры справа.</div></li>
-                        <li><div class="step-content" data-i18n-html="ls_algo_2"><strong>Вычитай цифры</strong> по столбикам, начиная справа.</div></li>
-                        <li><div class="step-content" data-i18n-html="ls_algo_3"><strong>Если верхняя цифра меньше</strong>, займи десяток у следующего разряда и поставь над ним точку.</div></li>
-                        <li><div class="step-content" data-i18n-html="ls_algo_4"><strong>Проверь результат:</strong> сложи разность и вычитаемое.</div></li>
-                    </ol>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Custom Equation Modal -->
     <div class="modal-backdrop" id="customModal" role="dialog" aria-modal="true" aria-labelledby="customModalTitle">
@@ -1063,7 +904,10 @@
             #initConfig() {
                 this.#config = {
                     maxLevel: 20,
-                    maxResultDigits: 8
+                    maxResultDigits: 8,
+                    // The notebook grid never uses more than this many columns: with
+                    // more the cells and digits get too small to read on a phone.
+                    maxGridColumns: 12
                 };
             }
 
@@ -1077,9 +921,6 @@
                     mathGrid: document.getElementById('mathGrid'),
                     commaLayer: document.getElementById('commaLayer'),
                     numpadGrid: document.getElementById('numpadGrid'),
-                    termsModal: document.getElementById('termsModal'),
-                    hintModalBtn: document.getElementById('hintModalBtn'),
-                    modalCloseBtn: document.getElementById('modalCloseBtn'),
                     completionOverlay: document.getElementById('completionOverlay'),
                     completionEquation: document.getElementById('completionEquation'),
                     nextProblemBtn: document.getElementById('nextProblemBtn'),
@@ -1128,10 +969,6 @@
 
                 // Physical keyboard support
                 window.addEventListener('keydown', (e) => {
-                    if (this.#elements.termsModal.classList.contains('open')) {
-                        if (e.key === 'Escape') this.#toggleModal(false);
-                        return;
-                    }
                     if (this.#elements.customModal.classList.contains('open')) {
                         if (e.key === 'Escape') this.#toggleCustomModal(false);
                         return;
@@ -1173,14 +1010,11 @@
                 });
 
                 // Window resize for comma alignment
-                window.addEventListener('resize', () => this.#renderCommas());
-
-                // Hint modal toggle
-                this.#elements.hintModalBtn.addEventListener('click', () => this.#toggleModal(true));
-                this.#elements.modalCloseBtn.addEventListener('click', () => this.#toggleModal(false));
-                this.#elements.termsModal.addEventListener('click', (e) => {
-                    if (e.target === this.#elements.termsModal) this.#toggleModal(false);
+                window.addEventListener('resize', () => {
+                    this.#applyCellSize();
+                    this.#renderCommas();
                 });
+
 
                 // Completion next button
                 this.#elements.nextProblemBtn.addEventListener('click', () => this.#startNewRound());
@@ -1355,6 +1189,10 @@
                     if (cfg.borrow && !borrow) continue;
                     if (cfg.needZero && !this.#hasInnerZero(firstDigits, k1)) continue;
 
+                    // Keep the notebook grid inside the column budget, otherwise the
+                    // cells get too small to read on a phone.
+                    if (this.#geometry(firstDigits, k1, secondDigits, k2).numCols > this.#config.maxGridColumns) continue;
+
                     return {
                         firstDigits,
                         firstDecimals: k1,
@@ -1394,26 +1232,39 @@
                 this.#promptCurrentStep();
             }
 
-            #computeGeometry() {
-                const s = this.#state;
-                const scale = Math.max(s.firstDecimals, s.secondDecimals);
-                const firstScaled = this.#scaledDigits(s.firstDigits, s.firstDecimals, scale);
-                const secondScaled = this.#scaledDigits(s.secondDigits, s.secondDecimals, scale);
-
-                s.resultDecimals = scale;
-                s.resultDigits = String(Number(firstScaled) - Number(secondScaled));
-
+            // Sign gutter + the widest operand or result + the decimal places. No
+            // trailing column is reserved, so the right-most cell always holds a digit.
+            #geometry(firstDigits, firstDecimals, secondDigits, secondDecimals) {
+                const scale = Math.max(firstDecimals, secondDecimals);
+                const firstScaled = this.#scaledDigits(firstDigits, firstDecimals, scale);
+                const secondScaled = this.#scaledDigits(secondDigits, secondDecimals, scale);
+                const resultDigits = String(Number(firstScaled) - Number(secondScaled));
                 const integerColumns = Math.max(
                     firstScaled.length - scale,
                     secondScaled.length - scale,
-                    s.resultDigits.length - scale
+                    resultDigits.length - scale
                 );
 
-                const padding = 1;
-                s.baseCol = padding + integerColumns;
-                s.numCols = padding + integerColumns + 1 + scale + padding;
-                s.numRows = 4;
-                s.resultRow = 3;
+                // Column 0 is the single sign/carry gutter: the operands start there.
+                return {
+                    scale,
+                    resultDigits,
+                    baseCol: integerColumns,
+                    numCols: integerColumns + 1 + scale
+                };
+            }
+
+            #computeGeometry() {
+                const s = this.#state;
+                const geometry = this.#geometry(s.firstDigits, s.firstDecimals, s.secondDigits, s.secondDecimals);
+
+                s.resultDecimals = geometry.scale;
+                s.resultDigits = geometry.resultDigits;
+                s.baseCol = geometry.baseCol;
+                s.numCols = geometry.numCols;
+                // Operands on rows 0-1 and the result right below the line on row 2.
+                s.numRows = 3;
+                s.resultRow = 2;
             }
 
             #computePlan() {
@@ -1517,16 +1368,7 @@
                 const grid = this.#elements.mathGrid;
                 grid.innerHTML = '';
 
-                if (this.#state.numCols > 12) {
-                    grid.style.setProperty('--cell-size', 'clamp(22px, 5vw, 28px)');
-                    grid.style.setProperty('--cell-font-size', 'clamp(14px, 3.8vw, 18px)');
-                } else if (this.#state.numCols > 9) {
-                    grid.style.setProperty('--cell-size', 'clamp(27px, 6.5vw, 34px)');
-                    grid.style.setProperty('--cell-font-size', 'clamp(16px, 4.2vw, 21px)');
-                } else {
-                    grid.style.setProperty('--cell-size', 'clamp(32px, 7vw, 40px)');
-                    grid.style.setProperty('--cell-font-size', 'clamp(18px, 4.5vw, 24px)');
-                }
+                this.#applyCellSize();
 
                 grid.style.gridTemplateColumns = `repeat(${this.#state.numCols}, var(--cell-size))`;
                 grid.style.gridTemplateRows = `repeat(${this.#state.numRows}, var(--cell-size))`;
@@ -1541,6 +1383,21 @@
                         grid.appendChild(cellEl);
                     }
                 }
+            }
+
+            // The notebook grid is the main content, so cells grow to fill the free
+            // width. They only shrink (down to a readable floor) when a long problem
+            // needs more columns than fit on screen.
+            #applyCellSize() {
+                const grid = this.#elements.mathGrid;
+                const board = this.#elements.boardContainer;
+                const cols = this.#state.numCols || 1;
+                // 6px reserve for the grid border (1px) + padding (1px) plus slack,
+                // so the board never needs a horizontal scrollbar.
+                const available = (board ? board.clientWidth : 360) - 6;
+                const cell = Math.max(20, Math.min(48, Math.floor(available / cols)));
+                grid.style.setProperty('--cell-size', `${cell}px`);
+                grid.style.setProperty('--cell-font-size', `${Math.max(14, Math.min(26, Math.round(cell * 0.58)))}px`);
             }
 
             // Decimal points are aligned, so one boundary per row is enough.
@@ -1892,9 +1749,6 @@
             // Modals
             // ---------------------------------------------------------------
 
-            #toggleModal(open) {
-                this.#elements.termsModal.classList.toggle('open', open);
-            }
 
             #toggleCustomModal(open) {
                 this.#elements.customModal.classList.toggle('open', open);
@@ -1934,6 +1788,13 @@
                 const second = Number(this.#scaledDigits(subtrahend.digits, subtrahend.decimals, scale));
                 if (first < second) {
                     this.#showCustomError('ls_custom_err_order');
+                    return;
+                }
+
+                // Same column budget as the generated levels: a longer example would
+                // shrink the grid cells until the digits are unreadable.
+                if (this.#geometry(minuend.digits, minuend.decimals, subtrahend.digits, subtrahend.decimals).numCols > this.#config.maxGridColumns) {
+                    this.#showCustomError('ls_custom_err_too_big');
                     return;
                 }
 
