@@ -13,6 +13,8 @@
     'use strict';
 
     const RUN_KEY = 'brainwars_challenge_v1';
+    // Language chosen on the challenge page before a run exists
+    const LANG_KEY = 'brainwars_challenge_lang_v1';
     const PAGE = 'challenge.html';
     const PARAM = 'challenge';
     const LIMITS = { games: [1, 50], level: [1, 20] };
@@ -54,6 +56,40 @@
         }
     }
 
+    // A language picked by hand sticks for the run, or for the next one when no run exists yet
+    function rememberManualLanguage(lang) {
+        const current = loadRun();
+        if (current) {
+            current.lang = lang;
+            saveRun(current);
+            return;
+        }
+        try {
+            global.localStorage.setItem(LANG_KEY, lang);
+        } catch (error) {
+            /* private mode */
+        }
+    }
+
+    function takePendingLanguage() {
+        try {
+            const lang = global.localStorage.getItem(LANG_KEY);
+            if (lang) global.localStorage.removeItem(LANG_KEY);
+            return lang || null;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function watchLanguageChoice() {
+        // Capture phase: the language buttons stop propagation of their own clicks
+        document.addEventListener('click', (event) => {
+            const button = event.target.closest('.lang-btn');
+            if (!button || !button.dataset.lang) return;
+            rememberManualLanguage(button.dataset.lang);
+        }, true);
+    }
+
     function shuffle(list) {
         const copy = list.slice();
         for (let i = copy.length - 1; i > 0; i--) {
@@ -82,6 +118,7 @@
         const run = {
             total: queue.length,
             level: clamp(level, LIMITS.level),
+            lang: takePendingLanguage(),
             queue: queue.slice(1),
             current: queue[0],
             solved: 0,
@@ -109,6 +146,8 @@
         clearRun: clearRun,
         createRun: createRun,
         stepUrl: stepUrl,
+        // Remember a language the player picks by hand, on the setup page or in a step
+        watchLanguageChoice: watchLanguageChoice,
         // Starting level for games that read it while setting up their round
         startLevel: () => (active ? run.level : 1)
     };
@@ -147,16 +186,6 @@
         if (others.length) {
             global.I18n.setLang(others[Math.floor(Math.random() * others.length)]);
         }
-    }
-
-    function watchManualLanguage() {
-        // Capture phase: the language buttons stop propagation of their own clicks
-        document.addEventListener('click', (event) => {
-            const button = event.target.closest('.lang-btn');
-            if (!button || !button.dataset.lang) return;
-            run.lang = button.dataset.lang;
-            saveRun(run);
-        }, true);
     }
 
     applyStepLanguage();
@@ -310,7 +339,7 @@
         const flag = mountBar();
         pointBackLink();
         hideLevelPicker();
-        watchManualLanguage();
+        watchLanguageChoice();
         watchSignals(flag);
         // The game builds its own DOM (level menu, board) in its own DOMContentLoaded handler
         global.addEventListener('load', pinLevel);
