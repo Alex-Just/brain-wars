@@ -248,6 +248,12 @@
             body.has-challenge #customEqBtn {
                 display: none;
             }
+            /* Nor do the games' own "solved!" screens: the run moves straight on.
+               Hidden with CSS so they never flash before the step advances. */
+            body.has-challenge .completion-overlay,
+            body.has-challenge #instructions {
+                display: none !important;
+            }
         `;
         document.head.appendChild(style);
     }
@@ -315,6 +321,8 @@
     // A step with mistakes only lights the warning dot in the bar.
     function finishStep(flag) {
         if (run.dirty && flag) flag.hidden = false;
+        // No stray taps while the next game is loading (some games advance on a tap)
+        document.body.style.pointerEvents = 'none';
         global.setTimeout(() => { global.location.href = completeStep(); }, ADVANCE_MS);
     }
 
