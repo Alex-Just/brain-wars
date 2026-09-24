@@ -337,6 +337,12 @@
             justify-content: center;
             gap: 8px;
             padding: 2px 0;
+            transition: opacity 0.2s ease;
+        }
+
+        /* The item only matters from question b) on, so it starts dimmed like a locked step */
+        .item-row.is-locked {
+            opacity: 0.4;
         }
 
         .item-emoji {
@@ -1045,6 +1051,7 @@
                     itemEmoji: document.getElementById('itemEmoji'),
                     itemName: document.getElementById('itemName'),
                     itemPrice: document.getElementById('itemPrice'),
+                    itemRow: document.getElementById('itemRow'),
                     steps: document.getElementById('steps'),
                     stepCShort: document.getElementById('stepCShort'),
                     partA: document.querySelector('.answer-inputs[data-part="a"]'),
@@ -1212,6 +1219,9 @@
                     el.classList.toggle('is-done', this.#state.done[step]);
                     el.classList.toggle('is-locked', !this.#state.done[step] && !previousDone);
                 });
+
+                // The item is only asked about from question b) on
+                this.#elements.itemRow.classList.toggle('is-locked', !this.#state.done.a);
 
                 // Answer values
                 this.#elements.amountBoxes.forEach(box => {
