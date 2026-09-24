@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title data-i18n="game_money">Задачи про деньги</title>
     <script src="i18n.js"></script>
+    <script src="games.js"></script>
+    <script src="challenge.js"></script>
     <style>
         :root {
             /* Colors */
@@ -912,22 +914,6 @@
             // generated. Difficulty grows in three ways: more denominations and
             // lines, larger amounts, and items whose price is closer to the total.
             #createProblem(level) {
-                if (level === 1) {
-                    // Lucía: 2 notes of 5 €, 6 coins of 1 €, 4 coins of 10 cts, a book for 12 €
-                    return {
-                        lines: [
-                            { value: 500, count: 2 },
-                            { value: 100, count: 6 },
-                            { value: 10, count: 4 }
-                        ],
-                        total: 1640,
-                        price: 1200,
-                        itemKey: 'mp_item_book',
-                        afford: true,
-                        delta: 440
-                    };
-                }
-
                 const cfg = this.#getLevelConfig(level);
                 for (let attempt = 0; attempt < 200; attempt++) {
                     const itemKey = cfg.items[this.#randomInt(0, cfg.items.length - 1)];
@@ -968,7 +954,9 @@
                 const large = ['mp_item_teddy', 'mp_item_backpack', 'mp_item_headphones'];
                 const huge = ['mp_item_backpack', 'mp_item_headphones', 'mp_item_bike'];
                 const table = [
-                    null, // level 1 is the worksheet itself
+                    // Level 1 keeps the worksheet's pieces (5 € notes, 1 € and 10 cts coins)
+                    // but draws the amounts, like every other level.
+                    { denoms: [500, 100, 10], lines: [3, 3], afford: 'yes', items: small, maxPrice: 2000 },
                     { denoms: [500, 100, 10], lines: [2, 3], afford: 'yes', items: small, maxPrice: 3000 },
                     { denoms: [500, 100, 200, 10], lines: [2, 3], afford: 'yes', items: small, maxPrice: 3000 },
                     { denoms: [500, 1000, 100, 200, 10], lines: [2, 3], afford: 'yes', items: small, maxPrice: 4000 },
