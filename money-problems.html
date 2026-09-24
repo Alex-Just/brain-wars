@@ -1,0 +1,1489 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="game_money">Задачи про деньги</title>
+    <script src="i18n.js"></script>
+    <style>
+        :root {
+            /* Colors */
+            --color-primary: #60ACBD;
+            --color-primary-dark: #4d8a98;
+            --color-primary-text: #3B6D78;
+            --color-primary-light: #e0f2fe;
+            --color-success: #4CAF50;
+            --color-success-dark: #2E7D32;
+            --color-error: #FF6B6B;
+            --color-error-dark: #D32F2F;
+            --color-text: #333333;
+            --color-text-secondary: #666666;
+            --color-text-light: #999999;
+            --color-background: #f5f5f5;
+
+            /* Educational accents */
+            --color-purple: #7B61FF;
+            --color-purple-text: #6D4FD8;
+            --color-purple-light: #EDE9FE;
+            --color-amber: #F59E0B;
+            --color-amber-light: #FEF3C7;
+
+            /* Money colors */
+            --bill-border: #60ACBD;
+            --bill-fill: #e8f4f8;
+            --coin-border: #E0A800;
+            --coin-fill: #FFF6DD;
+
+            /* Radii & Shadows */
+            --radius-sm: 6px;
+            --radius-md: 12px;
+            --radius-lg: 20px;
+            --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --shadow-btn: 0 4px 12px rgba(0, 0, 0, 0.06);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :focus-visible {
+            outline: 3px solid var(--color-primary-text);
+            outline-offset: 2px;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--color-background);
+            color: var(--color-text);
+            min-height: 100vh;
+            min-height: 100svh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 12px 8px;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+            overflow-x: hidden;
+            overflow-y: auto;
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+        }
+
+        @supports (padding: max(0px)) {
+            body {
+                padding-top: max(12px, env(safe-area-inset-top));
+                padding-bottom: max(12px, env(safe-area-inset-bottom));
+                padding-left: max(8px, env(safe-area-inset-left));
+                padding-right: max(8px, env(safe-area-inset-right));
+            }
+        }
+
+        /* Header Navigation */
+        .top-nav {
+            width: min(94vw, 380px);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            gap: 8px;
+            flex-wrap: wrap;
+            z-index: 10;
+        }
+
+        .nav-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border: 1px solid rgba(0,0,0,0.08);
+            color: var(--color-text-secondary);
+            border-radius: 10px;
+            min-height: 44px;
+            padding: 10px 14px;
+            font-size: 14px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .nav-btn:active {
+            background-color: #f8fafc;
+            color: var(--color-primary-dark);
+            transform: scale(0.97);
+        }
+
+        .icon-btn {
+            min-width: 44px;
+            padding: 10px 12px;
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        .level-picker {
+            position: relative;
+        }
+
+        .level-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(0, 0, 0, 0.08);
+            color: var(--color-text-secondary);
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 600;
+            min-height: 44px;
+            padding: 10px 12px;
+            border: 1px solid transparent;
+            border-radius: 10px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background-color 0.15s ease;
+        }
+
+        .level-badge:active,
+        .level-badge[aria-expanded="true"] {
+            background: rgba(0, 0, 0, 0.14);
+        }
+
+        .level-caret {
+            font-size: 11px;
+            line-height: 1;
+            color: var(--color-primary-text);
+        }
+
+        .level-menu {
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            z-index: 30;
+            display: none;
+            grid-template-columns: repeat(4, 44px);
+            gap: 6px;
+            padding: 8px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+            max-height: min(60vh, 60dvh);
+            overflow-y: auto;
+        }
+
+        .level-menu.open {
+            display: grid;
+        }
+
+        .level-menu-item {
+            width: 44px;
+            height: 44px;
+            padding: 0;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            background: #f8fafc;
+            color: var(--color-text);
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.15s ease, transform 0.1s ease;
+        }
+
+        .level-menu-item:active {
+            transform: scale(0.95);
+        }
+
+        .level-menu-item.current {
+            background: var(--color-primary-dark);
+            border-color: var(--color-primary-dark);
+            color: white;
+        }
+
+        /* Main Container */
+        .game-card {
+            width: min(94vw, 380px);
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-card);
+            padding: 12px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+        }
+
+        /* Instruction banner: the question the child is answering now */
+        .instruction-box {
+            width: 100%;
+            background: #f8fafc;
+            border-radius: var(--radius-md);
+            padding: 8px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: background-color 0.3s ease;
+        }
+
+        .instruction-text {
+            font-size: clamp(14px, 3.8vw, 16px);
+            font-weight: 500;
+            text-align: center;
+            color: var(--color-text);
+            line-height: 1.35;
+        }
+
+        .instruction-hint {
+            font-size: 13px;
+            color: var(--color-purple-text);
+            font-weight: 600;
+            margin-top: 4px;
+            text-align: center;
+        }
+
+        .instruction-hint.is-error {
+            color: var(--color-error) !important;
+        }
+
+        /* Wallet */
+        .wallet {
+            width: 100%;
+            background: #f8fafc;
+            border-radius: var(--radius-md);
+            padding: 8px 10px;
+        }
+
+        .wallet-intro {
+            font-size: 13px;
+            color: var(--color-text-secondary);
+            margin-bottom: 6px;
+        }
+
+        .wallet-lines {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .wallet-line {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .wallet-count {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--color-primary-text);
+            min-width: 30px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .money-shape {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            flex: 0 0 auto;
+        }
+
+        .money-shape.is-bill {
+            width: 58px;
+            height: 32px;
+            border-radius: 6px;
+            background: var(--bill-fill);
+            border: 2px solid var(--bill-border);
+            box-shadow: inset 0 0 0 2px #ffffff;
+            color: var(--color-primary-text);
+            font-size: 15px;
+        }
+
+        .money-shape.is-coin {
+            width: 34px;
+            height: 34px;
+            margin: 0 12px;
+            border-radius: 50%;
+            background: var(--coin-fill);
+            border: 2px solid var(--coin-border);
+            box-shadow: inset 0 0 0 2px #ffffff;
+            color: #8a6400;
+            font-size: 13px;
+        }
+
+        .wallet-unit {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+        }
+
+        /* Item to buy */
+        .item-row {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 2px 0;
+        }
+
+        .item-emoji {
+            font-size: 30px;
+            line-height: 1;
+        }
+
+        .item-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--color-text);
+        }
+
+        .item-price {
+            background: var(--color-purple-light);
+            color: var(--color-purple-text);
+            font-weight: 700;
+            font-size: 15px;
+            padding: 4px 12px;
+            border-radius: 999px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Steps a / b / c */
+        .steps {
+            list-style: none;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 8px;
+            border-radius: var(--radius-md);
+            border: 1px solid transparent;
+            transition: background-color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+        }
+
+        .step.is-active {
+            background: #f0f9fb;
+            border-color: #cfe8ee;
+        }
+
+        .step.is-locked {
+            opacity: 0.4;
+        }
+
+        .step.is-done {
+            background: #eef9ef;
+        }
+
+        .step.is-wrong {
+            border-color: var(--color-error);
+            background: #FEF2F2;
+        }
+
+        .step-letter {
+            flex: 0 0 26px;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            color: var(--color-text-secondary);
+            font-size: 14px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .step.is-active .step-letter {
+            background: var(--color-primary-dark);
+            color: white;
+        }
+
+        .step.is-done .step-letter {
+            background: var(--color-success);
+            color: white;
+        }
+
+        .step-main {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .step-short {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+        }
+
+        .answer-inputs {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .amount-box {
+            min-width: 46px;
+            height: 40px;
+            padding: 0 6px;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            background: white;
+            color: var(--color-text);
+            font-family: inherit;
+            font-size: 18px;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        /* Active box: the same yellow dashed highlight the column games use */
+        .amount-box.is-active {
+            background-color: #FEF08A;
+            border: 2px dashed #EAB308;
+            border-radius: 8px;
+            animation: pulseActive 1.4s infinite;
+            z-index: 2;
+        }
+
+        .amount-box.correct-flash {
+            animation: flashGreen 0.4s ease-out;
+        }
+
+        .amount-box.error-shake {
+            animation: shakeError 0.5s ease-out;
+        }
+
+        @keyframes pulseActive {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.4);
+            }
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.3);
+            }
+        }
+
+        @keyframes flashGreen {
+            0% {
+                background-color: var(--color-success);
+                border-color: var(--color-success);
+                color: white;
+            }
+            100% { background-color: transparent; }
+        }
+
+        @keyframes shakeError {
+            0%, 100% { transform: translateX(0); background-color: transparent; }
+            20%, 60% { transform: translateX(-4px); background-color: #FEE2E2; color: var(--color-error-dark); }
+            40%, 80% { transform: translateX(4px); background-color: #FEE2E2; color: var(--color-error-dark); }
+        }
+
+        .amount-box.is-correct {
+            border-color: var(--color-success);
+            background: #f1faf1;
+            color: var(--color-success-dark);
+        }
+
+        .amount-unit {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+        }
+
+        .answer-choices {
+            display: flex;
+            gap: 6px;
+        }
+
+        .choice-btn {
+            min-height: 40px;
+            min-width: 58px;
+            padding: 0 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            background: white;
+            color: var(--color-text);
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+        }
+
+        .choice-btn.is-correct {
+            border-color: var(--color-success);
+            background: #f1faf1;
+            color: var(--color-success-dark);
+        }
+
+        .step-check {
+            flex: 0 0 18px;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--color-success);
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .step.is-done .step-check {
+            opacity: 1;
+        }
+
+        /* Numpad */
+        .numpad-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            width: 100%;
+            max-width: 310px;
+        }
+
+        .numpad-grid.is-off {
+            opacity: 0.35;
+            pointer-events: none;
+        }
+
+        .numpad-btn {
+            background: white;
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 12px;
+            height: clamp(42px, 10vw, 50px);
+            font-size: clamp(19px, 5vw, 23px);
+            font-weight: 600;
+            color: var(--color-text);
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            transition: all 0.1s ease;
+            user-select: none;
+        }
+
+        .numpad-btn:active {
+            transform: scale(0.96);
+            background: #f1f5f9;
+        }
+
+        .numpad-btn[data-key="0"] {
+            grid-column: 2;
+        }
+
+        /* Success Completion Overlay */
+        .completion-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 500;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .completion-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .completion-icon {
+            font-size: 64px;
+            margin-bottom: 12px;
+            animation: bounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0); }
+            60% { transform: scale(1.15); }
+            100% { transform: scale(1); }
+        }
+
+        .completion-title {
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--color-success-dark);
+            margin-bottom: 8px;
+        }
+
+        .completion-caption {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .completion-equation {
+            font-size: 34px;
+            font-weight: 700;
+            color: var(--color-text);
+            margin: 4px 0 10px 0;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .completion-verdict {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--color-primary-text);
+            margin-bottom: 20px;
+            max-width: 320px;
+            line-height: 1.4;
+        }
+
+        .completion-next-btn {
+            background: var(--color-primary-dark);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 14px 32px;
+            font-size: 20px;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(77, 138, 152, 0.4);
+            transition: transform 0.15s ease, background-color 0.2s;
+        }
+
+        .completion-next-btn:active {
+            transform: scale(0.96);
+        }
+
+        @media (max-width: 360px) {
+            .money-shape.is-bill {
+                width: 48px;
+                height: 28px;
+                font-size: 13px;
+            }
+
+            .money-shape.is-coin {
+                width: 30px;
+                height: 30px;
+                margin: 0 8px;
+                font-size: 12px;
+            }
+
+            .step-short {
+                font-size: 12px;
+            }
+        }
+
+        @media (hover: hover) {
+            .nav-btn:hover {
+                background-color: #f8fafc;
+                color: var(--color-primary-dark);
+                transform: translateY(-1px);
+            }
+            .numpad-btn:hover {
+                background: #f8fafc;
+                border-color: rgba(0,0,0,0.15);
+            }
+            .amount-box:hover {
+                border-color: var(--color-primary);
+            }
+            .choice-btn:hover {
+                border-color: var(--color-primary);
+                background: #f8fafc;
+            }
+            .level-badge:hover {
+                background: rgba(0, 0, 0, 0.12);
+            }
+            .level-menu-item:hover:not(.current) {
+                background: #eef2f7;
+            }
+            .completion-next-btn:hover {
+                background: #3b6d78;
+                transform: translateY(-2px);
+            }
+        }
+
+    </style>
+</head>
+<body>
+    <!-- Top Navigation -->
+    <header class="top-nav">
+        <a id="backBtn" class="nav-btn icon-btn" href="./index.html" data-i18n-aria-label="nav_back" aria-label="Назад к играм">←</a>
+        <div data-lang-toggle></div>
+        <div class="level-picker">
+            <button type="button" id="levelDisplay" class="level-badge" aria-haspopup="listbox" aria-expanded="false">
+                <span id="levelText" aria-live="polite">Уровень 1</span>
+                <span class="level-caret" aria-hidden="true">▾</span>
+            </button>
+            <div class="level-menu" id="levelMenu" role="listbox" data-i18n-aria-label="mp_level_menu_aria" aria-label="Выберите уровень"></div>
+        </div>
+    </header>
+
+    <!-- Main Game Card -->
+    <main class="game-card">
+        <!-- Active question banner -->
+        <div class="instruction-box" id="instructionBox" role="status" aria-live="polite">
+            <div class="instruction-text" id="instructionText"></div>
+            <div class="instruction-hint" id="instructionHint"></div>
+        </div>
+
+        <!-- Wallet: what the child has -->
+        <section class="wallet" id="wallet" data-i18n-aria-label="mp_wallet_aria" aria-label="Деньги в кошельке">
+            <p class="wallet-intro" id="walletIntro"></p>
+            <div class="wallet-lines" id="walletLines"></div>
+        </section>
+
+        <!-- What she wants to buy -->
+        <div class="item-row" id="itemRow">
+            <span class="item-emoji" id="itemEmoji" aria-hidden="true">📕</span>
+            <span class="item-name" id="itemName"></span>
+            <span class="item-price" id="itemPrice"></span>
+        </div>
+
+        <!-- Three steps, like the worksheet -->
+        <ol class="steps" id="steps">
+            <li class="step" data-step="a">
+                <span class="step-letter" data-i18n="mp_letter_a">а)</span>
+                <div class="step-main">
+                    <span class="step-short" data-i18n="mp_short_a">Всего</span>
+                    <div class="answer-inputs" role="group" data-part="a">
+                        <button type="button" class="amount-box" data-box="a-eur"><span class="box-value"></span></button>
+                        <span class="amount-unit" data-i18n="mp_unit_eur">€</span>
+                        <button type="button" class="amount-box" data-box="a-cts"><span class="box-value"></span></button>
+                        <span class="amount-unit" data-i18n="mp_unit_cts">центов</span>
+                    </div>
+                </div>
+                <span class="step-check" aria-hidden="true">✓</span>
+            </li>
+            <li class="step" data-step="b">
+                <span class="step-letter" data-i18n="mp_letter_b">б)</span>
+                <div class="step-main">
+                    <span class="step-short" data-i18n="mp_short_b">Хватит ли?</span>
+                    <div class="answer-choices" role="group" data-part="b">
+                        <button type="button" class="choice-btn" data-answer="yes" data-i18n="mp_yes">Да</button>
+                        <button type="button" class="choice-btn" data-answer="no" data-i18n="mp_no">Нет</button>
+                    </div>
+                </div>
+                <span class="step-check" aria-hidden="true">✓</span>
+            </li>
+            <li class="step" data-step="c">
+                <span class="step-letter" data-i18n="mp_letter_c">в)</span>
+                <div class="step-main">
+                    <span class="step-short" id="stepCShort"></span>
+                    <div class="answer-inputs" role="group" data-part="c">
+                        <button type="button" class="amount-box" data-box="c-eur"><span class="box-value"></span></button>
+                        <span class="amount-unit" data-i18n="mp_unit_eur">€</span>
+                        <button type="button" class="amount-box" data-box="c-cts"><span class="box-value"></span></button>
+                        <span class="amount-unit" data-i18n="mp_unit_cts">центов</span>
+                    </div>
+                </div>
+                <span class="step-check" aria-hidden="true">✓</span>
+            </li>
+        </ol>
+
+        <!-- Touch Numpad -->
+        <div class="numpad-grid" id="numpadGrid" role="group" data-i18n-aria-label="mp_numpad_aria" aria-label="Цифровая клавиатура">
+            <button type="button" class="numpad-btn" data-key="1">1</button>
+            <button type="button" class="numpad-btn" data-key="2">2</button>
+            <button type="button" class="numpad-btn" data-key="3">3</button>
+            <button type="button" class="numpad-btn" data-key="4">4</button>
+            <button type="button" class="numpad-btn" data-key="5">5</button>
+            <button type="button" class="numpad-btn" data-key="6">6</button>
+            <button type="button" class="numpad-btn" data-key="7">7</button>
+            <button type="button" class="numpad-btn" data-key="8">8</button>
+            <button type="button" class="numpad-btn" data-key="9">9</button>
+            <button type="button" class="numpad-btn" data-key="0">0</button>
+        </div>
+    </main>
+
+    <!-- Completion Overlay -->
+    <div class="completion-overlay" id="completionOverlay" role="dialog" aria-modal="true">
+        <div class="completion-icon">🌟</div>
+        <div class="completion-title" data-i18n="mp_done_title">Отлично!</div>
+        <div class="completion-caption" data-i18n="mp_total_caption">Всего</div>
+        <div class="completion-equation" id="completionTotal">16 € 40 центов</div>
+        <div class="completion-verdict" id="completionVerdict"></div>
+        <button type="button" class="completion-next-btn" id="nextProblemBtn" data-i18n="mp_done_next">Следующая задача →</button>
+    </div>
+
+    <!-- Game Engine -->
+    <script>
+        class MoneyProblemsGame {
+            #state;
+            #elements;
+            #config;
+
+            constructor() {
+                this.#initConfig();
+                this.#initElements();
+                this.#initState();
+                this.#bindEvents();
+                this.#subscribeToLanguageChanges();
+                this.#startNewRound();
+            }
+
+            #initConfig() {
+                this.#config = {
+                    maxLevel: 20,
+                    // 5, 10, 20 and 50 euro notes
+                    bills: [500, 1000, 2000, 5000],
+                    // Coins may be listed up to six times per denomination, notes up to four
+                    billCount: [1, 4],
+                    coinCount: [1, 6],
+                    // Typical price band (in cents) for every item that can appear
+                    items: {
+                        mp_item_chocolate: { emoji: '🍫', band: [100, 400] },
+                        mp_item_notebook: { emoji: '📒', band: [150, 600] },
+                        mp_item_icecream: { emoji: '🍦', band: [200, 500] },
+                        mp_item_pizza: { emoji: '🍕', band: [700, 1800] },
+                        mp_item_book: { emoji: '📕', band: [800, 2000] },
+                        mp_item_ball: { emoji: '⚽', band: [1000, 3000] },
+                        mp_item_teddy: { emoji: '🧸', band: [1200, 3500] },
+                        mp_item_backpack: { emoji: '🎒', band: [2500, 7000] },
+                        mp_item_headphones: { emoji: '🎧', band: [3000, 9000] },
+                        mp_item_bike: { emoji: '🚲', band: [12000, 35000] }
+                    }
+                };
+            }
+
+            // Every wallet problem: what there is, what it costs, and how far apart they are
+            #initState() {
+                this.#state = {
+                    level: 1,
+                    hadErrorThisRound: false,
+                    problem: null,
+                    // Index into the mp_name_1..mp_name_20 pool of the active language
+                    nameIndex: 1,
+                    step: 'a',
+                    activeBox: 'a-eur',
+                    answers: { 'a-eur': '', 'a-cts': '', 'c-eur': '', 'c-cts': '' },
+                    done: { a: false, b: false, c: false }
+                };
+            }
+
+            // A different girl every round, from the 20 names in the dictionary
+            #name() {
+                return I18n.t(`mp_name_${this.#state.nameIndex}`);
+            }
+
+            #randomInt(min, max) {
+                return Math.floor(Math.random() * (max - min + 1)) + min;
+            }
+
+            #round10(value) {
+                return Math.round(value / 10) * 10;
+            }
+
+            #shuffle(list) {
+                for (let i = list.length - 1; i > 0; i--) {
+                    const j = this.#randomInt(0, i);
+                    [list[i], list[j]] = [list[j], list[i]];
+                }
+                return list;
+            }
+
+            // Level 1 is the worksheet from the notebook; every later level is
+            // generated. Difficulty grows in three ways: more denominations and
+            // lines, larger amounts, and items whose price is closer to the total.
+            #createProblem(level) {
+                if (level === 1) {
+                    // Lucía: 2 notes of 5 €, 6 coins of 1 €, 4 coins of 10 cts, a book for 12 €
+                    return {
+                        lines: [
+                            { value: 500, count: 2 },
+                            { value: 100, count: 6 },
+                            { value: 10, count: 4 }
+                        ],
+                        total: 1640,
+                        price: 1200,
+                        itemKey: 'mp_item_book',
+                        afford: true,
+                        delta: 440
+                    };
+                }
+
+                const cfg = this.#getLevelConfig(level);
+                for (let attempt = 0; attempt < 200; attempt++) {
+                    const itemKey = cfg.items[this.#randomInt(0, cfg.items.length - 1)];
+                    const item = this.#config.items[itemKey];
+                    const price = this.#round10(this.#randomInt(item.band[0], Math.min(item.band[1], cfg.maxPrice)));
+                    if (price < 100) continue;
+
+                    const afford = cfg.afford === 'mixed' ? Math.random() < 0.5 : cfg.afford === 'yes';
+                    const delta = this.#round10(this.#randomInt(
+                        Math.max(30, Math.round(price * 0.1)),
+                        Math.max(60, Math.round(price * 0.3))
+                    ));
+                    // Affordable problems hold more than the price, unaffordable ones less
+                    const total = afford ? price + delta : price - delta;
+                    if (total < 100) continue;
+
+                    const lines = this.#buildWallet(total, cfg.denoms, cfg.lines);
+                    if (!lines) continue;
+
+                    return { lines, total, price, itemKey, afford, delta };
+                }
+
+                // Never seen in practice: a gentle fallback problem
+                return {
+                    lines: [{ value: 500, count: 2 }, { value: 100, count: 6 }],
+                    total: 1600,
+                    price: 1400,
+                    itemKey: 'mp_item_book',
+                    afford: true,
+                    delta: 200
+                };
+            }
+
+            #getLevelConfig(level) {
+                const small = ['mp_item_chocolate', 'mp_item_notebook', 'mp_item_icecream', 'mp_item_pizza', 'mp_item_book', 'mp_item_ball'];
+                const middle = ['mp_item_pizza', 'mp_item_book', 'mp_item_ball', 'mp_item_teddy', 'mp_item_backpack'];
+                const middle2 = ['mp_item_ball', 'mp_item_teddy', 'mp_item_backpack', 'mp_item_headphones'];
+                const large = ['mp_item_teddy', 'mp_item_backpack', 'mp_item_headphones'];
+                const huge = ['mp_item_backpack', 'mp_item_headphones', 'mp_item_bike'];
+                const table = [
+                    null, // level 1 is the worksheet itself
+                    { denoms: [500, 100, 10], lines: [2, 3], afford: 'yes', items: small, maxPrice: 3000 },
+                    { denoms: [500, 100, 200, 10], lines: [2, 3], afford: 'yes', items: small, maxPrice: 3000 },
+                    { denoms: [500, 1000, 100, 200, 10], lines: [2, 3], afford: 'yes', items: small, maxPrice: 4000 },
+                    { denoms: [500, 1000, 100, 200, 50, 10], lines: [3, 3], afford: 'mixed', items: small, maxPrice: 5000 },
+                    { denoms: [500, 1000, 100, 200, 50, 20, 10], lines: [3, 3], afford: 'mixed', items: middle, maxPrice: 9000 },
+                    { denoms: [500, 1000, 2000, 100, 200, 50, 10], lines: [3, 4], afford: 'mixed', items: middle, maxPrice: 12000 },
+                    { denoms: [500, 1000, 2000, 100, 200, 50, 20, 10], lines: [3, 4], afford: 'mixed', items: middle, maxPrice: 15000 },
+                    { denoms: [500, 1000, 2000, 100, 200, 50, 20, 10, 5], lines: [3, 4], afford: 'mixed', items: middle2, maxPrice: 20000 },
+                    { denoms: [500, 1000, 2000, 100, 200, 50, 20, 10, 5], lines: [3, 4], afford: 'mixed', items: middle2, maxPrice: 25000 },
+                    { denoms: [500, 1000, 2000, 5000, 200, 100, 50, 10], lines: [3, 4], afford: 'mixed', items: middle2, maxPrice: 30000 },
+                    { denoms: [1000, 2000, 5000, 500, 200, 100, 50, 10], lines: [3, 4], afford: 'mixed', items: middle2, maxPrice: 35000 },
+                    { denoms: [1000, 2000, 5000, 500, 200, 100, 50, 20, 10], lines: [4, 4], afford: 'mixed', items: middle2, maxPrice: 40000 },
+                    { denoms: [1000, 2000, 5000, 500, 200, 100, 50, 20, 10, 5], lines: [4, 4], afford: 'mixed', items: large, maxPrice: 50000 },
+                    { denoms: [1000, 2000, 5000, 500, 200, 100, 50, 20, 10, 5], lines: [4, 5], afford: 'mixed', items: large, maxPrice: 60000 },
+                    { denoms: [1000, 2000, 5000, 500, 100, 50, 20, 10], lines: [4, 5], afford: 'mixed', items: large, maxPrice: 70000 },
+                    { denoms: [1000, 2000, 5000, 500, 100, 50, 10], lines: [4, 5], afford: 'mixed', items: huge, maxPrice: 90000 },
+                    { denoms: [2000, 5000, 1000, 500, 200, 100, 50, 10], lines: [4, 5], afford: 'mixed', items: huge, maxPrice: 150000 },
+                    { denoms: [2000, 5000, 1000, 500, 200, 100, 50, 10], lines: [4, 5], afford: 'mixed', items: huge, maxPrice: 200000 },
+                    { denoms: [2000, 5000, 1000, 500, 200, 100, 50, 10], lines: [4, 5], afford: 'mixed', items: huge, maxPrice: 300000 }
+                ];
+                const index = Math.min(Math.max(level, 1), table.length) - 1;
+                return table[index];
+            }
+
+            // Picks a set of denominations whose counts add up to exactly `target`.
+            // Each line keeps a natural count (1-4 notes, 1-6 coins), so the wallet
+            // always looks like play money rather than an arbitrary number list.
+            #buildWallet(target, denoms, lineRange) {
+                const hasBill = denoms.some(value => value >= 500);
+                for (let attempt = 0; attempt < 300; attempt++) {
+                    const lineCount = this.#randomInt(lineRange[0], lineRange[1]);
+                    if (lineCount > denoms.length) continue;
+                    const chosen = this.#shuffle(denoms.slice()).slice(0, lineCount).sort((a, b) => b - a);
+                    // Keep at least one note once a level uses notes, so the wallet
+                    // looks like play money instead of a pile of coins
+                    if (hasBill && !chosen.some(value => value >= 500)) continue;
+                    const counts = this.#solveCounts(target, chosen);
+                    if (!counts) continue;
+                    return chosen.map((value, i) => ({ value, count: counts[i] }));
+                }
+                return null;
+            }
+
+            // Finds counts c[i] in [1, max] with sum(c[i] * value[i]) === target
+            #solveCounts(target, values) {
+                const ranges = values.map(value => {
+                    const max = value >= 500 ? this.#config.billCount[1] : this.#config.coinCount[1];
+                    return { min: 1, max };
+                });
+                const minSum = values.reduce((sum, value, i) => sum + value * ranges[i].min, 0);
+                const maxSum = values.reduce((sum, value, i) => sum + value * ranges[i].max, 0);
+                if (target < minSum || target > maxSum) return null;
+
+                // Work in "extra above the minimum" units so every step is a range choice
+                let remaining = target - minSum;
+                const counts = values.map((value, i) => {
+                    const extraMax = ranges[i].max - ranges[i].min;
+                    const restCapacity = values.slice(i + 1).reduce(
+                        (sum, restValue, j) => sum + restValue * (ranges[i + 1 + j].max - ranges[i + 1 + j].min), 0
+                    );
+                    const last = i === values.length - 1;
+                    const lowExtra = last ? 0 : Math.ceil((remaining - restCapacity) / value);
+                    const highExtra = Math.min(extraMax, Math.floor(remaining / value));
+                    if (lowExtra > highExtra) return -1;
+                    const extra = last
+                        ? (remaining % value === 0 ? remaining / value : -1)
+                        : this.#randomInt(Math.max(0, lowExtra), highExtra);
+                    if (extra < 0 || extra > extraMax) return -1;
+                    remaining -= extra * value;
+                    return ranges[i].min + extra;
+                });
+
+                if (counts.includes(-1) || remaining !== 0) return null;
+                return counts;
+            }
+
+            #initElements() {
+                this.#elements = {
+                    levelDisplay: document.getElementById('levelDisplay'),
+                    levelText: document.getElementById('levelText'),
+                    levelMenu: document.getElementById('levelMenu'),
+                    instructionText: document.getElementById('instructionText'),
+                    instructionHint: document.getElementById('instructionHint'),
+                    walletIntro: document.getElementById('walletIntro'),
+                    walletLines: document.getElementById('walletLines'),
+                    itemEmoji: document.getElementById('itemEmoji'),
+                    itemName: document.getElementById('itemName'),
+                    itemPrice: document.getElementById('itemPrice'),
+                    steps: document.getElementById('steps'),
+                    stepCShort: document.getElementById('stepCShort'),
+                    partA: document.querySelector('.answer-inputs[data-part="a"]'),
+                    partB: document.querySelector('.answer-choices[data-part="b"]'),
+                    partC: document.querySelector('.answer-inputs[data-part="c"]'),
+                    amountBoxes: Array.from(document.querySelectorAll('.amount-box')),
+                    choiceButtons: Array.from(document.querySelectorAll('.choice-btn')),
+                    numpadGrid: document.getElementById('numpadGrid'),
+                    completionOverlay: document.getElementById('completionOverlay'),
+                    completionTotal: document.getElementById('completionTotal'),
+                    completionVerdict: document.getElementById('completionVerdict'),
+                    nextProblemBtn: document.getElementById('nextProblemBtn')
+                };
+            }
+
+            #bindEvents() {
+                this.#elements.amountBoxes.forEach(box => {
+                    box.addEventListener('click', () => this.#selectBox(box.dataset.box));
+                });
+
+                this.#elements.choiceButtons.forEach(button => {
+                    button.addEventListener('click', () => this.#answerChoice(button.dataset.answer));
+                });
+
+                this.#elements.numpadGrid.addEventListener('click', (e) => {
+                    const btn = e.target.closest('.numpad-btn');
+                    if (!btn) return;
+                    this.#handleKey(btn.dataset.key);
+                });
+
+                this.#elements.nextProblemBtn.addEventListener('click', () => this.#startNewRound());
+
+                this.#elements.levelDisplay.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.#toggleLevelMenu(!this.#elements.levelMenu.classList.contains('open'));
+                });
+
+                this.#elements.levelMenu.addEventListener('click', (e) => {
+                    const item = e.target.closest('.level-menu-item');
+                    if (!item) return;
+                    this.#selectLevel(Number(item.dataset.level));
+                });
+
+                document.addEventListener('click', () => this.#toggleLevelMenu(false));
+
+                window.addEventListener('keydown', (e) => {
+                    if (this.#elements.levelMenu.classList.contains('open')) {
+                        if (e.key === 'Escape') {
+                            this.#toggleLevelMenu(false);
+                            this.#elements.levelDisplay.focus();
+                        }
+                        return;
+                    }
+                    if (this.#elements.completionOverlay.classList.contains('show')) {
+                        if (e.key === 'Enter' || e.key === ' ') this.#startNewRound();
+                        return;
+                    }
+
+                    const isControlFocused = e.target instanceof HTMLElement &&
+                        (e.target.tagName === 'BUTTON' || e.target.tagName === 'A');
+                    if (isControlFocused && (e.key === 'Enter' || e.key === ' ')) return;
+
+                    if (e.key >= '0' && e.key <= '9') {
+                        this.#handleKey(e.key);
+                    } else if (e.key === 'Backspace') {
+                        this.#handleKey('backspace');
+                    } else if (e.key === 'Enter') {
+                        this.#handleKey('check');
+                    }
+                });
+            }
+
+            #subscribeToLanguageChanges() {
+                I18n.subscribe(() => {
+                    this.#renderLevelBadge();
+                    this.#renderRound();
+                });
+            }
+
+            #startNewRound() {
+                this.#state.hadErrorThisRound = false;
+                this.#state.nameIndex = this.#randomInt(1, 20);
+                this.#state.step = 'a';
+                this.#state.activeBox = 'a-eur';
+                this.#state.answers = { 'a-eur': '', 'a-cts': '', 'c-eur': '', 'c-cts': '' };
+                this.#state.done = { a: false, b: false, c: false };
+                this.#state.problem = this.#createProblem(this.#state.level);
+
+                this.#elements.completionOverlay.classList.remove('show');
+                this.#elements.instructionHint.classList.remove('is-error');
+                this.#renderLevelBadge();
+                this.#renderRound();
+            }
+
+            #selectLevel(level) {
+                this.#state.level = Math.min(Math.max(level, 1), this.#config.maxLevel);
+                this.#toggleLevelMenu(false);
+                this.#startNewRound();
+            }
+
+            /* ---------- rendering ---------- */
+
+            #renderLevelBadge() {
+                this.#elements.levelText.textContent = I18n.t('level_label', { n: this.#state.level });
+
+                const menu = this.#elements.levelMenu;
+                menu.innerHTML = '';
+                for (let level = 1; level <= this.#config.maxLevel; level++) {
+                    const item = document.createElement('button');
+                    item.type = 'button';
+                    item.className = 'level-menu-item' + (level === this.#state.level ? ' current' : '');
+                    item.dataset.level = String(level);
+                    item.setAttribute('role', 'option');
+                    item.setAttribute('aria-selected', level === this.#state.level ? 'true' : 'false');
+                    item.setAttribute('aria-label', I18n.t('level_label', { n: level }));
+                    item.textContent = String(level);
+                    menu.appendChild(item);
+                }
+            }
+
+            #toggleLevelMenu(open) {
+                this.#elements.levelMenu.classList.toggle('open', open);
+                this.#elements.levelDisplay.setAttribute('aria-expanded', open ? 'true' : 'false');
+            }
+
+            #renderRound() {
+                const problem = this.#state.problem;
+                if (!problem) return;
+
+                this.#renderWallet(problem);
+                this.#renderItem(problem);
+                this.#renderSteps();
+                this.#renderInstruction();
+                this.#elements.walletIntro.textContent = I18n.t('mp_intro', { name: this.#name() });
+            }
+
+            #renderWallet(problem) {
+                this.#elements.walletLines.innerHTML = problem.lines.map(line => {
+                    const isBill = line.value >= 500;
+                    const value = isBill || line.value >= 100 ? line.value / 100 : line.value;
+                    const unit = isBill || line.value >= 100 ? I18n.t('mp_unit_eur') : I18n.t('mp_unit_cts');
+                    return `
+                        <div class="wallet-line">
+                            <span class="wallet-count">×${line.count}</span>
+                            <span class="money-shape ${isBill ? 'is-bill' : 'is-coin'}" aria-hidden="true">${value}</span>
+                            <span class="wallet-unit">${unit}</span>
+                        </div>`;
+                }).join('');
+            }
+
+            #renderItem(problem) {
+                this.#elements.itemEmoji.textContent = this.#config.items[problem.itemKey].emoji;
+                this.#elements.itemName.textContent = I18n.t(problem.itemKey);
+                this.#elements.itemPrice.textContent = this.#formatMoney(problem.price);
+            }
+
+            #renderSteps() {
+                const problem = this.#state.problem;
+                const order = ['a', 'b', 'c'];
+
+                order.forEach((step, index) => {
+                    const el = this.#elements.steps.querySelector(`.step[data-step="${step}"]`);
+                    const previousDone = index === 0 || this.#state.done[order[index - 1]];
+                    el.classList.toggle('is-active', this.#state.step === step);
+                    el.classList.toggle('is-done', this.#state.done[step]);
+                    el.classList.toggle('is-locked', !this.#state.done[step] && !previousDone);
+                });
+
+                // Answer values
+                this.#elements.amountBoxes.forEach(box => {
+                    const key = box.dataset.box;
+                    const done = key.startsWith('a') ? this.#state.done.a : this.#state.done.c;
+                    const raw = this.#state.answers[key];
+                    box.querySelector('.box-value').textContent = raw;
+                    box.classList.toggle('is-active', this.#state.step === (key.startsWith('a') ? 'a' : 'c') && this.#state.activeBox === key && !done);
+                    box.classList.toggle('is-correct', done);
+                });
+
+                const expectCents = this.#state.done.c ? problem.delta : null;
+                if (expectCents !== null) {
+                    this.#elements.steps.querySelectorAll('.step[data-step="c"] .amount-box').forEach(box => {
+                        const key = box.dataset.box;
+                        const boxCents = key.endsWith('eur')
+                            ? Math.floor(expectCents / 100) * 100
+                            : expectCents % 100;
+                        box.querySelector('.box-value').textContent = key.endsWith('eur')
+                            ? String(Math.floor(boxCents / 100))
+                            : String(boxCents);
+                    });
+                }
+
+                this.#elements.choiceButtons.forEach(button => {
+                    const answered = this.#state.done.b;
+                    const correct = problem.afford ? 'yes' : 'no';
+                    button.classList.toggle('is-correct', answered && button.dataset.answer === correct);
+                });
+
+                // The numpad only makes sense while a money amount is being typed
+                const typing = (this.#state.step === 'a' && !this.#state.done.a) ||
+                    (this.#state.step === 'c' && !this.#state.done.c);
+                this.#elements.numpadGrid.classList.toggle('is-off', !typing);
+            }
+
+            #renderInstruction() {
+                const problem = this.#state.problem;
+                const step = this.#state.step;
+
+                const questionA = I18n.t('mp_q_a', { name: this.#name() });
+                const questionB = I18n.t('mp_q_b', { price: this.#formatMoney(problem.price) });
+                const questionC = I18n.t(problem.afford ? 'mp_q_c_over' : 'mp_q_c_short');
+                const shortC = I18n.t(problem.afford ? 'mp_short_c_over' : 'mp_short_c_short');
+
+                this.#elements.stepCShort.textContent = shortC;
+                this.#elements.partA.setAttribute('aria-label', `${I18n.t('mp_short_a')}: ${questionA}`);
+                this.#elements.partB.setAttribute('aria-label', `${I18n.t('mp_short_b')}: ${questionB}`);
+                this.#elements.partC.setAttribute('aria-label', `${shortC}: ${questionC}`);
+
+                let text = '';
+                let hint = '';
+                if (step === 'a') {
+                    text = questionA;
+                    hint = I18n.t('mp_hint_a');
+                } else if (step === 'b') {
+                    text = questionB;
+                    hint = I18n.t('mp_hint_b');
+                } else {
+                    text = questionC;
+                    hint = I18n.t(problem.afford ? 'mp_hint_c_over' : 'mp_hint_c_short');
+                }
+
+                this.#elements.instructionText.textContent = text;
+                if (!this.#elements.instructionHint.classList.contains('is-error')) {
+                    this.#elements.instructionHint.textContent = hint;
+                }
+            }
+
+            #formatMoney(cents) {
+                const euros = Math.floor(cents / 100);
+                const rest = cents % 100;
+                if (rest === 0) return `${euros} ${I18n.t('mp_unit_eur')}`;
+                return `${euros} ${I18n.t('mp_unit_eur')} ${rest} ${I18n.t('mp_unit_cts')}`;
+            }
+
+            /* ---------- input ---------- */
+
+            #selectBox(key) {
+                const step = key.startsWith('a') ? 'a' : 'c';
+                if (this.#state.step !== step || this.#state.done[step]) return;
+                this.#state.activeBox = key;
+                this.#renderSteps();
+            }
+
+            #handleKey(key) {
+                const step = this.#state.step;
+                const prefix = step === 'a' ? 'a' : 'c';
+                const typing = (step === 'a' && !this.#state.done.a) ||
+                    (step === 'c' && !this.#state.done.c);
+                if (!typing) return;
+
+                if (key === 'check') {
+                    const euroValue = this.#state.answers[`${prefix}-eur`];
+                    if (this.#state.activeBox.endsWith('eur') && euroValue) {
+                        this.#state.activeBox = `${prefix}-cts`;
+                        this.#renderSteps();
+                        return;
+                    }
+                    if (!euroValue && !this.#state.answers[`${prefix}-cts`]) return;
+                    this.#checkAmount();
+                    return;
+                }
+
+                if (key === 'backspace') {
+                    const current = this.#state.answers[this.#state.activeBox];
+                    if (current) {
+                        this.#state.answers[this.#state.activeBox] = current.slice(0, -1);
+                    } else if (this.#state.activeBox.endsWith('cts')) {
+                        this.#state.activeBox = `${prefix}-eur`;
+                    }
+                    this.#clearWrongHighlight();
+                    this.#renderSteps();
+                    return;
+                }
+
+                if (key >= '0' && key <= '9') {
+                    const box = this.#state.activeBox;
+                    const isEuro = box.endsWith('eur');
+                    const expectedLength = this.#expectedDigits(step)[isEuro ? 'eur' : 'cts'];
+                    const current = this.#state.answers[box];
+                    if (current.length >= expectedLength) return;
+
+                    this.#state.answers[box] = current + key;
+                    this.#clearWrongHighlight();
+                    this.#renderSteps();
+
+                    if (this.#state.answers[box].length === expectedLength) {
+                        if (isEuro) {
+                            // Same as the next cell in the column games: hand over to cents
+                            this.#state.activeBox = `${prefix}-cts`;
+                            this.#renderSteps();
+                        } else {
+                            setTimeout(() => this.#checkAmount(), 80);
+                        }
+                    }
+                }
+            }
+
+            // Digits each box expects; the answer is checked as soon as they are typed,
+            // exactly like the column games
+            #expectedDigits(step) {
+                const expected = step === 'a'
+                    ? this.#state.problem.total
+                    : Math.abs(this.#state.problem.delta);
+                return {
+                    eur: String(Math.floor(expected / 100)).length,
+                    cts: String(expected % 100).length
+                };
+            }
+
+            #checkAmount() {
+                const problem = this.#state.problem;
+                const step = this.#state.step;
+                const prefix = step === 'a' ? 'a' : 'c';
+                const expected = step === 'a' ? problem.total : Math.abs(problem.delta);
+
+                const euros = parseInt(this.#state.answers[`${prefix}-eur`] || '0', 10);
+                const cents = parseInt(this.#state.answers[`${prefix}-cts`] || '0', 10);
+                const typed = euros * 100 + cents;
+
+                if (typed === expected) {
+                    this.#state.done[step] = true;
+                    this.#state.answers[`${prefix}-eur`] = String(Math.floor(expected / 100));
+                    this.#state.answers[`${prefix}-cts`] = String(expected % 100);
+                    this.#renderSteps();
+                    this.#flashCorrect(prefix);
+                    this.#advanceFrom(step);
+                    return;
+                }
+
+                this.#markWrong(prefix);
+            }
+
+            #flashCorrect(prefix) {
+                const boxes = this.#elements.steps.querySelectorAll(`.step[data-step="${prefix}"] .amount-box`);
+                boxes.forEach(box => box.classList.add('correct-flash'));
+                setTimeout(() => boxes.forEach(box => box.classList.remove('correct-flash')), 450);
+            }
+
+            #answerChoice(answer) {
+                if (this.#state.step !== 'b' || this.#state.done.b) return;
+                const problem = this.#state.problem;
+                if ((answer === 'yes') === problem.afford) {
+                    this.#state.done.b = true;
+                    this.#advanceFrom('b');
+                    return;
+                }
+                this.#markWrong('b');
+            }
+
+            #markWrong(prefix) {
+                this.#state.hadErrorThisRound = true;
+
+                const step = this.#elements.steps.querySelector(`.step[data-step="${prefix}"]`);
+                step.classList.add('is-wrong');
+                setTimeout(() => step.classList.remove('is-wrong'), 600);
+
+                const boxes = this.#elements.steps.querySelectorAll(`.step[data-step="${prefix}"] .amount-box, .step[data-step="${prefix}"] .choice-btn`);
+                boxes.forEach(el => el.classList.remove('error-shake'));
+                boxes.forEach(el => el.classList.add('error-shake'));
+                setTimeout(() => boxes.forEach(el => el.classList.remove('error-shake')), 600);
+
+                this.#elements.instructionHint.classList.add('is-error');
+                this.#elements.instructionHint.textContent = I18n.t('mp_wrong');
+                setTimeout(() => {
+                    this.#elements.instructionHint.classList.remove('is-error');
+                    this.#renderInstruction();
+                }, 1200);
+
+                if (prefix !== 'b') {
+                    this.#state.answers[`${prefix}-eur`] = '';
+                    this.#state.answers[`${prefix}-cts`] = '';
+                    this.#state.activeBox = `${prefix}-eur`;
+                }
+                this.#renderSteps();
+            }
+
+            #clearWrongHighlight() {
+                this.#elements.steps.querySelectorAll('.is-wrong').forEach(el => el.classList.remove('is-wrong'));
+                this.#elements.instructionHint.classList.remove('is-error');
+                this.#renderInstruction();
+            }
+
+            #advanceFrom(step) {
+                const next = { a: 'b', b: 'c', c: null }[step];
+                if (next) {
+                    this.#state.step = next;
+                    if (next === 'c') this.#state.activeBox = 'c-eur';
+                    this.#renderSteps();
+                    this.#renderInstruction();
+                    return;
+                }
+                this.#renderSteps();
+                this.#finishRound();
+            }
+
+            #finishRound() {
+                if (this.#state.hadErrorThisRound) {
+                    this.#state.level = Math.max(1, this.#state.level - 1);
+                } else {
+                    this.#state.level = Math.min(this.#config.maxLevel, this.#state.level + 1);
+                }
+                this.#renderLevelBadge();
+
+                const problem = this.#state.problem;
+                const amount = this.#formatMoney(Math.abs(problem.delta));
+                this.#elements.completionTotal.textContent = this.#formatMoney(problem.total);
+                this.#elements.completionVerdict.textContent = I18n.t(
+                    problem.afford ? 'mp_verdict_over' : 'mp_verdict_short',
+                    { amount }
+                );
+
+                setTimeout(() => this.#elements.completionOverlay.classList.add('show'), 400);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            new MoneyProblemsGame();
+        });
+    </script>
+</body>
+</html>
