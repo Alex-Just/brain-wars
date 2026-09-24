@@ -761,16 +761,9 @@
             <div class="wallet-lines" id="walletLines"></div>
         </section>
 
-        <!-- What she wants to buy -->
-        <div class="item-row" id="itemRow">
-            <span class="item-emoji" id="itemEmoji" aria-hidden="true">📕</span>
-            <span class="item-name" id="itemName"></span>
-            <span class="item-price" id="itemPrice"></span>
-        </div>
-
-        <!-- Three steps, like the worksheet -->
-        <ol class="steps" id="steps">
-            <li class="step" data-step="a">
+        <!-- Three steps, like the worksheet, with the item between a) and b) -->
+        <div class="steps" id="steps">
+            <div class="step" data-step="a">
                 <span class="step-letter" data-i18n="mp_letter_a">а)</span>
                 <div class="step-main">
                     <span class="step-short" data-i18n="mp_short_a">Всего</span>
@@ -782,8 +775,15 @@
                     </div>
                 </div>
                 <span class="step-check" aria-hidden="true">✓</span>
-            </li>
-            <li class="step" data-step="b">
+            </div>
+            <!-- What she wants to buy -->
+            <div class="item-row" id="itemRow">
+                <span class="item-emoji" id="itemEmoji" aria-hidden="true">📕</span>
+                <span class="item-name" id="itemName"></span>
+                <span class="item-price" id="itemPrice"></span>
+            </div>
+
+            <div class="step" data-step="b">
                 <span class="step-letter" data-i18n="mp_letter_b">б)</span>
                 <div class="step-main">
                     <span class="step-short" data-i18n="mp_short_b">Хватит ли?</span>
@@ -793,8 +793,8 @@
                     </div>
                 </div>
                 <span class="step-check" aria-hidden="true">✓</span>
-            </li>
-            <li class="step" data-step="c">
+            </div>
+            <div class="step" data-step="c">
                 <span class="step-letter" data-i18n="mp_letter_c">в)</span>
                 <div class="step-main">
                     <span class="step-short" id="stepCShort"></span>
@@ -806,8 +806,8 @@
                     </div>
                 </div>
                 <span class="step-check" aria-hidden="true">✓</span>
-            </li>
-        </ol>
+            </div>
+        </div>
 
         <!-- Touch Numpad -->
         <div class="numpad-grid" id="numpadGrid" role="group" data-i18n-aria-label="mp_numpad_aria" aria-label="Цифровая клавиатура">
