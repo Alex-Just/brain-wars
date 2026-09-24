@@ -1196,7 +1196,9 @@
                 const rawDividend = String(this.#elements.customDividend.value).trim().replace(/\s+/g, '');
                 const rawDivisor = String(this.#elements.customDivisor.value).trim();
 
-                const dividendMatch = rawDividend.match(/^(\d{1,5})(?:[.,](\d{1,2}))?$/);
+                // Accept generous input here: the 8-digit and column budgets below
+                // decide what can be shown, and they report their own "too big" message.
+                const dividendMatch = rawDividend.match(/^(\d{1,12})(?:[.,](\d{1,2}))?$/);
                 if (!dividendMatch || Number(dividendMatch[1]) < 1) {
                     this.#showCustomError('ld_custom_err_dividend');
                     return;

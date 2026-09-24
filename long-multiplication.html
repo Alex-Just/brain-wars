@@ -1797,7 +1797,9 @@
             }
 
             #parseFactor(raw) {
-                const match = String(raw).trim().replace(/\s+/g, '').match(/^(\d{1,4})(?:[.,](\d{1,2}))?$/);
+                // Accept generous input here: the product and column budgets below
+                // decide what can be shown, and they report their own "too big" message.
+                const match = String(raw).trim().replace(/\s+/g, '').match(/^(\d{1,12})(?:[.,](\d{1,2}))?$/);
                 if (!match || Number(match[1]) < 1) return null;
                 let fraction = match[2] || '';
                 while (fraction.endsWith('0')) fraction = fraction.slice(0, -1);
