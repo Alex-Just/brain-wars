@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>¿Qué hora es?</title>
     <script src="i18n.js"></script>
+    <script src="games.js"></script>
+    <script src="challenge.js"></script>
     <style>
         /* Add CSS variables at the root */
         :root {
@@ -199,6 +201,11 @@
             position: fixed;
             top: max(15px, env(safe-area-inset-top));
             right: max(15px, env(safe-area-inset-right));
+            /* Same height as the language pill, so both sit on the row's centre line */
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            height: 52px;
             font-size: var(--font-size-base);
             padding: var(--spacing-sm) 15px;
             border-radius: var(--border-radius-sm);
@@ -576,9 +583,8 @@
             }
 
             #startGameDirectly() {
-                console.log("Starting game directly...");
                 this.#state.isPlaying = true;
-                this.#state.level = 1;
+                this.#state.level = Math.max(1, BrainWarsChallenge.startLevel());
                 this.#elements.analogClock.closest('#analogClockContainer').style.visibility = 'visible'; // Ensure clock is visible
                 this.#elements.timeChoices.style.visibility = 'visible'; // Ensure choices are visible
                 this.#elements.timeChoices.style.opacity = '1';

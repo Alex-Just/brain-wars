@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Выбор игры</title>
     <script src="i18n.js"></script>
+    <script src="games.js"></script>
     <style>
         /* Basic reset and centering */
         body {
@@ -237,163 +238,45 @@
 <body>
     <div class="lang-bar" data-lang-toggle></div>
     <h1 data-i18n="hub_title">Выбор игры</h1>
-    <div class="game-grid">
-        <a href="./follow-the-leader.html" class="game-card active">
+    <div class="game-grid" id="gameGrid">
+        <a href="./challenge.html" class="game-card">
             <div class="game-icon">
-                <div class="follow-leader-icon">
-                    <div class="square"></div>
-                    <div class="square active"></div>
-                    <div class="square active"></div>
-                    <div class="square active"></div>
-                </div>
-            </div>
-            <div class="game-title" data-i18n="game_follow">Повтори за мной</div>
-        </a>
-        <a href="./operations.html" class="game-card">
-            <div class="game-icon">
-                <div class="operations-icon">
-                    <div class="operator">+</div>
-                    <div class="operator">−</div>
-                    <div class="operator multiply">×</div>
-                    <div class="operator">÷</div>
-                </div>
-            </div>
-            <div class="game-title" data-i18n="game_operations">Математика</div>
-        </a>
-        <a href="./telling-time-es.html" class="game-card">
-            <div class="game-icon">
-                 <!-- Simple Clock Icon -->
-                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" style="width: 80%; height: 80%; fill: none; stroke: #60ACBD; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round;">
-                     <circle cx="50" cy="50" r="45"/>
-                     <path d="M50 25 V50 L75 65"/> <!-- Clock hands pointing roughly to 3:00 -->
-                 </svg>
-            </div>
-            <div class="game-title" data-i18n="game_time">¿Qué hora es?</div>
-        </a>
-        <a href="./long-division.html" class="game-card">
-            <div class="game-icon">
-                <!-- Russian Long Division Bracket Icon -->
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" style="width: 80%; height: 80%;">
-                    <defs>
-                        <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-                            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#E2E8F0" stroke-width="1"/>
-                        </pattern>
-                    </defs>
-                    <rect width="100" height="100" rx="14" fill="#F8FAFC"/>
-                    <rect width="100" height="100" rx="14" fill="url(#grid)"/>
-
-                    <!-- Arc over incomplete dividend 12 -->
-                    <path d="M 18 30 Q 32 18 46 30" fill="none" stroke="#7B61FF" stroke-width="3.5" stroke-linecap="round"/>
-
-                    <!-- Dividend 12 -->
-                    <text x="18" y="52" font-family="system-ui, sans-serif" font-size="24" font-weight="700" fill="#334155">12</text>
-
-                    <!-- Russian Division Corner Bracket: Vertical & Horizontal -->
-                    <path d="M 54 24 L 54 80 M 54 48 L 88 48" fill="none" stroke="#60ACBD" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
-
-                    <!-- Divisor 2 -->
-                    <text x="64" y="42" font-family="system-ui, sans-serif" font-size="22" font-weight="700" fill="#60ACBD">2</text>
-
-                    <!-- Quotient 6 -->
-                    <text x="64" y="74" font-family="system-ui, sans-serif" font-size="22" font-weight="700" fill="#4CAF50">6</text>
-                </svg>
-            </div>
-            <div class="game-title" data-i18n="game_division">Деление в столбик</div>
-        </a>
-        <a href="./long-multiplication.html" class="game-card">
-            <div class="game-icon">
-                <!-- Column Multiplication Icon -->
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" style="width: 80%; height: 80%;">
-                    <defs>
-                        <pattern id="grid-mult" width="20" height="20" patternUnits="userSpaceOnUse">
-                            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#E2E8F0" stroke-width="1"/>
-                        </pattern>
-                    </defs>
-                    <rect width="100" height="100" rx="14" fill="#F8FAFC"/>
-                    <rect width="100" height="100" rx="14" fill="url(#grid-mult)"/>
-
-                    <!-- Multiplicand 24 -->
-                    <text x="30" y="34" font-family="system-ui, sans-serif" font-size="24" font-weight="700" fill="#334155">24</text>
-
-                    <!-- Multiplier × 3 -->
-                    <text x="14" y="63" font-family="system-ui, sans-serif" font-size="22" font-weight="700" fill="#60ACBD">× 3</text>
-
-                    <!-- Line -->
-                    <path d="M 14 70 L 68 70" fill="none" stroke="#60ACBD" stroke-width="4" stroke-linecap="round"/>
-
-                    <!-- Product 72 -->
-                    <text x="30" y="93" font-family="system-ui, sans-serif" font-size="24" font-weight="700" fill="#4CAF50">72</text>
-                </svg>
-            </div>
-            <div class="game-title" data-i18n="game_multiplication">Умножение в столбик</div>
-        </a>
-        <a href="./long-addition.html" class="game-card">
-            <div class="game-icon">
-                <!-- Column Addition Icon -->
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" style="width: 80%; height: 80%;">
-                    <defs>
-                        <pattern id="grid-add" width="20" height="20" patternUnits="userSpaceOnUse">
-                            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#E2E8F0" stroke-width="1"/>
-                        </pattern>
-                    </defs>
-                    <rect width="100" height="100" rx="14" fill="#F8FAFC"/>
-                    <rect width="100" height="100" rx="14" fill="url(#grid-add)"/>
-
-                    <!-- First addend 47 -->
-                    <text x="34" y="34" font-family="system-ui, sans-serif" font-size="24" font-weight="700" fill="#334155">47</text>
-
-                    <!-- Second addend + 25 -->
-                    <text x="14" y="62" font-family="system-ui, sans-serif" font-size="22" font-weight="700" fill="#60ACBD">+ 25</text>
-
-                    <!-- Line -->
-                    <path d="M 14 70 L 68 70" fill="none" stroke="#60ACBD" stroke-width="4" stroke-linecap="round"/>
-
-                    <!-- Sum 72 -->
-                    <text x="34" y="93" font-family="system-ui, sans-serif" font-size="24" font-weight="700" fill="#4CAF50">72</text>
-                </svg>
-            </div>
-            <div class="game-title" data-i18n="game_addition">Сложение в столбик</div>
-        </a>
-        <a href="./long-subtraction.html" class="game-card">
-            <div class="game-icon">
-                <!-- Column Subtraction Icon -->
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" style="width: 80%; height: 80%;">
-                    <defs>
-                        <pattern id="grid-sub" width="20" height="20" patternUnits="userSpaceOnUse">
-                            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#E2E8F0" stroke-width="1"/>
-                        </pattern>
-                    </defs>
-                    <rect width="100" height="100" rx="14" fill="#F8FAFC"/>
-                    <rect width="100" height="100" rx="14" fill="url(#grid-sub)"/>
-
-                    <!-- Minuend 72 -->
-                    <text x="34" y="34" font-family="system-ui, sans-serif" font-size="24" font-weight="700" fill="#334155">72</text>
-
-                    <!-- Subtrahend − 25 -->
-                    <text x="14" y="62" font-family="system-ui, sans-serif" font-size="22" font-weight="700" fill="#60ACBD">− 25</text>
-
-                    <!-- Line -->
-                    <path d="M 14 70 L 68 70" fill="none" stroke="#60ACBD" stroke-width="4" stroke-linecap="round"/>
-
-                    <!-- Difference 47 -->
-                    <text x="34" y="93" font-family="system-ui, sans-serif" font-size="24" font-weight="700" fill="#4CAF50">47</text>
-                </svg>
-            </div>
-            <div class="game-title" data-i18n="game_subtraction">Вычитание в столбик</div>
-        </a>
-        <a href="./money-problems.html" class="game-card">
-            <div class="game-icon">
-                <!-- Money icon: a banknote with a coin -->
+                <!-- Challenge icon: progress bar and star -->
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" style="width: 80%; height: 80%;">
                     <rect width="100" height="100" rx="14" fill="#F8FAFC"/>
-                    <rect x="10" y="24" width="60" height="38" rx="6" fill="#E3F2FD" stroke="#60ACBD" stroke-width="4"/>
-                    <text x="40" y="51" font-family="system-ui, sans-serif" font-size="24" font-weight="700" fill="#60ACBD" text-anchor="middle">€</text>
-                    <circle cx="72" cy="68" r="17" fill="#FFF6DD" stroke="#E0A800" stroke-width="4"/>
-                    <text x="72" y="75" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#B8860B" text-anchor="middle">1</text>
+                    <rect x="14" y="52" width="56" height="14" rx="7" fill="#E2E8F0"/>
+                    <rect x="14" y="52" width="36" height="14" rx="7" fill="#F59E0B"/>
+                    <path d="M75 20 L78.23 28.55 L87.36 28.98 L80.23 34.7 L82.64 43.52 L75 38.5 L67.36 43.52 L69.77 34.7 L62.64 28.98 L71.77 28.55 Z" fill="#F59E0B"/>
                 </svg>
             </div>
-            <div class="game-title" data-i18n="game_money">Задачи про деньги</div>
+            <div class="game-title" data-i18n="ch_title">Челлендж</div>
         </a>
     </div>
+
+    <script>
+        // The grid is rendered from games.js, so a new game only has to be registered there
+        (function () {
+            'use strict';
+            const grid = document.getElementById('gameGrid');
+            window.BrainWarsGames.all().forEach((game) => {
+                const card = document.createElement('a');
+                card.className = 'game-card' + (game.highlight ? ' active' : '');
+                card.href = './' + game.file;
+
+                const icon = document.createElement('div');
+                icon.className = 'game-icon';
+                icon.innerHTML = game.icon;
+
+                const title = document.createElement('div');
+                title.className = 'game-title';
+                title.setAttribute('data-i18n', game.titleKey);
+                title.textContent = window.I18n.t(game.titleKey);
+
+                card.append(icon, title);
+                grid.appendChild(card);
+            });
+            window.I18n.applyTranslations(grid);
+        })();
+    </script>
 </body>
 </html>

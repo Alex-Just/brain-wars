@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="ch_title">Челлендж</title>
+    <script src="i18n.js"></script>
+    <script src="games.js"></script>
+    <script src="challenge.js"></script>
+    <style>
+        :root {
+            --color-primary-dark: #4d8a98;
+            --color-success-dark: #2E7D32;
+            --color-amber: #F59E0B;
+            --color-text: #333333;
+            --color-text-secondary: #666666;
+            --color-background: #f5f5f5;
+            --radius-lg: 20px;
+            --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :focus-visible {
+            outline: 3px solid var(--color-primary-dark);
+            outline-offset: 2px;
+        }
+
+        [hidden] {
+            display: none !important;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--color-background);
+            color: var(--color-text);
+            margin: 0;
+            min-height: 100vh;
+            min-height: 100svh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            justify-content: safe center;
+            padding: 20px;
+            touch-action: manipulation;
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+        }
+
+        @supports (padding: max(0px)) {
+            body {
+                padding: max(20px, env(safe-area-inset-top))
+                         max(20px, env(safe-area-inset-right))
+                         max(20px, env(safe-area-inset-bottom))
+                         max(20px, env(safe-area-inset-left));
+            }
+        }
+
+        h1 {
+            font-size: clamp(28px, 6vw, 42px);
+            font-weight: 400;
+            text-align: center;
+            margin: 0 0 24px 0;
+        }
+
+        .back {
+            position: fixed;
+            top: max(12px, env(safe-area-inset-top));
+            left: max(12px, env(safe-area-inset-left));
+            z-index: 100;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 44px;
+            min-height: 44px;
+            border-radius: 10px;
+            background: #fff;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            color: var(--color-text-secondary);
+            font-size: 18px;
+            line-height: 1;
+            text-decoration: none;
+        }
+
+        .lang-bar {
+            position: fixed;
+            top: max(12px, env(safe-area-inset-top));
+            right: max(12px, env(safe-area-inset-right));
+            z-index: 100;
+        }
+
+        .card {
+            width: min(92vw, 420px);
+            background: #fff;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-card);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .field {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .field-label {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--color-text);
+        }
+
+        .stepper {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .stepper button {
+            width: 44px;
+            height: 44px;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            background: #fff;
+            color: var(--color-text);
+            font-family: inherit;
+            font-size: 22px;
+            font-weight: 700;
+            line-height: 1;
+            cursor: pointer;
+        }
+
+        .stepper button:disabled {
+            opacity: 0.35;
+            cursor: default;
+        }
+
+        .stepper output {
+            min-width: 56px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .primary {
+            min-height: 54px;
+            border: none;
+            border-radius: 14px;
+            background: var(--color-primary-dark);
+            color: #fff;
+            font-family: inherit;
+            font-size: 19px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(77, 138, 152, 0.35);
+        }
+
+        .primary:active {
+            transform: scale(0.98);
+        }
+
+        .ghost {
+            min-height: 46px;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            background: #fff;
+            color: #475569;
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .summary-icon {
+            font-size: 56px;
+            line-height: 1;
+            text-align: center;
+        }
+
+        .summary-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--color-success-dark);
+            text-align: center;
+        }
+
+        .stars {
+            font-size: 30px;
+            letter-spacing: 4px;
+            text-align: center;
+            color: var(--color-amber);
+        }
+
+        .line {
+            font-size: 16px;
+            color: #475569;
+            text-align: center;
+        }
+
+        @media (hover: hover) {
+            .stepper button:hover:not(:disabled),
+            .ghost:hover {
+                background: #f8fafc;
+                border-color: var(--color-primary-dark);
+            }
+            .primary:hover {
+                background: #3b6d78;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a class="back" href="./index.html" data-i18n-aria-label="nav_back" aria-label="Назад к играм">←</a>
+    <div class="lang-bar" data-lang-toggle></div>
+    <h1 data-i18n="ch_title">Челлендж</h1>
+
+    <main class="card" id="setup">
+        <div class="field">
+            <span class="field-label" data-i18n="ch_games_label">Игр</span>
+            <div class="stepper">
+                <button type="button" id="gamesDown" data-i18n-aria-label="ch_decrease" aria-label="Меньше">−</button>
+                <output id="gamesOut" aria-live="polite">10</output>
+                <button type="button" id="gamesUp" data-i18n-aria-label="ch_increase" aria-label="Больше">+</button>
+            </div>
+        </div>
+        <div class="field">
+            <span class="field-label" data-i18n="ch_difficulty_label">Сложность</span>
+            <div class="stepper">
+                <button type="button" id="levelDown" data-i18n-aria-label="ch_decrease" aria-label="Меньше">−</button>
+                <output id="levelOut" aria-live="polite">10</output>
+                <button type="button" id="levelUp" data-i18n-aria-label="ch_increase" aria-label="Больше">+</button>
+            </div>
+        </div>
+        <button type="button" class="primary" id="startBtn" data-i18n="ch_start">Начать</button>
+        <button type="button" class="ghost" id="continueBtn" hidden></button>
+    </main>
+
+    <main class="card" id="summary" hidden>
+        <div class="summary-icon" aria-hidden="true">🏆</div>
+        <div class="summary-title" data-i18n="ch_done_title">Челлендж пройден!</div>
+        <div class="stars" id="stars" role="img"></div>
+        <div class="line" id="doneLine"></div>
+        <div class="line" id="retriesLine"></div>
+        <button type="button" class="primary" id="againBtn" data-i18n="ch_play_again">Играть снова</button>
+    </main>
+
+    <script>
+        (function () {
+            'use strict';
+
+            const Challenge = window.BrainWarsChallenge;
+            const I18n = window.I18n;
+            const gamesLimits = Challenge.limits.games;
+            const levelLimits = Challenge.limits.level;
+
+            const setupView = document.getElementById('setup');
+            const summaryView = document.getElementById('summary');
+            const gamesOut = document.getElementById('gamesOut');
+            const levelOut = document.getElementById('levelOut');
+            const gamesDown = document.getElementById('gamesDown');
+            const gamesUp = document.getElementById('gamesUp');
+            const levelDown = document.getElementById('levelDown');
+            const levelUp = document.getElementById('levelUp');
+
+            let games = Challenge.defaults.games;
+            let level = Challenge.defaults.level;
+
+            function renderSetup() {
+                gamesOut.textContent = games;
+                levelOut.textContent = level;
+                gamesDown.disabled = games <= gamesLimits[0];
+                gamesUp.disabled = games >= gamesLimits[1];
+                levelDown.disabled = level <= levelLimits[0];
+                levelUp.disabled = level >= levelLimits[1];
+            }
+
+            function step(value, delta, limits) {
+                return Challenge.clamp(value + delta, limits);
+            }
+
+            gamesDown.addEventListener('click', () => { games = step(games, -1, gamesLimits); renderSetup(); });
+            gamesUp.addEventListener('click', () => { games = step(games, 1, gamesLimits); renderSetup(); });
+            levelDown.addEventListener('click', () => { level = step(level, -1, levelLimits); renderSetup(); });
+            levelUp.addEventListener('click', () => { level = step(level, 1, levelLimits); renderSetup(); });
+
+            document.getElementById('startBtn').addEventListener('click', () => {
+                Challenge.createRun(games, level);
+                window.location.href = Challenge.stepUrl(Challenge.loadRun());
+            });
+
+            document.getElementById('againBtn').addEventListener('click', () => {
+                games = Challenge.defaults.games;
+                level = Challenge.defaults.level;
+                renderSetup();
+                summaryView.hidden = true;
+                setupView.hidden = false;
+            });
+
+            function showSummary(run) {
+                const stars = run.retries === 0 ? 3 : run.retries <= 2 ? 2 : 1;
+                const starsEl = document.getElementById('stars');
+                starsEl.textContent = '★'.repeat(stars) + '☆'.repeat(3 - stars);
+                starsEl.setAttribute('aria-label', I18n.t('ch_stars_aria', { n: stars }));
+                document.getElementById('doneLine').textContent = I18n.t('ch_done_line', { total: run.solved });
+                document.getElementById('retriesLine').textContent = I18n.t('ch_retries', { n: run.retries });
+                setupView.hidden = true;
+                summaryView.hidden = false;
+                Challenge.clearRun();
+            }
+
+            function offerContinue(run) {
+                const button = document.getElementById('continueBtn');
+                button.hidden = false;
+                button.textContent = I18n.t('ch_continue_run', { solved: run.solved, total: run.total });
+                button.addEventListener('click', () => {
+                    window.location.href = Challenge.stepUrl(run);
+                });
+            }
+
+            const run = Challenge.loadRun();
+            if (run && new URLSearchParams(location.search).has('done')) {
+                showSummary(run);
+            } else if (run && run.solved > 0) {
+                offerContinue(run);
+            }
+            renderSetup();
+        })();
+    </script>
+</body>
+</html>

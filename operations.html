@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Математика</title>
     <script src="i18n.js"></script>
+    <script src="games.js"></script>
+    <script src="challenge.js"></script>
     <style>
         /* Add CSS variables at the root */
         :root {
@@ -254,6 +256,11 @@
             position: fixed;
             top: max(15px, env(safe-area-inset-top));
             right: max(15px, env(safe-area-inset-right));
+            /* Same height as the language pill, so both sit on the row's centre line */
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            height: 52px;
             font-size: clamp(16px, 4vw, 20px);
             padding: 10px 15px;
             border-radius: 6px;
@@ -700,7 +707,8 @@
             }
 
             #startGameDirectly() {
-                console.log("Starting game directly...");
+                this.#state.level = Math.max(1, BrainWarsChallenge.startLevel());
+                this.#elements.levelDisplay.textContent = I18n.t('level_label', { n: this.#state.level });
                 this.#generateProblem();
             }
 

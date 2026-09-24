@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Повтори за мной</title>
   <script src="i18n.js"></script>
+  <script src="games.js"></script>
+  <script src="challenge.js"></script>
   <style>
     /* Basic reset and centering */
     body {
@@ -176,6 +178,11 @@
       position: fixed;
       top: max(15px, env(safe-area-inset-top));
       right: max(15px, env(safe-area-inset-right));
+      /* Same height as the language pill, so both sit on the row's centre line */
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      height: 52px;
       font-size: clamp(16px, 4vw, 20px);
       padding: 10px 15px;
       border-radius: 6px;
@@ -475,40 +482,37 @@
 
       // Update startGame method
       async startGameDirectly() {
-        console.log("Starting game directly...");
+        const startLevel = Math.max(1, BrainWarsChallenge.startLevel());
 
         this.resetGame();
         this.setMessage('ftl_remember');
-        
-        const initialSquares = this.calculateTotalSquares(1);
-        while (this.sequence.length < initialSquares) {
+
+        const totalSquares = this.calculateTotalSquares(startLevel);
+        while (this.sequence.length < totalSquares) {
           const randomIndex = this.getRandomSquare();
           if (randomIndex !== null) {
             this.sequence.push(randomIndex);
           }
         }
-        this.level = 1;
-        this.levelDisplayEl.textContent = I18n.t('level_label', { n: 1 });
+        this.level = startLevel;
+        this.speed = this.speedForLevel(startLevel);
+        this.levelDisplayEl.textContent = I18n.t('level_label', { n: startLevel });
         await this.playSequence();
+      }
+
+      // A level that adds a square starts fresh; otherwise the sequence speeds up
+      speedForLevel(level) {
+        const grew = this.calculateTotalSquares(level - 1) > this.calculateTotalSquares(level - 2);
+        if (grew) return this.INITIAL_SPEED;
+        const increase = this.SPEED_DECREASE + Math.floor(level / 10) * 5;
+        return Math.max(this.MIN_SPEED, this.INITIAL_SPEED - (level - 1) * increase);
       }
 
       // Update nextLevel method
       async nextLevel() {
         this.level++;
         this.levelDisplayEl.textContent = I18n.t('level_label', { n: this.level });
-        
-        // Calculate if we're adding a new square this level
-        const previousSquares = this.calculateTotalSquares(this.level - 2);
-        const currentSquares = this.calculateTotalSquares(this.level - 1);
-        const addingNewSquare = currentSquares > previousSquares;
-        
-        if (addingNewSquare) {
-          this.speed = this.INITIAL_SPEED; // Reset to initial speed
-        } else {
-          const currentSpeedIncrease = this.SPEED_DECREASE + Math.floor(this.level / 10) * 5;
-          this.speed = Math.max(this.MIN_SPEED, this.INITIAL_SPEED - (this.level - 1) * currentSpeedIncrease);
-        }
-        
+        this.speed = this.speedForLevel(this.level);
         this.setMessage('ftl_remember_next', { n: this.level });
         this.playerSequence = [];
 
