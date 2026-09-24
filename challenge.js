@@ -56,18 +56,17 @@
         }
     }
 
-    // A language picked by hand sticks for the run, or for the next one when no run exists yet
+    // A language picked by hand sticks for the run, and for the next one a challenge starts
     function rememberManualLanguage(lang) {
-        const current = loadRun();
-        if (current) {
-            current.lang = lang;
-            saveRun(current);
-            return;
-        }
         try {
             global.localStorage.setItem(LANG_KEY, lang);
         } catch (error) {
             /* private mode */
+        }
+        const current = loadRun();
+        if (current) {
+            current.lang = lang;
+            saveRun(current);
         }
     }
 
