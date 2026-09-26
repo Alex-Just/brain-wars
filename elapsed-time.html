@@ -634,8 +634,9 @@
                     maxLevel: BrainWarsElapsed.maxLevel,
                     // How long the green "correct" beat stays before the next question
                     advanceDelay: 900,
-                    // Digits each box takes, by box name
-                    boxLength: { hours: 2, minutes: 2, durHours: 1, durMinutes: 2 }
+                    // Digits each box takes, by box name. The hours boxes accept both
+                    // spellings ("7" and "07"); the minutes boxes always take two digits.
+                    boxLength: { hours: 2, minutes: 2, durHours: 2, durMinutes: 2 }
                 };
             }
 
@@ -671,9 +672,9 @@
                     // Which wording of the question is shown (plain or one of the stories)
                     templateIndex: 0,
                     answers: { hours: '', minutes: '', durHours: '', durMinutes: '' },
-                    // What each box has to hold, taken from the answer; a box that can hold
-                    // no more digits, or already holds the answer, is settled
-                    expected: {},
+                    // The hour answers, by box name: an hours box settles as soon as it
+                    // holds one, while the minutes boxes always wait for two digits
+                    expectedHours: {},
                     enabledBoxes: ['hours', 'minutes'],
                     activeBox: 'hours',
                     // 'correct' | 'wrong' | 'fill' | 'hour-range' | 'minute-range' | null
@@ -741,7 +742,7 @@
                 this.#state.question = question;
                 this.#state.templateIndex = question.story ? 1 + this.#randomInt(0, keys.length - 2) : 0;
                 this.#state.answers = { hours: '', minutes: '', durHours: '', durMinutes: '' };
-                this.#state.expected = this.#expectedValues(question);
+                this.#state.expectedHours = this.#expectedHours(question);
                 this.#state.enabledBoxes = this.#boxesFor(question);
                 this.#state.activeBox = this.#state.enabledBoxes[0];
                 this.#state.hint = null;
@@ -768,25 +769,29 @@
                 return question.format === 'hoursMinutes' ? ['durHours', 'durMinutes'] : ['durMinutes'];
             }
 
-            // The number each box has to hold, taken from the answer
-            #expectedValues(question) {
+            // The hour answer each hours box has to hold, taken from the question
+            #expectedHours(question) {
                 if (question.kind === 'duration') {
-                    if (question.format === 'minutes') return { durMinutes: question.duration };
-                    return {
-                        durHours: Math.floor(question.duration / 60),
-                        durMinutes: question.duration % 60
-                    };
+                    return question.format === 'hoursMinutes'
+                        ? { durHours: Math.floor(question.duration / 60) }
+                        : {};
                 }
                 const answer = BrainWarsElapsed.toClock(question.kind === 'end' ? question.end : question.start);
-                return { hours: answer.hours, minutes: answer.minutes };
+                return { hours: answer.hours };
             }
 
-            // A box is settled when it already holds the answer, or can hold no more
-            // digits; the other games work the same way, so no key ever has to be pressed
+            // A box is settled when it can hold no more digits, or when it already holds
+            // the answer. The minutes boxes always take two digits ("05", "00"), so they
+            // settle by length alone; an hours box never needs a leading zero.
             #boxComplete(name) {
                 const typed = this.#state.answers[name];
                 if (!typed) return false;
-                return typed.length >= this.#config.boxLength[name] || Number(typed) === this.#state.expected[name];
+                if (typed.length >= this.#config.boxLength[name]) return true;
+                return !this.#isMinutesBox(name) && Number(typed) === this.#state.expectedHours[name];
+            }
+
+            #isMinutesBox(name) {
+                return name === 'minutes' || name === 'durMinutes';
             }
 
             #allBoxesComplete() {
