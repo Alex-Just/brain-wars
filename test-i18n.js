@@ -201,6 +201,18 @@ check('the challenge page loads its scripts', () => {
     });
 });
 
+check('every page uses the same back arrow', () => {
+    // A text arrow (←) renders differently on every platform, so all pages carry the same SVG
+    INTEGRATED_PAGES.filter((file) => file !== 'index.html').forEach((file) => {
+        const html = fs.readFileSync(path.join(__dirname, file), 'utf8');
+        assert.ok(html.includes('id="backBtn"'), file + ': the back button must be #backBtn');
+        assert.ok(html.includes('class="back-arrow"'), file + ': the back button must use the shared svg arrow');
+        assert.ok(html.includes('viewBox="0 0 24 24" width="22" height="22"'), file + ': the arrow must be 22px');
+        assert.ok(html.includes('href="./index.html"'), file + ': the back button must point at the hub');
+        assert.ok(!html.includes('>←<'), file + ': no text arrow left');
+    });
+});
+
 console.log('challenge run plan');
 check('every game type is played once before any of them comes back', () => {
     const challenge = require('./challenge.js');
