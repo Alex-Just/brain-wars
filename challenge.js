@@ -222,14 +222,14 @@
         style.id = 'challenge-styles';
         style.textContent = `
             .ch-bar { position: fixed; top: 0; left: 0; right: 0; z-index: 400; display: flex;
-                align-items: center; gap: 8px; box-sizing: border-box;
+                align-items: center; gap: 8px; box-sizing: border-box; min-height: 30px;
                 padding: max(8px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-left)) 8px;
                 background: rgba(255, 255, 255, 0.97); border-bottom: 1px solid #e2e8f0;
                 box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05); font-family: inherit; }
             .ch-track { flex: 1 1 auto; display: flex; gap: 2px; height: 10px; min-width: 40px; }
             .ch-seg { flex: 1 1 0; min-width: 2px; border-radius: 3px; background: #e2e8f0; }
             .ch-seg.is-done { background: #4CAF50; }
-            .ch-flag { flex: 0 0 auto; font-size: 14px; }
+            .ch-flag { flex: 0 0 auto; font-size: 14px; line-height: 1; }
             body.has-challenge {
                 --ch-bar-offset: calc(34px + env(safe-area-inset-top, 0px));
                 padding-top: var(--ch-bar-offset);
@@ -284,6 +284,16 @@
         bar.append(track, flag);
         document.body.appendChild(bar);
         document.body.classList.add('has-challenge');
+
+        // Reserve the bar's real height plus the same gap the games put under their header
+        // row (10px), so the space above and below the flags stays equal on every device,
+        // notch or not.
+        const headerGap = 10;
+        document.body.style.setProperty(
+            '--ch-bar-offset',
+            Math.ceil(bar.getBoundingClientRect().height) + headerGap + 'px'
+        );
+
         return flag;
     }
 
