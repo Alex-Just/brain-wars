@@ -22,8 +22,6 @@
     // The game pages own their DOM; polling their two signals is simpler and steadier
     // than re-binding observers per game, and the signals stay up for hundreds of ms.
     const SIGNAL_POLL_MS = 250;
-    // Time to let the game's own success screen play before moving on
-    const ADVANCE_MS = 1500;
 
     /* ------------------------------ run model ------------------------------ */
 
@@ -316,13 +314,12 @@
 
     /* ------------------------------ step flow ------------------------------ */
 
-    // The games show their own success screen; the run just moves straight on.
-    // A step with mistakes only lights the warning dot in the bar.
+    // The game's own success screen is hidden during a run, so move on the moment the
+    // step registers: waiting here only looks like a freeze.
     function finishStep(flag) {
         if (run.dirty && flag) flag.hidden = false;
-        // No stray taps while the next game is loading (some games advance on a tap)
         document.body.style.pointerEvents = 'none';
-        global.setTimeout(() => { global.location.href = completeStep(); }, ADVANCE_MS);
+        global.location.href = completeStep();
     }
 
     function watchSignals(flag) {
