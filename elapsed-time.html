@@ -465,19 +465,10 @@
             background: #f1f5f9;
         }
 
-        .numpad-btn.is-check {
-            background: var(--color-primary-dark);
-            border-color: var(--color-primary-dark);
-            color: white;
-        }
-
-        .numpad-btn.is-check:active {
-            background: #3b6d78;
-        }
-
-        .numpad-btn.is-back {
-            color: var(--color-text-secondary);
-            font-size: clamp(17px, 4.5vw, 20px);
+        /* Like the other games, the pad holds digits only, so the bottom row carries
+           the zero on its own */
+        .numpad-btn[data-key="0"] {
+            grid-column: 2;
         }
 
         @media (max-width: 360px) {
@@ -610,9 +601,7 @@
             <button type="button" class="numpad-btn" data-key="7">7</button>
             <button type="button" class="numpad-btn" data-key="8">8</button>
             <button type="button" class="numpad-btn" data-key="9">9</button>
-            <button type="button" class="numpad-btn is-back" data-key="backspace" data-i18n-aria-label="et_back_aria" aria-label="Стереть">⌫</button>
             <button type="button" class="numpad-btn" data-key="0">0</button>
-            <button type="button" class="numpad-btn is-check" data-key="check" data-i18n-aria-label="et_check_aria" aria-label="Проверить">✓</button>
         </div>
     </main>
 
@@ -682,10 +671,15 @@
                     // Which wording of the question is shown (plain or one of the stories)
                     templateIndex: 0,
                     answers: { hours: '', minutes: '', durHours: '', durMinutes: '' },
+                    // What each box has to hold, taken from the answer; a box that can hold
+                    // no more digits, or already holds the answer, is settled
+                    expected: {},
                     enabledBoxes: ['hours', 'minutes'],
                     activeBox: 'hours',
                     // 'correct' | 'wrong' | 'fill' | 'hour-range' | 'minute-range' | null
                     hint: null,
+                    hintTimer: null,
+                    checkTimer: null,
                     hadErrorThisRound: false,
                     locked: false
                 };
@@ -743,9 +737,11 @@
             #startRound() {
                 const question = BrainWarsElapsed.build(this.#state.level, undefined, this.#state.question);
                 const keys = ElapsedTimeGame.#QUESTION_KEYS[question.kind];
+                this.#cancelTimers();
                 this.#state.question = question;
                 this.#state.templateIndex = question.story ? 1 + this.#randomInt(0, keys.length - 2) : 0;
                 this.#state.answers = { hours: '', minutes: '', durHours: '', durMinutes: '' };
+                this.#state.expected = this.#expectedValues(question);
                 this.#state.enabledBoxes = this.#boxesFor(question);
                 this.#state.activeBox = this.#state.enabledBoxes[0];
                 this.#state.hint = null;
@@ -754,11 +750,58 @@
                 this.#render();
             }
 
+            #cancelTimers() {
+                if (this.#state.hintTimer) {
+                    clearTimeout(this.#state.hintTimer);
+                    this.#state.hintTimer = null;
+                }
+                if (this.#state.checkTimer) {
+                    clearTimeout(this.#state.checkTimer);
+                    this.#state.checkTimer = null;
+                }
+            }
+
             // Which boxes the answer uses: a time is hours : minutes, a span is minutes
             // alone when it is under an hour and hours and minutes otherwise.
             #boxesFor(question) {
                 if (question.kind !== 'duration') return ['hours', 'minutes'];
                 return question.format === 'hoursMinutes' ? ['durHours', 'durMinutes'] : ['durMinutes'];
+            }
+
+            // The number each box has to hold, taken from the answer
+            #expectedValues(question) {
+                if (question.kind === 'duration') {
+                    if (question.format === 'minutes') return { durMinutes: question.duration };
+                    return {
+                        durHours: Math.floor(question.duration / 60),
+                        durMinutes: question.duration % 60
+                    };
+                }
+                const answer = BrainWarsElapsed.toClock(question.kind === 'end' ? question.end : question.start);
+                return { hours: answer.hours, minutes: answer.minutes };
+            }
+
+            // A box is settled when it already holds the answer, or can hold no more
+            // digits; the other games work the same way, so no key ever has to be pressed
+            #boxComplete(name) {
+                const typed = this.#state.answers[name];
+                if (!typed) return false;
+                return typed.length >= this.#config.boxLength[name] || Number(typed) === this.#state.expected[name];
+            }
+
+            #allBoxesComplete() {
+                return this.#state.enabledBoxes.every((name) => this.#boxComplete(name));
+            }
+
+            // The first open box at or after `name`, then around the row
+            #openBoxFrom(name) {
+                const boxes = this.#state.enabledBoxes;
+                const start = Math.max(boxes.indexOf(name), 0);
+                for (let step = 0; step < boxes.length; step++) {
+                    const box = boxes[(start + step) % boxes.length];
+                    if (!this.#boxComplete(box)) return box;
+                }
+                return null;
             }
 
             /* ---------- rendering ---------- */
@@ -880,7 +923,8 @@
 
             #setActiveBox(name) {
                 if (this.#state.locked || !this.#state.enabledBoxes.includes(name)) return;
-                this.#state.activeBox = name;
+                // Tapping a settled box hands the pen to the next open one
+                this.#state.activeBox = this.#boxComplete(name) ? (this.#openBoxFrom(name) || name) : name;
                 this.#renderBoxes();
             }
 
@@ -898,16 +942,23 @@
             }
 
             #typeDigit(digit) {
-                const name = this.#state.activeBox;
-                const value = this.#state.answers[name];
-                if (value.length >= this.#config.boxLength[name]) return;
+                const name = this.#openBoxFrom(this.#state.activeBox);
+                if (!name) return;
+                this.#state.activeBox = name;
                 this.#clearHint();
-                this.#state.answers[name] = value + digit;
-                const next = this.#state.enabledBoxes[this.#state.enabledBoxes.indexOf(name) + 1];
-                if (next && this.#state.answers[name].length >= this.#config.boxLength[name]) {
-                    this.#state.activeBox = next;
-                }
+                this.#state.answers[name] += digit;
+                this.#state.activeBox = this.#openBoxFrom(name) || name;
                 this.#renderBoxes();
+                if (this.#allBoxesComplete()) this.#scheduleCheck();
+            }
+
+            // The other games check the moment the last box fills; a beat later reads calmer
+            #scheduleCheck() {
+                if (this.#state.checkTimer) return;
+                this.#state.checkTimer = setTimeout(() => {
+                    this.#state.checkTimer = null;
+                    this.#checkAnswer();
+                }, 80);
             }
 
             #backspace() {
@@ -923,13 +974,40 @@
             }
 
             #clearHint() {
-                if (this.#state.hint && this.#state.hint !== 'correct') {
-                    this.#state.hint = null;
-                    this.#renderHint();
+                if (!this.#state.hint || this.#state.hint === 'correct') return;
+                if (this.#state.hintTimer) {
+                    clearTimeout(this.#state.hintTimer);
+                    this.#state.hintTimer = null;
                 }
+                this.#state.hint = null;
+                this.#renderHint();
+            }
+
+            // Shows feedback, and (for mistakes) lets it fade by itself like the other games
+            #showHint(status, autoClearMs) {
+                if (this.#state.hintTimer) {
+                    clearTimeout(this.#state.hintTimer);
+                    this.#state.hintTimer = null;
+                }
+                this.#state.hint = status;
+                this.#renderHint();
+                if (!autoClearMs) return;
+                const shown = status;
+                this.#state.hintTimer = setTimeout(() => {
+                    this.#state.hintTimer = null;
+                    if (this.#state.hint === shown) {
+                        this.#state.hint = null;
+                        this.#renderHint();
+                    }
+                }, autoClearMs);
             }
 
             #checkAnswer() {
+                if (this.#state.locked) return;
+                if (this.#state.checkTimer) {
+                    clearTimeout(this.#state.checkTimer);
+                    this.#state.checkTimer = null;
+                }
                 const question = this.#state.question;
                 const isDuration = question.kind === 'duration';
                 const status = BrainWarsElapsed.check(question, {
@@ -942,14 +1020,20 @@
                     return;
                 }
                 if (status === 'incomplete') {
-                    this.#state.hint = 'fill';
-                    this.#renderHint();
+                    this.#showHint('fill');
                     return;
                 }
+                this.#handleWrong(status);
+            }
+
+            #handleWrong(status) {
                 this.#state.hadErrorThisRound = true;
-                this.#state.hint = status;
-                this.#renderHint();
+                this.#showHint(status, 1200);
                 this.#shakeBoxes();
+                // Clear the entry so it can be typed again, the way the other games do
+                this.#state.answers = { hours: '', minutes: '', durHours: '', durMinutes: '' };
+                this.#state.activeBox = this.#state.enabledBoxes[0];
+                this.#renderBoxes();
             }
 
             #boxValue(name) {
@@ -978,7 +1062,7 @@
 
             #handleCorrect() {
                 this.#state.locked = true;
-                this.#state.hint = 'correct';
+                this.#showHint('correct');
                 // A clean first try moves the ladder up; a round with mistakes is repeated
                 if (!this.#state.hadErrorThisRound) {
                     this.#state.level = Math.min(this.#config.maxLevel, this.#state.level + 1);
