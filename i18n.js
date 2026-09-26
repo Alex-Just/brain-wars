@@ -214,6 +214,38 @@
             mp_name_18: 'Bella',
             mp_name_19: 'Clara',
             mp_name_20: 'Maya',
+            // Elapsed time (et_*),
+            game_elapsed: 'Elapsed Time',
+            et_level_menu_aria: 'Choose the level',
+            et_numpad_aria: 'Number pad',
+            et_back_aria: 'Erase',
+            et_check_aria: 'Check',
+            et_answer_aria: 'Your answer',
+            et_hours_aria: 'Hours',
+            et_minutes_aria: 'Minutes',
+            et_box_hours: 'h',
+            et_box_minutes: 'min',
+            et_clock_aria: 'The clock shows {time}',
+            et_span_aria: 'From {start} to {end}',
+            et_format_minutes: 'Answer in minutes',
+            et_format_hours_minutes: 'Answer in hours and minutes',
+            et_correct: 'Correct!',
+            et_wrong: 'Not quite, try again',
+            et_fill: 'Type the answer first',
+            et_range_hours: 'Hours go from 1 to 12',
+            et_range_minutes: 'Minutes go from 0 to 59',
+            et_q_end_plain: "It's {time}. What time will it be in {duration}?",
+            et_q_end_1: 'The cake goes into the oven at {time} and bakes for {duration}. When is it ready?',
+            et_q_end_2: 'The bus leaves at {time} and the ride takes {duration}. What time does it arrive?',
+            et_q_end_3: 'Football practice starts at {time} and lasts {duration}. What time does it end?',
+            et_q_start_plain: "It's {time}. What time was it {duration} ago?",
+            et_q_start_1: 'The cake comes out of the oven at {time}. It baked for {duration}. When did it go in?',
+            et_q_start_2: 'The bus arrives at {time}. The ride took {duration}. What time did it leave?',
+            et_q_start_3: 'The film ends at {time}. It lasts {duration}. What time did it start?',
+            et_q_dur_plain: 'How much time passes between the two times?',
+            et_q_dur_1: 'Maria read her book. How long did she read?',
+            et_q_dur_2: 'The cake was in the oven. How long was it baking?',
+            et_q_dur_3: 'The bus was on the road. How long was the ride?',
             // Challenge mode (ch_*),
             ch_title: 'Challenge',
             ch_games_label: 'Games',
@@ -432,6 +464,38 @@
             mp_name_18: 'Rocío',
             mp_name_19: 'Pilar',
             mp_name_20: 'Inés',
+            // Elapsed time (et_*),
+            game_elapsed: 'Tiempo transcurrido',
+            et_level_menu_aria: 'Elige el nivel',
+            et_numpad_aria: 'Teclado numérico',
+            et_back_aria: 'Borrar',
+            et_check_aria: 'Comprobar',
+            et_answer_aria: 'Tu respuesta',
+            et_hours_aria: 'Horas',
+            et_minutes_aria: 'Minutos',
+            et_box_hours: 'h',
+            et_box_minutes: 'min',
+            et_clock_aria: 'El reloj marca {time}',
+            et_span_aria: 'De {start} a {end}',
+            et_format_minutes: 'Responde en minutos',
+            et_format_hours_minutes: 'Responde en horas y minutos',
+            et_correct: '¡Correcto!',
+            et_wrong: 'Casi, inténtalo otra vez',
+            et_fill: 'Escribe primero la respuesta',
+            et_range_hours: 'Las horas van del 1 al 12',
+            et_range_minutes: 'Los minutos van del 0 al 59',
+            et_q_end_plain: 'Son las {time}. ¿Qué hora será en {duration}?',
+            et_q_end_1: 'El pastel entra al horno a las {time} y se hornea {duration}. ¿Cuándo estará listo?',
+            et_q_end_2: 'El autobús sale a las {time} y el viaje dura {duration}. ¿A qué hora llega?',
+            et_q_end_3: 'El entrenamiento empieza a las {time} y dura {duration}. ¿A qué hora termina?',
+            et_q_start_plain: 'Son las {time}. ¿Qué hora era hace {duration}?',
+            et_q_start_1: 'El pastel sale del horno a las {time}. Se horneó {duration}. ¿Cuándo entró?',
+            et_q_start_2: 'El autobús llega a las {time}. El viaje duró {duration}. ¿A qué hora salió?',
+            et_q_start_3: 'La película termina a las {time}. Dura {duration}. ¿A qué hora empezó?',
+            et_q_dur_plain: '¿Cuánto tiempo pasa entre las dos horas?',
+            et_q_dur_1: 'María leyó su libro. ¿Cuánto tiempo leyó?',
+            et_q_dur_2: 'El pastel estuvo en el horno. ¿Cuánto tiempo se horneó?',
+            et_q_dur_3: 'El autobús estuvo en camino. ¿Cuánto duró el viaje?',
             // Challenge mode (ch_*),
             ch_title: 'Desafío',
             ch_games_label: 'Juegos',
@@ -651,6 +715,38 @@
             mp_name_18: 'Дианы',
             mp_name_19: 'Наташи',
             mp_name_20: 'Иры',
+            // Elapsed time (et_*),
+            game_elapsed: 'Сколько времени прошло?',
+            et_level_menu_aria: 'Выберите уровень',
+            et_numpad_aria: 'Цифровая клавиатура',
+            et_back_aria: 'Стереть',
+            et_check_aria: 'Проверить',
+            et_answer_aria: 'Твой ответ',
+            et_hours_aria: 'Часы',
+            et_minutes_aria: 'Минуты',
+            et_box_hours: 'ч',
+            et_box_minutes: 'мин',
+            et_clock_aria: 'Часы показывают {time}',
+            et_span_aria: 'С {start} до {end}',
+            et_format_minutes: 'Ответь в минутах',
+            et_format_hours_minutes: 'Ответь в часах и минутах',
+            et_correct: 'Верно!',
+            et_wrong: 'Не совсем, попробуй ещё раз',
+            et_fill: 'Сначала впиши ответ',
+            et_range_hours: 'Часы — от 1 до 12',
+            et_range_minutes: 'Минуты — от 0 до 59',
+            et_q_end_plain: 'Сейчас {time}. Какое время будет через {duration}?',
+            et_q_end_1: 'Пирог ставят в духовку в {time}, он печётся {duration}. Когда он будет готов?',
+            et_q_end_2: 'Автобус отправляется в {time}, поездка длится {duration}. В какое время он приедет?',
+            et_q_end_3: 'Тренировка начинается в {time} и длится {duration}. Во сколько она закончится?',
+            et_q_start_plain: 'Сейчас {time}. Какое время было {duration} назад?',
+            et_q_start_1: 'Пирог достают из духовки в {time}. Он пёкся {duration}. Когда его поставили?',
+            et_q_start_2: 'Автобус прибывает в {time}. Поездка длилась {duration}. Во сколько он уехал?',
+            et_q_start_3: 'Фильм заканчивается в {time}. Он идёт {duration}. Во сколько он начался?',
+            et_q_dur_plain: 'Сколько времени проходит между двумя моментами?',
+            et_q_dur_1: 'Мария читала книгу. Сколько времени она читала?',
+            et_q_dur_2: 'Пирог был в духовке. Сколько времени он пёкся?',
+            et_q_dur_3: 'Автобус был в пути. Сколько длилась поездка?',
             // Challenge mode (ch_*),
             ch_title: 'Челлендж',
             ch_games_label: 'Игр',
@@ -911,6 +1007,38 @@
         return timePhraseTokens(lang, hour, minute).map((token) => token.text).join(' ');
     }
 
+    // ---- Duration words ----
+    // Spans read as "1 hour and 25 minutes", "2 часа 2 минуты", "45 minutos".
+    // Russian keeps three plural forms; English and Spanish need one and many.
+    const DURATION_FORMS = {
+        en: { hours: ['hour', 'hours'], minutes: ['minute', 'minutes'], join: ' and ' },
+        es: { hours: ['hora', 'horas'], minutes: ['minuto', 'minutos'], join: ' y ' },
+        ru: { hours: ['час', 'часа', 'часов'], minutes: ['минута', 'минуты', 'минут'], join: ' ' }
+    };
+
+    function pluralIndex(lang, value) {
+        if (lang === 'ru') {
+            const last = value % 10;
+            const lastTwo = value % 100;
+            if (last === 1 && lastTwo !== 11) return 0;
+            if (last >= 2 && last <= 4 && (lastTwo < 12 || lastTwo > 14)) return 1;
+            return 2;
+        }
+        return value === 1 ? 0 : 1;
+    }
+
+    function durationWords(lang, minutes) {
+        const language = DURATION_FORMS[lang] ? lang : DEFAULT_LANG;
+        const forms = DURATION_FORMS[language];
+        const total = Math.max(0, Math.round(minutes));
+        const hours = Math.floor(total / 60);
+        const rest = total % 60;
+        const parts = [];
+        if (hours > 0) parts.push(hours + ' ' + forms.hours[pluralIndex(language, hours)]);
+        if (rest > 0 || hours === 0) parts.push(rest + ' ' + forms.minutes[pluralIndex(language, rest)]);
+        return parts.join(forms.join);
+    }
+
     // ---- DOM application ----
     function applyTranslations(root) {
         if (typeof document === 'undefined') return;
@@ -1008,6 +1136,7 @@
         renderLanguageToggle,
         timePhraseTokens,
         timePhrase,
+        durationWords,
         translations,
         supportedLangs: SUPPORTED_LANGS.slice()
     };

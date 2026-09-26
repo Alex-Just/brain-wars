@@ -212,6 +212,23 @@
                 </svg>
             `
         },
+        {
+            id: 'elapsed-time',
+            file: 'elapsed-time.html',
+            titleKey: 'game_elapsed',
+            level: 'picker',
+            completion: { kind: 'class', selector: '#instructionHint', value: 'is-correct' },
+            mistake: { kind: 'class', selector: '#instructionHint', value: 'is-error' },
+            icon: `
+                <!-- Elapsed time icon: a clock with an arrow running around it -->
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" style="width: 80%; height: 80%;">
+                    <circle cx="44" cy="60" r="25" fill="#F8FAFC" stroke="#60ACBD" stroke-width="5"/>
+                    <path d="M44 46 V60 H60" fill="none" stroke="#7B61FF" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M54 28 A 12 12 0 1 1 66 16" fill="none" stroke="#4CAF50" stroke-width="5" stroke-linecap="round"/>
+                    <polygon points="60,9 60,23 71,16" fill="#4CAF50"/>
+                </svg>
+            `
+        },
     ];
 
     const byId = new Map(games.map((game) => [game.id, game]));

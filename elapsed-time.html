@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* Boot loader: painted before the deferred scripts run, faded out when the page is ready */
+        #boot-loader {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f5f5f5;
+            transition: opacity 0.25s ease;
+        }
+        #boot-loader.is-done {
+            opacity: 0;
+            pointer-events: none;
+        }
+        #boot-loader::after {
+            content: '';
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 3px solid rgba(0, 0, 0, 0.12);
+            border-top-color: #4d8a98;
+            animation: boot-spin 0.8s linear infinite;
+        }
+        @keyframes boot-spin {
+            to { transform: rotate(360deg); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            #boot-loader::after { animation-duration: 2.4s; }
+        }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const loader = document.getElementById('boot-loader');
+            if (!loader) return;
+            loader.classList.add('is-done');
+            setTimeout(() => loader.remove(), 400);
+        });
+    </script>
+    <title data-i18n="game_elapsed">Сколько времени прошло?</title>
+    <script src="i18n.js" defer></script>
+    <script src="games.js" defer></script>
+    <script src="challenge.js" defer></script>
+    <script src="elapsed-time.js" defer></script>
+    <style>
+        :root {
+            --color-primary: #60ACBD;
+            --color-primary-dark: #4d8a98;
+            --color-primary-text: #3B6D78;
+            --color-success: #2E7D32;
+            --color-success-dark: #256428;
+            --color-error: #D32F2F;
+            --color-text: #333333;
+            --color-text-secondary: #666666;
+            --color-text-light: #999999;
+            --color-background: #f5f5f5;
+            --color-purple: #7B61FF;
+            --color-purple-text: #6D4FD8;
+            --color-purple-light: #EDE9FE;
+            --radius-md: 12px;
+            --radius-lg: 20px;
+            --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        [hidden] {
+            display: none !important;
+        }
+
+        :focus-visible {
+            outline: 3px solid var(--color-primary-text);
+            outline-offset: 2px;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--color-background);
+            color: var(--color-text);
+            min-height: 100vh;
+            min-height: 100svh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 12px 8px;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+            overflow-x: hidden;
+            overflow-y: auto;
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+        }
+
+        @supports (padding: max(0px)) {
+            body {
+                padding-top: max(12px, env(safe-area-inset-top));
+                padding-bottom: max(12px, env(safe-area-inset-bottom));
+                padding-left: max(8px, env(safe-area-inset-left));
+                padding-right: max(8px, env(safe-area-inset-right));
+            }
+        }
+
+        /* Header navigation */
+        .top-nav {
+            width: min(94vw, 380px);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            gap: 8px;
+            flex-wrap: wrap;
+            z-index: 10;
+        }
+
+        .nav-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border: 1px solid rgba(0,0,0,0.08);
+            color: var(--color-text-secondary);
+            border-radius: 10px;
+            min-height: 44px;
+            padding: 10px 14px;
+            font-size: 14px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .nav-btn:active {
+            background-color: #f8fafc;
+            color: var(--color-primary-dark);
+            transform: scale(0.97);
+        }
+
+        .icon-btn {
+            min-width: 44px;
+            padding: 10px 12px;
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        .level-picker {
+            position: relative;
+        }
+
+        .level-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(0, 0, 0, 0.08);
+            color: var(--color-text-secondary);
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 600;
+            min-height: 44px;
+            padding: 10px 12px;
+            border: 1px solid transparent;
+            border-radius: 10px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background-color 0.15s ease;
+        }
+
+        .level-badge:active,
+        .level-badge[aria-expanded="true"] {
+            background: rgba(0, 0, 0, 0.14);
+        }
+
+        .level-caret {
+            font-size: 11px;
+            line-height: 1;
+            color: var(--color-primary-text);
+        }
+
+        .level-menu {
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            z-index: 30;
+            display: none;
+            grid-template-columns: repeat(4, 44px);
+            gap: 6px;
+            padding: 8px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+            max-height: min(60vh, 60dvh);
+            overflow-y: auto;
+        }
+
+        .level-menu.open {
+            display: grid;
+        }
+
+        .level-menu-item {
+            width: 44px;
+            height: 44px;
+            padding: 0;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            background: #f8fafc;
+            color: var(--color-text);
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.15s ease, transform 0.1s ease;
+        }
+
+        .level-menu-item:active {
+            transform: scale(0.95);
+        }
+
+        .level-menu-item.current {
+            background: var(--color-primary-dark);
+            border-color: var(--color-primary-dark);
+            color: white;
+        }
+
+        /* Main card */
+        .game-card {
+            width: min(94vw, 380px);
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-card);
+            padding: 12px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+        }
+
+        /* The question, and the one line of feedback under it */
+        .instruction-box {
+            width: 100%;
+            background: #f8fafc;
+            border-radius: var(--radius-md);
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 78px;
+        }
+
+        .instruction-text {
+            font-size: clamp(14px, 3.8vw, 16px);
+            font-weight: 500;
+            text-align: center;
+            color: var(--color-text);
+            line-height: 1.35;
+        }
+
+        .instruction-hint {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--color-purple-text);
+            margin-top: 4px;
+            min-height: 17px;
+            text-align: center;
+        }
+
+        .instruction-hint.is-error {
+            color: var(--color-error);
+        }
+
+        .instruction-hint.is-correct {
+            color: var(--color-success);
+        }
+
+        /* The clock, or the two times of a "how long?" question. Fixed height so the
+           number pad never jumps between questions. */
+        .display {
+            width: 100%;
+            height: clamp(148px, 42vw, 196px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .clock-wrap {
+            height: 100%;
+            aspect-ratio: 1;
+        }
+
+        .clock-wrap svg {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #hourHand,
+        #minuteHand {
+            transform-origin: 50px 50px;
+        }
+
+        .span {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .time-chip {
+            font-size: clamp(24px, 7vw, 32px);
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            color: var(--color-purple-text);
+            background: var(--color-purple-light);
+            border-radius: 14px;
+            padding: 6px 14px;
+            white-space: nowrap;
+        }
+
+        .span-arrow {
+            font-size: clamp(22px, 6vw, 28px);
+            color: var(--color-text-light);
+        }
+
+        /* Answer boxes */
+        .answer-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 48px;
+        }
+
+        .answer-line {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .num-box {
+            min-width: 56px;
+            height: 46px;
+            padding: 0 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            background: white;
+            color: var(--color-text);
+            font-family: inherit;
+            font-size: 22px;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .num-box.is-active {
+            background-color: #FEF08A;
+            border: 2px dashed #EAB308;
+            border-radius: 8px;
+            animation: pulseActive 1.4s infinite;
+        }
+
+        .num-box.correct-flash {
+            animation: flashGreen 0.4s ease-out;
+        }
+
+        .num-box.error-shake {
+            animation: shakeError 0.5s ease-in-out;
+        }
+
+        @keyframes pulseActive {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.4);
+            }
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.3);
+            }
+        }
+
+        @keyframes flashGreen {
+            0% {
+                background-color: var(--color-success);
+                border-color: var(--color-success);
+                color: white;
+            }
+            100% { background-color: transparent; }
+        }
+
+        @keyframes shakeError {
+            0%, 100% { transform: translateX(0); background-color: transparent; }
+            20%, 60% { transform: translateX(-4px); background-color: #FEE2E2; color: var(--color-error); }
+            40%, 80% { transform: translateX(4px); background-color: #FEE2E2; color: var(--color-error); }
+        }
+
+        .colon {
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--color-text-secondary);
+        }
+
+        .unit {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+        }
+
+        .format-line {
+            min-height: 17px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--color-text-light);
+            text-align: center;
+        }
+
+        /* Number pad */
+        .numpad-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            width: 100%;
+            max-width: 310px;
+        }
+
+        .numpad-btn {
+            background: white;
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 12px;
+            height: clamp(42px, 10vw, 50px);
+            font-size: clamp(19px, 5vw, 23px);
+            font-weight: 600;
+            color: var(--color-text);
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            transition: all 0.1s ease;
+            user-select: none;
+        }
+
+        .numpad-btn:active {
+            transform: scale(0.96);
+            background: #f1f5f9;
+        }
+
+        .numpad-btn.is-check {
+            background: var(--color-primary-dark);
+            border-color: var(--color-primary-dark);
+            color: white;
+        }
+
+        .numpad-btn.is-check:active {
+            background: #3b6d78;
+        }
+
+        .numpad-btn.is-back {
+            color: var(--color-text-secondary);
+            font-size: clamp(17px, 4.5vw, 20px);
+        }
+
+        @media (max-width: 360px) {
+            .display {
+                height: clamp(132px, 40vw, 168px);
+            }
+
+            .num-box {
+                min-width: 50px;
+                height: 42px;
+                font-size: 20px;
+            }
+        }
+
+        @media (hover: hover) {
+            .nav-btn:hover {
+                background-color: #f8fafc;
+                color: var(--color-primary-dark);
+                transform: translateY(-1px);
+            }
+            .numpad-btn:hover {
+                background: #f8fafc;
+                border-color: rgba(0,0,0,0.15);
+            }
+            .num-box:hover {
+                border-color: var(--color-primary);
+            }
+            .level-badge:hover {
+                background: rgba(0, 0, 0, 0.12);
+            }
+            .level-menu-item:hover:not(.current) {
+                background: #eef2f7;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="boot-loader" aria-hidden="true"></div>
+
+    <!-- Top navigation -->
+    <header class="top-nav">
+        <a id="backBtn" class="nav-btn icon-btn" href="./index.html" data-i18n-aria-label="nav_back" aria-label="Назад к играм"><svg class="back-arrow" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path d="M20 12H6M11.5 6 5.5 12 11.5 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <div data-lang-toggle></div>
+        <div class="level-picker">
+            <button type="button" id="levelDisplay" class="level-badge" aria-haspopup="listbox" aria-expanded="false">
+                <span id="levelText" aria-live="polite">Уровень 1</span>
+                <span class="level-caret" aria-hidden="true">▾</span>
+            </button>
+            <div class="level-menu" id="levelMenu" role="listbox" data-i18n-aria-label="et_level_menu_aria" aria-label="Выберите уровень"></div>
+        </div>
+    </header>
+
+    <!-- Game card -->
+    <main class="game-card">
+        <!-- The question, and the feedback line below it -->
+        <div class="instruction-box">
+            <div class="instruction-text" id="instructionText"></div>
+            <div class="instruction-hint" id="instructionHint" role="status" aria-live="polite"></div>
+        </div>
+
+        <!-- The time(s) in play: a clock, or the two times of a "how long?" question -->
+        <div class="display">
+            <div class="clock-wrap" id="clockWrap">
+                <svg id="analogClock" viewBox="-10 -10 120 120" role="img">
+                    <circle cx="50" cy="50" r="45" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
+                    <g stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round">
+                        <line x1="50" y1="7" x2="50" y2="12" transform="rotate(0 50 50)"/>
+                        <line x1="50" y1="7" x2="50" y2="12" transform="rotate(30 50 50)"/>
+                        <line x1="50" y1="7" x2="50" y2="12" transform="rotate(60 50 50)"/>
+                        <line x1="50" y1="7" x2="50" y2="12" transform="rotate(90 50 50)"/>
+                        <line x1="50" y1="7" x2="50" y2="12" transform="rotate(120 50 50)"/>
+                        <line x1="50" y1="7" x2="50" y2="12" transform="rotate(150 50 50)"/>
+                        <line x1="50" y1="7" x2="50" y2="12" transform="rotate(180 50 50)"/>
+                        <line x1="50" y1="7" x2="50" y2="12" transform="rotate(210 50 50)"/>
+                        <line x1="50" y1="7" x2="50" y2="12" transform="rotate(240 50 50)"/>
+                        <line x1="50" y1="7" x2="50" y2="12" transform="rotate(270 50 50)"/>
+                        <line x1="50" y1="7" x2="50" y2="12" transform="rotate(300 50 50)"/>
+                        <line x1="50" y1="7" x2="50" y2="12" transform="rotate(330 50 50)"/>
+                    </g>
+                    <g font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" dominant-baseline="central" fill="#334155">
+                        <text x="50.0" y="-5.0">12</text>
+                        <text x="78.0" y="2.7">1</text>
+                        <text x="97.3" y="22.0">2</text>
+                        <text x="105.0" y="50.0">3</text>
+                        <text x="97.3" y="78.0">4</text>
+                        <text x="78.0" y="97.3">5</text>
+                        <text x="50.0" y="105.0">6</text>
+                        <text x="22.0" y="97.3">7</text>
+                        <text x="2.7" y="78.0">8</text>
+                        <text x="-5.0" y="50.0">9</text>
+                        <text x="2.7" y="22.0">10</text>
+                        <text x="22.0" y="2.7">11</text>
+                    </g>
+                    <circle cx="50" cy="50" r="3" fill="#334155"/>
+                    <line id="hourHand" x1="50" y1="50" x2="50" y2="27" stroke="#7B61FF" stroke-width="4" stroke-linecap="round"/>
+                    <line id="minuteHand" x1="50" y1="50" x2="50" y2="16" stroke="#60ACBD" stroke-width="3" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <div class="span" id="spanWrap" role="img">
+                <span class="time-chip" id="spanStart"></span>
+                <span class="span-arrow" aria-hidden="true">→</span>
+                <span class="time-chip" id="spanEnd"></span>
+            </div>
+        </div>
+
+        <!-- The answer: a time, or a span -->
+        <div class="answer-row" id="answerRow" role="group" data-i18n-aria-label="et_answer_aria" aria-label="Твой ответ">
+            <div class="answer-line" id="answerTimes">
+                <button type="button" class="num-box" data-box="hours" data-i18n-aria-label="et_hours_aria" aria-label="Часы"><span class="box-value"></span></button>
+                <span class="colon" aria-hidden="true">:</span>
+                <button type="button" class="num-box" data-box="minutes" data-i18n-aria-label="et_minutes_aria" aria-label="Минуты"><span class="box-value"></span></button>
+            </div>
+            <div class="answer-line" id="answerDuration">
+                <button type="button" class="num-box" id="durHoursBox" data-box="durHours" data-i18n-aria-label="et_hours_aria" aria-label="Часы"><span class="box-value"></span></button>
+                <span class="unit" id="durHoursUnit" data-i18n="et_box_hours">ч</span>
+                <button type="button" class="num-box" data-box="durMinutes" data-i18n-aria-label="et_minutes_aria" aria-label="Минуты"><span class="box-value"></span></button>
+                <span class="unit" data-i18n="et_box_minutes">мин</span>
+            </div>
+        </div>
+        <div class="format-line" id="formatLine"></div>
+
+        <!-- Number pad -->
+        <div class="numpad-grid" id="numpadGrid" role="group" data-i18n-aria-label="et_numpad_aria" aria-label="Цифровая клавиатура">
+            <button type="button" class="numpad-btn" data-key="1">1</button>
+            <button type="button" class="numpad-btn" data-key="2">2</button>
+            <button type="button" class="numpad-btn" data-key="3">3</button>
+            <button type="button" class="numpad-btn" data-key="4">4</button>
+            <button type="button" class="numpad-btn" data-key="5">5</button>
+            <button type="button" class="numpad-btn" data-key="6">6</button>
+            <button type="button" class="numpad-btn" data-key="7">7</button>
+            <button type="button" class="numpad-btn" data-key="8">8</button>
+            <button type="button" class="numpad-btn" data-key="9">9</button>
+            <button type="button" class="numpad-btn is-back" data-key="backspace" data-i18n-aria-label="et_back_aria" aria-label="Стереть">⌫</button>
+            <button type="button" class="numpad-btn" data-key="0">0</button>
+            <button type="button" class="numpad-btn is-check" data-key="check" data-i18n-aria-label="et_check_aria" aria-label="Проверить">✓</button>
+        </div>
+    </main>
+
+    <!-- Game engine -->
+    <script>
+        class ElapsedTimeGame {
+            #state;
+            #elements;
+            #config;
+
+            // Question templates per kind: index 0 is the plain question, the rest are
+            // small stories. The index sticks for the whole question, so a language
+            // switch only rewords it.
+            static #QUESTION_KEYS = {
+                end: ['et_q_end_plain', 'et_q_end_1', 'et_q_end_2', 'et_q_end_3'],
+                start: ['et_q_start_plain', 'et_q_start_1', 'et_q_start_2', 'et_q_start_3'],
+                duration: ['et_q_dur_plain', 'et_q_dur_1', 'et_q_dur_2', 'et_q_dur_3']
+            };
+
+            constructor() {
+                this.#initConfig();
+                this.#initElements();
+                this.#initState();
+                this.#bindEvents();
+                this.#startRound();
+            }
+
+            #initConfig() {
+                this.#config = {
+                    maxLevel: BrainWarsElapsed.maxLevel,
+                    // How long the green "correct" beat stays before the next question
+                    advanceDelay: 900,
+                    // Digits each box takes, by box name
+                    boxLength: { hours: 2, minutes: 2, durHours: 1, durMinutes: 2 }
+                };
+            }
+
+            #initElements() {
+                const byId = (id) => document.getElementById(id);
+                this.#elements = {
+                    instructionText: byId('instructionText'),
+                    instructionHint: byId('instructionHint'),
+                    clockWrap: byId('clockWrap'),
+                    clock: byId('analogClock'),
+                    hourHand: byId('hourHand'),
+                    minuteHand: byId('minuteHand'),
+                    spanWrap: byId('spanWrap'),
+                    spanStart: byId('spanStart'),
+                    spanEnd: byId('spanEnd'),
+                    answerTimes: byId('answerTimes'),
+                    answerDuration: byId('answerDuration'),
+                    durHours: byId('durHoursBox'),
+                    durHoursUnit: byId('durHoursUnit'),
+                    formatLine: byId('formatLine'),
+                    numpadGrid: byId('numpadGrid'),
+                    levelDisplay: byId('levelDisplay'),
+                    levelText: byId('levelText'),
+                    levelMenu: byId('levelMenu')
+                };
+                this.#elements.boxes = Array.from(document.querySelectorAll('.num-box'));
+            }
+
+            #initState() {
+                this.#state = {
+                    level: 1,
+                    question: null,
+                    // Which wording of the question is shown (plain or one of the stories)
+                    templateIndex: 0,
+                    answers: { hours: '', minutes: '', durHours: '', durMinutes: '' },
+                    enabledBoxes: ['hours', 'minutes'],
+                    activeBox: 'hours',
+                    // 'correct' | 'wrong' | 'fill' | 'hour-range' | 'minute-range' | null
+                    hint: null,
+                    hadErrorThisRound: false,
+                    locked: false
+                };
+            }
+
+            #bindEvents() {
+                this.#elements.numpadGrid.addEventListener('click', (event) => {
+                    const button = event.target.closest('.numpad-btn');
+                    if (button) this.#handleKey(button.dataset.key);
+                });
+
+                this.#elements.boxes.forEach((box) => {
+                    box.addEventListener('click', () => this.#setActiveBox(box.dataset.box));
+                });
+
+                this.#elements.levelDisplay.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    this.#toggleLevelMenu(!this.#elements.levelMenu.classList.contains('open'));
+                });
+
+                this.#elements.levelMenu.addEventListener('click', (event) => {
+                    const item = event.target.closest('.level-menu-item');
+                    if (item) this.#selectLevel(Number(item.dataset.level));
+                });
+
+                document.addEventListener('click', () => this.#toggleLevelMenu(false));
+
+                // A physical keyboard works like the number pad
+                window.addEventListener('keydown', (event) => {
+                    if (this.#elements.levelMenu.classList.contains('open')) {
+                        if (event.key === 'Escape') {
+                            this.#toggleLevelMenu(false);
+                            this.#elements.levelDisplay.focus();
+                        }
+                        return;
+                    }
+                    const isControlFocused = event.target instanceof HTMLElement &&
+                        (event.target.tagName === 'BUTTON' || event.target.tagName === 'A');
+                    if (isControlFocused && (event.key === 'Enter' || event.key === ' ')) return;
+
+                    if (event.key >= '0' && event.key <= '9') this.#handleKey(event.key);
+                    else if (event.key === 'Backspace') this.#handleKey('backspace');
+                    else if (event.key === 'Enter') this.#handleKey('check');
+                });
+
+                I18n.subscribe(() => this.#render());
+            }
+
+            #randomInt(min, max) {
+                return Math.floor(Math.random() * (max - min + 1)) + min;
+            }
+
+            /* ---------- rounds ---------- */
+
+            #startRound() {
+                const question = BrainWarsElapsed.build(this.#state.level, undefined, this.#state.question);
+                const keys = ElapsedTimeGame.#QUESTION_KEYS[question.kind];
+                this.#state.question = question;
+                this.#state.templateIndex = question.story ? 1 + this.#randomInt(0, keys.length - 2) : 0;
+                this.#state.answers = { hours: '', minutes: '', durHours: '', durMinutes: '' };
+                this.#state.enabledBoxes = this.#boxesFor(question);
+                this.#state.activeBox = this.#state.enabledBoxes[0];
+                this.#state.hint = null;
+                this.#state.hadErrorThisRound = false;
+                this.#state.locked = false;
+                this.#render();
+            }
+
+            // Which boxes the answer uses: a time is hours : minutes, a span is minutes
+            // alone when it is under an hour and hours and minutes otherwise.
+            #boxesFor(question) {
+                if (question.kind !== 'duration') return ['hours', 'minutes'];
+                return question.format === 'hoursMinutes' ? ['durHours', 'durMinutes'] : ['durMinutes'];
+            }
+
+            /* ---------- rendering ---------- */
+
+            #render() {
+                this.#renderLevelBadge();
+                this.#renderLevelMenu();
+                this.#renderQuestion();
+                this.#renderHint();
+                this.#renderBoxes();
+            }
+
+            #renderLevelBadge() {
+                this.#elements.levelText.textContent = I18n.t('level_label', { n: this.#state.level });
+            }
+
+            #renderLevelMenu() {
+                const menu = this.#elements.levelMenu;
+                menu.innerHTML = '';
+                for (let level = 1; level <= this.#config.maxLevel; level++) {
+                    const item = document.createElement('button');
+                    item.type = 'button';
+                    item.className = 'level-menu-item' + (level === this.#state.level ? ' current' : '');
+                    item.dataset.level = String(level);
+                    item.setAttribute('role', 'option');
+                    item.setAttribute('aria-selected', level === this.#state.level ? 'true' : 'false');
+                    item.setAttribute('aria-label', I18n.t('level_label', { n: level }));
+                    item.textContent = String(level);
+                    menu.appendChild(item);
+                }
+            }
+
+            #renderQuestion() {
+                const question = this.#state.question;
+                if (!question) return;
+
+                const time = question.kind === 'end' ? question.start : question.end;
+                const keys = ElapsedTimeGame.#QUESTION_KEYS[question.kind];
+                this.#elements.instructionText.textContent = I18n.t(keys[this.#state.templateIndex], {
+                    time: BrainWarsElapsed.formatClock(time),
+                    duration: I18n.durationWords(I18n.getLang(), question.duration)
+                });
+
+                if (question.kind === 'duration') {
+                    this.#renderSpan(question);
+                } else {
+                    this.#renderClock(time);
+                }
+
+                const isDuration = question.kind === 'duration';
+                const withHours = isDuration && question.format === 'hoursMinutes';
+                this.#elements.answerTimes.hidden = isDuration;
+                this.#elements.answerDuration.hidden = !isDuration;
+                this.#elements.durHours.hidden = !withHours;
+                this.#elements.durHoursUnit.hidden = !withHours;
+                this.#elements.formatLine.textContent = isDuration
+                    ? I18n.t(question.format === 'hoursMinutes' ? 'et_format_hours_minutes' : 'et_format_minutes')
+                    : '';
+            }
+
+            #renderClock(minutes) {
+                this.#elements.clockWrap.hidden = false;
+                this.#elements.spanWrap.hidden = true;
+                const clock = BrainWarsElapsed.toClock(minutes);
+                // The minute hand takes 6 degrees a minute, the hour hand 0.5 past its hour
+                const hourDegrees = (clock.hours % 12) * 30 + clock.minutes * 0.5;
+                const minuteDegrees = clock.minutes * 6;
+                this.#elements.hourHand.style.transform = 'rotate(' + hourDegrees + 'deg)';
+                this.#elements.minuteHand.style.transform = 'rotate(' + minuteDegrees + 'deg)';
+                this.#elements.clock.setAttribute('aria-label', I18n.t('et_clock_aria', {
+                    time: BrainWarsElapsed.formatClock(minutes)
+                }));
+            }
+
+            #renderSpan(question) {
+                this.#elements.clockWrap.hidden = true;
+                this.#elements.spanWrap.hidden = false;
+                const start = BrainWarsElapsed.formatClock(question.start);
+                const end = BrainWarsElapsed.formatClock(question.end);
+                this.#elements.spanStart.textContent = start;
+                this.#elements.spanEnd.textContent = end;
+                this.#elements.spanWrap.setAttribute('aria-label', I18n.t('et_span_aria', { start, end }));
+            }
+
+            #renderHint() {
+                const hint = this.#elements.instructionHint;
+                hint.classList.remove('is-correct', 'is-error');
+                hint.textContent = '';
+                const status = this.#state.hint;
+                if (!status) return;
+                if (status === 'correct') {
+                    hint.textContent = I18n.t('et_correct');
+                    hint.classList.add('is-correct');
+                } else if (status === 'wrong') {
+                    hint.textContent = I18n.t('et_wrong');
+                    hint.classList.add('is-error');
+                } else if (status === 'hour-range') {
+                    hint.textContent = I18n.t('et_range_hours');
+                    hint.classList.add('is-error');
+                } else if (status === 'minute-range') {
+                    hint.textContent = I18n.t('et_range_minutes');
+                    hint.classList.add('is-error');
+                } else {
+                    // 'fill': a nudge, not a mistake
+                    hint.textContent = I18n.t('et_fill');
+                }
+            }
+
+            #renderBoxes() {
+                this.#elements.boxes.forEach((box) => {
+                    const name = box.dataset.box;
+                    box.querySelector('.box-value').textContent = this.#state.answers[name];
+                    box.classList.toggle('is-active', !this.#state.locked && name === this.#state.activeBox);
+                    box.disabled = this.#state.locked;
+                });
+            }
+
+            /* ---------- input ---------- */
+
+            #setActiveBox(name) {
+                if (this.#state.locked || !this.#state.enabledBoxes.includes(name)) return;
+                this.#state.activeBox = name;
+                this.#renderBoxes();
+            }
+
+            #handleKey(key) {
+                if (this.#state.locked) return;
+                if (key === 'check') {
+                    this.#checkAnswer();
+                    return;
+                }
+                if (key === 'backspace') {
+                    this.#backspace();
+                    return;
+                }
+                if (key >= '0' && key <= '9') this.#typeDigit(key);
+            }
+
+            #typeDigit(digit) {
+                const name = this.#state.activeBox;
+                const value = this.#state.answers[name];
+                if (value.length >= this.#config.boxLength[name]) return;
+                this.#clearHint();
+                this.#state.answers[name] = value + digit;
+                const next = this.#state.enabledBoxes[this.#state.enabledBoxes.indexOf(name) + 1];
+                if (next && this.#state.answers[name].length >= this.#config.boxLength[name]) {
+                    this.#state.activeBox = next;
+                }
+                this.#renderBoxes();
+            }
+
+            #backspace() {
+                const name = this.#state.activeBox;
+                if (this.#state.answers[name]) {
+                    this.#state.answers[name] = this.#state.answers[name].slice(0, -1);
+                } else {
+                    const previous = this.#state.enabledBoxes[this.#state.enabledBoxes.indexOf(name) - 1];
+                    if (previous) this.#state.activeBox = previous;
+                }
+                this.#clearHint();
+                this.#renderBoxes();
+            }
+
+            #clearHint() {
+                if (this.#state.hint && this.#state.hint !== 'correct') {
+                    this.#state.hint = null;
+                    this.#renderHint();
+                }
+            }
+
+            #checkAnswer() {
+                const question = this.#state.question;
+                const isDuration = question.kind === 'duration';
+                const status = BrainWarsElapsed.check(question, {
+                    hours: this.#boxValue(isDuration ? 'durHours' : 'hours'),
+                    minutes: this.#boxValue(isDuration ? 'durMinutes' : 'minutes')
+                });
+
+                if (status === 'correct') {
+                    this.#handleCorrect();
+                    return;
+                }
+                if (status === 'incomplete') {
+                    this.#state.hint = 'fill';
+                    this.#renderHint();
+                    return;
+                }
+                this.#state.hadErrorThisRound = true;
+                this.#state.hint = status;
+                this.#renderHint();
+                this.#shakeBoxes();
+            }
+
+            #boxValue(name) {
+                const value = this.#state.answers[name];
+                return value === '' ? null : Number(value);
+            }
+
+            #boxElement(name) {
+                return this.#elements.boxes.find((box) => box.dataset.box === name);
+            }
+
+            #shakeBoxes() {
+                const boxes = this.#state.enabledBoxes.map((name) => this.#boxElement(name));
+                boxes.forEach((box) => {
+                    box.classList.remove('error-shake');
+                    box.classList.add('error-shake');
+                });
+                setTimeout(() => boxes.forEach((box) => box.classList.remove('error-shake')), 600);
+            }
+
+            #flashBoxes() {
+                const boxes = this.#state.enabledBoxes.map((name) => this.#boxElement(name));
+                boxes.forEach((box) => box.classList.add('correct-flash'));
+                setTimeout(() => boxes.forEach((box) => box.classList.remove('correct-flash')), 450);
+            }
+
+            #handleCorrect() {
+                this.#state.locked = true;
+                this.#state.hint = 'correct';
+                // A clean first try moves the ladder up; a round with mistakes is repeated
+                if (!this.#state.hadErrorThisRound) {
+                    this.#state.level = Math.min(this.#config.maxLevel, this.#state.level + 1);
+                }
+                this.#render();
+                this.#flashBoxes();
+                setTimeout(() => this.#startRound(), this.#config.advanceDelay);
+            }
+
+            /* ---------- level picker ---------- */
+
+            #selectLevel(level) {
+                this.#state.level = Math.min(Math.max(level, 1), this.#config.maxLevel);
+                this.#toggleLevelMenu(false);
+                this.#startRound();
+            }
+
+            #toggleLevelMenu(open) {
+                this.#elements.levelMenu.classList.toggle('open', open);
+                this.#elements.levelDisplay.setAttribute('aria-expanded', open ? 'true' : 'false');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            new ElapsedTimeGame();
+        });
+    </script>
+</body>
+</html>
