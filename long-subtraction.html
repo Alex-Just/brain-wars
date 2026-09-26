@@ -1326,17 +1326,7 @@
                     const borrowBefore = borrow;
                     const reduced = aDigit - borrowBefore;
 
-                    if (bDigit === 0 && reduced >= 0) {
-                        // Nothing to compute: the digit is simply carried over
-                        steps.push({
-                            type: 'AUTO',
-                            writeDigit: reduced,
-                            row: s.resultRow,
-                            col,
-                            badge: null
-                        });
-                        borrow = 0;
-                    } else if (reduced < bDigit) {
+                    if (reduced < bDigit) {
                         const work = reduced + 10;
                         borrow = 1;
                         steps.push({
@@ -1477,14 +1467,7 @@
             // ---------------------------------------------------------------
 
             #promptCurrentStep() {
-                // Steps with nothing to compute are filled in automatically
-                let step = this.#state.steps[this.#state.stepIndex];
-                while (step && step.type === 'AUTO') {
-                    this.#writeStep(step);
-                    this.#state.stepIndex++;
-                    step = this.#state.steps[this.#state.stepIndex];
-                }
-
+                const step = this.#state.steps[this.#state.stepIndex];
                 if (!step) {
                     this.#finishRound();
                     return;
