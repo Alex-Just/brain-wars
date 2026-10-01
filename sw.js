@@ -80,7 +80,9 @@ self.addEventListener('fetch', (event) => {
 async function networkFirst(request) {
     const cache = await caches.open(CACHE);
     try {
-        const response = await fetch(request);
+        // Revalidate on every navigation so content edits show up right away
+        // instead of being served from the browser's HTTP cache.
+        const response = await fetch(request, { cache: 'no-cache' });
         if (response && response.ok) await cache.put(request, response.clone());
         return response;
     } catch (error) {
