@@ -52,4 +52,25 @@ check('manifest icons exist on disk', () => {
     );
 });
 
+console.log('page wiring');
+check('every page is wired for the PWA', () => {
+    const pages = fs.readdirSync(__dirname).filter((file) => file.endsWith('.html'));
+    assert.strictEqual(pages.length, 11, 'expected 11 pages, found ' + pages.length);
+    pages.forEach((file) => {
+        const html = fs.readFileSync(path.join(__dirname, file), 'utf8');
+        assert.ok(html.includes('rel="manifest"'), file + ' must link the manifest');
+        assert.ok(html.includes('name="theme-color"'), file + ' must set the theme colour');
+        assert.ok(html.includes('rel="icon"'), file + ' must set the favicon');
+        assert.ok(html.includes('rel="apple-touch-icon"'), file + ' must set the Apple touch icon');
+        assert.ok(html.includes('src="pwa.js"'), file + ' must load pwa.js');
+    });
+});
+
+check('pwa.js registers the worker for the whole site', () => {
+    const source = fs.readFileSync(path.join(__dirname, 'pwa.js'), 'utf8');
+    assert.ok(source.includes("register('./sw.js'"), 'pwa.js must register ./sw.js');
+    assert.ok(source.includes("scope: './'"), 'the worker must control the whole site');
+    assert.ok(source.includes("updateViaCache: 'none'"), 'sw.js updates must bypass the HTTP cache');
+});
+
 console.log('\nAll ' + passed + ' checks passed.');
