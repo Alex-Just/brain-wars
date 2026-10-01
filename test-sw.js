@@ -4,6 +4,7 @@ const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
+const Games = require('./games.js');
 
 let passed = 0;
 function check(name, fn) {
@@ -25,6 +26,11 @@ try {
 } catch (error) {
     manifest = null;
 }
+
+const swPath = path.join(__dirname, 'sw.js');
+const swSource = fs.existsSync(swPath) ? fs.readFileSync(swPath, 'utf8') : '';
+const precacheMatch = swSource.match(/const PRECACHE = (\[[\s\S]*?\]);/);
+const PRECACHE = precacheMatch ? vm.runInNewContext('(' + precacheMatch[1] + ')') : [];
 
 console.log('manifest');
 check('manifest.json parses', () => {
@@ -71,6 +77,32 @@ check('pwa.js registers the worker for the whole site', () => {
     assert.ok(source.includes("register('./sw.js'"), 'pwa.js must register ./sw.js');
     assert.ok(source.includes("scope: './'"), 'the worker must control the whole site');
     assert.ok(source.includes("updateViaCache: 'none'"), 'sw.js updates must bypass the HTTP cache');
+});
+
+console.log('service worker precache');
+check('sw.js defines the precache list', () => {
+    assert.ok(precacheMatch, 'sw.js must define "const PRECACHE = [...];"');
+});
+
+check('every precache entry is relative and exists on disk', () => {
+    assert.ok(PRECACHE.length >= 20, 'the precache list looks too short');
+    PRECACHE.forEach((entry) => {
+        assert.ok(entry.startsWith('./'), entry + ' must start with ./');
+        const file = entry === './' ? 'index.html' : entry.replace(/^\.\//, '');
+        assert.ok(fs.existsSync(path.join(__dirname, file)), file + ' does not exist');
+    });
+});
+
+check('every registered game is precached', () => {
+    Games.all().forEach((game) => {
+        assert.ok(PRECACHE.includes('./' + game.file), game.file + ' is missing from PRECACHE');
+    });
+});
+
+check('core runtime files are precached', () => {
+    ['./index.html', './i18n.js', './games.js', './challenge.js', './elapsed-time.js', './pwa.js', './manifest.json'].forEach((entry) => {
+        assert.ok(PRECACHE.includes(entry), entry + ' is missing from PRECACHE');
+    });
 });
 
 console.log('\nAll ' + passed + ' checks passed.');
