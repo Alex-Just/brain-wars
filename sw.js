@@ -58,7 +58,8 @@ self.addEventListener('activate', (event) => {
     event.waitUntil(
         caches.keys()
             .then((names) => Promise.all(
-                names.filter((name) => name !== CACHE).map((name) => caches.delete(name))
+                names.filter((name) => name.startsWith('brain-wars-') && name !== CACHE)
+                    .map((name) => caches.delete(name))
             ))
             .then(() => self.clients.claim())
     );
@@ -86,7 +87,9 @@ async function networkFirst(request) {
         if (response && response.ok) await cache.put(request, response.clone());
         return response;
     } catch (error) {
-        const cached = await cache.match(request);
+        // Match ignoring the query string so a challenge step (?challenge=1) still
+        // finds the precached game page while the URL keeps its query for challenge.js.
+        const cached = await cache.match(request, { ignoreSearch: true });
         if (cached) return cached;
         const hub = await cache.match('./index.html');
         if (hub) return hub;

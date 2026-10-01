@@ -105,4 +105,9 @@ check('core runtime files are precached', () => {
     });
 });
 
+check('sw.js matches queries against the cache and only cleans its own caches', () => {
+    assert.ok(swSource.includes('ignoreSearch: true'), 'offline navigations with query strings must match the cached page');
+    assert.ok(swSource.includes("startsWith('brain-wars-')"), 'activate must not delete other projects caches');
+});
+
 console.log('\nAll ' + passed + ' checks passed.');
