@@ -15,7 +15,8 @@ adding a build step.
 - Hosted on GitHub Pages at `https://alex-just.github.io/brain-wars/` (HTTPS, subpath).
   All page URLs are relative, so the subpath already works.
 - Runtime assets: the 11 pages plus `i18n.js`, `games.js`, `challenge.js`,
-  `elapsed-time.js`, `follow-the-leader.js`.
+  `elapsed-time.js`. (Follow-the-leader is inline script; there is no
+  `follow-the-leader.js`.)
 - `localStorage` holds the language choice and the in-progress challenge; the service
   worker must not touch it.
 - `games.js` is the single source of truth for the game registry.
@@ -71,7 +72,7 @@ out of the cache.
 ### Service worker behavior
 
 - **Precache list** is explicit in `sw.js`: the 11 pages, `i18n.js`, `games.js`,
-  `challenge.js`, `elapsed-time.js`, `follow-the-leader.js`, `pwa.js`, `manifest.json`,
+  `challenge.js`, `elapsed-time.js`, `pwa.js`, `manifest.json`,
   and the icons. Both `./` and `./index.html` are cached so either navigation form works
   offline.
 - **Install:** write each entry individually, tolerating a single bad entry so a typo
