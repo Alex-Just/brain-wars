@@ -5,7 +5,7 @@
 <h1 align="center">Brain Wars</h1>
 
 <p align="center">
-  <em>Playful math practice for kids: a challenge mode plus nine games, three languages, and offline play.</em>
+  <em>Playful math practice for kids: a challenge mode plus ten games, three languages, and offline play.</em>
 </p>
 
 <p align="center">
@@ -25,6 +25,7 @@ Brain Wars is a collection of small, playful math games for primary-school child
 | --- | --- |
 | **Challenge** | A mixed run: pick 1–50 games and a difficulty (1–20). Every game type is dealt once before any repeats, and mistakes bring that game back later. A progress bar tracks the run, and the results screen awards up to three stars. |
 | **Follow the Leader** | Watch a sequence of squares light up, then repeat it. The sequence grows and speeds up as you climb. |
+| **Unfollow the Leader** | Follow the Leader in pink, played backwards: the last square shown is the first one to tap. |
 | **Mental Math** | Choose the missing operator (+, −, ×, ÷) that makes the equation true. |
 | **What Time Is It?** | Read an analog clock and pick the matching time. |
 | **Long Division** | Divide step by step in the Russian bracket layout — quotient digit, product, remainder, bring down. |
@@ -38,7 +39,7 @@ Brain Wars is a collection of small, playful math games for primary-school child
 
 - **Offline-first PWA.** The service worker precaches every page, script and icon, so the app installs to a home screen and plays with no connection; offline navigations fall back to the hub.
 - **Three languages, one code path.** EN / ES / RU dictionaries with identical key sets (the tests enforce it), a flag toggle on every page and locale-aware number formatting. The first visit starts in Russian, and your choice is remembered. In Challenge mode every step can appear in a different language — or pin one and it sticks for the run.
-- **Levels that fit the child.** Six games offer a menu of 20 levels; the other three ramp difficulty automatically; Challenge mode pins one difficulty across the whole run.
+- **Levels that fit the child.** Six games offer a menu of 20 levels; the other four ramp difficulty automatically; Challenge mode pins one difficulty across the whole run.
 - **Custom equations.** All four column-arithmetic games accept numbers you type in — whole numbers or decimals, results up to eight digits.
 - **Kid-friendly and accessible.** Large touch targets, safe-area padding for notched phones, `prefers-reduced-motion` support, ARIA labels and live regions.
 - **Tested without a framework.** Plain Node.js scripts validate the translations, page wiring, game registry, challenge queue, question generators and service worker precache.
@@ -77,9 +78,9 @@ brain-wars/
 ├── i18n.js               # EN / ES / RU dictionaries, language toggle, number formatting
 ├── elapsed-time.js       # Elapsed-time question generator (shared with the tests)
 ├── *.html                # One self-contained page per game (markup, styles and logic
-│                         #   together): follow-the-leader, operations, telling-time-es,
-│                         #   long-division, long-multiplication, long-addition,
-│                         #   long-subtraction, money-problems, elapsed-time
+│                         #   together): follow-the-leader, unfollow-the-leader, operations,
+│                         #   telling-time-es, long-division, long-multiplication,
+│                         #   long-addition, long-subtraction, money-problems, elapsed-time
 ├── pwa.js                # Registers the service worker on secure contexts
 ├── sw.js                 # Offline-first service worker (precache + fetch strategies)
 ├── manifest.json         # PWA metadata and icons

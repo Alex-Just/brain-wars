@@ -11,7 +11,7 @@
  */
 'use strict';
 
-const VERSION = 'v1';
+const VERSION = 'v2';
 const CACHE = 'brain-wars-' + VERSION;
 
 const PRECACHE = [
@@ -27,6 +27,7 @@ const PRECACHE = [
     './money-problems.html',
     './operations.html',
     './telling-time-es.html',
+    './unfollow-the-leader.html',
     './i18n.js',
     './games.js',
     './challenge.js',

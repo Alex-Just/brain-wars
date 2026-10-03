@@ -33,6 +33,22 @@
             `
         },
         {
+            id: 'unfollow-the-leader',
+            file: 'unfollow-the-leader.html',
+            titleKey: 'game_unfollow',
+            level: 'startup',
+            completion: { kind: 'text', selector: '#message', key: 'uftl_great_job' },
+            mistake: { kind: 'text', selector: '#message', key: 'uftl_try_again' },
+            icon: `
+                <div class="follow-leader-icon unfollow-leader-icon">
+                    <div class="square"></div>
+                    <div class="square active"></div>
+                    <div class="square active"></div>
+                    <div class="square active"></div>
+                </div>
+            `
+        },
+        {
             id: 'operations',
             file: 'operations.html',
             titleKey: 'game_operations',

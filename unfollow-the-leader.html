@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#f5f5f5">
+  <link rel="icon" type="image/png" href="./icons/icon-32.png">
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Brain Wars">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <script src="pwa.js" defer></script>
+    <style>
+        /* Boot loader: painted before the deferred scripts run, faded out when the page is ready */
+        #boot-loader {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f5f5f5;
+            transition: opacity 0.25s ease;
+        }
+        #boot-loader.is-done {
+            opacity: 0;
+            pointer-events: none;
+        }
+        #boot-loader::after {
+            content: '';
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 3px solid rgba(0, 0, 0, 0.12);
+            border-top-color: #4d8a98;
+            animation: boot-spin 0.8s linear infinite;
+        }
+        @keyframes boot-spin {
+            to { transform: rotate(360deg); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            #boot-loader::after { animation-duration: 2.4s; }
+        }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const loader = document.getElementById('boot-loader');
+            if (!loader) return;
+            loader.classList.add('is-done');
+            setTimeout(() => loader.remove(), 400);
+        });
+    </script>
+  <title>Повтори наоборот</title>
+  <script src="i18n.js" defer></script>
+  <script src="games.js" defer></script>
+  <script src="challenge.js" defer></script>
+  <style>
+    /* Basic reset and centering */
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #ffffff;
+      margin: 0;
+      padding: 0; /* Remove padding */
+      min-height: 100vh;
+      min-height: 100dvh;
+      height: 100vh;
+      height: 100dvh;
+      max-height: 100vh;
+      max-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      justify-content: safe center;
+      touch-action: manipulation; /* Disable double-tap zoom */
+      -webkit-tap-highlight-color: transparent; /* Remove tap highlight on iOS */
+      overflow-x: hidden; /* Prevent horizontal overflow */
+      overflow-y: auto; /* Allow scrolling on short viewports */
+      -webkit-overflow-scrolling: touch;
+      position: fixed; /* Lock viewport */
+      width: 100%; /* Full width */
+      user-select: none; /* Prevent text selection */
+      -webkit-user-select: none; /* Safari */
+      -moz-user-select: none;    /* Firefox (older) */
+      -ms-user-select: none;     /* IE/Edge */
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+    h1 {
+      margin-bottom: 10px;
+    }
+    /* Game board container */
+    #game {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(80px, 100px));
+      grid-template-rows: repeat(3, minmax(80px, 100px));
+      gap: min(3vw, 10px);
+      margin: 20px auto;
+      width: min(90vw, 320px);
+      aspect-ratio: 1;
+    }
+    /* Style for each square */
+    .square {
+      width: 100%;
+      height: 100%;
+      background-color: transparent;
+      border: none;
+      padding: 0;
+      -webkit-appearance: none;
+      appearance: none;
+      border-radius: min(2vw, 8px);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      touch-action: none; /* Disable browser touch actions */
+      -webkit-touch-callout: none; /* Disable callout on iOS */
+      -webkit-tap-highlight-color: transparent; /* Remove tap highlight */
+      user-select: none; /* Prevent text selection */
+      -webkit-user-select: none;
+      box-shadow: none !important;
+    }
+    /* When square appears in sequence */
+    .square.sequence {
+      background-color: #F19EC2;  /* Light pink when appearing */
+    }
+    /* When sequence is complete */
+    .square.ready {
+      background-color: rgb(230, 52, 133);  /* Deep pink when ready for input */
+      pointer-events: auto; /* Enable interactions only when ready */
+    }
+    /* Hover effect when ready */
+    .square:focus-visible {
+      outline: 3px solid #3B6D78;
+      outline-offset: 3px;
+    }
+    /* Message and button styles */
+    #message {
+      font-size: clamp(16px, 4vw, 18px);
+      margin: 10px;
+      text-align: center;
+      max-width: 90vw;
+    }
+    /* Update the button container and button styles */
+    #buttonContainer {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      margin-top: 20px;
+    }
+    /* Add new CSS for tap animation */
+    @keyframes tapAnimation {
+      0% {
+        transform: scale(1);
+        opacity: 1;
+        background-color: var(--color-primary);
+      }
+      100% {
+        transform: scale(var(--scale-tap));
+        opacity: 0;
+        background-color: var(--color-primary-light);
+      }
+    }
+
+    .square.tapped {
+      animation: tapAnimation var(--animation-speed-fast) ease-out forwards;
+    }
+
+    /* Add new CSS for wrong tap animation */
+    @keyframes wrongTapAnimation {
+      0%, 50% {
+        transform: scale(1);
+        opacity: 1;
+        background-color: var(--color-primary);
+      }
+      25%, 75% {
+        transform: scale(var(--scale-error));
+        opacity: 0.7;
+        background-color: var(--color-error);
+      }
+      100% {
+        transform: scale(var(--scale-tap));
+        opacity: 0;
+        background-color: var(--color-error-light);
+      }
+    }
+
+    .square.wrong {
+      animation: wrongTapAnimation var(--animation-speed-medium) ease-out forwards;
+    }
+
+    /* Update the CSS for level display */
+    /* Back to the game list + language pill, pinned top-left */
+    .top-left-nav {
+      position: fixed;
+      top: max(15px, env(safe-area-inset-top));
+      left: max(15px, env(safe-area-inset-left));
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 1000;
+    }
+
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 44px;
+      min-height: 44px;
+      background: white;
+      border: 1px solid rgba(0,0,0,0.08);
+      border-radius: 10px;
+      color: #666;
+      font-size: 20px;
+      line-height: 1;
+      text-decoration: none;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .back-btn:active {
+      background: #f8fafc;
+      transform: scale(0.97);
+    }
+
+    #levelDisplay {
+      position: fixed;
+      top: max(15px, env(safe-area-inset-top));
+      right: max(15px, env(safe-area-inset-right));
+      /* Same height as the language pill, so both sit on the row's centre line */
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      height: 52px;
+      font-size: clamp(16px, 4vw, 20px);
+      padding: 10px 15px;
+      border-radius: 6px;
+      background: rgba(0,0,0,0.1);
+      color: #666;
+      z-index: 1000;
+    }
+
+    /* Add new CSS for level completion animation */
+    @keyframes particleBurst {
+      0% {
+        transform: translate(0, 0) scale(0);
+        opacity: 1;
+      }
+      100% {
+        transform: translate(var(--tx), var(--ty)) scale(1);
+        opacity: 0;
+      }
+    }
+
+    .particle {
+      position: fixed;
+      width: var(--particle-size);
+      height: var(--particle-size);
+      background-color: var(--color-success);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 1000;
+      animation: particleBurst var(--animation-speed-slow) ease-out forwards;
+    }
+
+    /* Media query for very small screens */
+    @media (max-width: 320px) {
+      body {
+        padding: 10px;
+      }
+      
+      #game {
+        gap: 5px;
+      }
+      
+      #message {
+        margin: 5px;
+      }
+    }
+
+    /* Safe area insets for notched phones */
+    @supports (padding: max(0px)) {
+      body {
+        padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      }
+    }
+
+    /* Add CSS custom properties for consistent values */
+    :root {
+      /* Colors */
+      --color-primary: rgb(230, 52, 133);
+      --color-primary-light: rgba(230, 52, 133, 0.3);
+      --color-secondary: #F19EC2;
+      --color-error: rgb(244, 67, 54);
+      --color-error-light: rgba(244, 67, 54, 0.3);
+      --color-success: #4CAF50;
+      --color-button: #007BFF;
+      --color-button-hover: #0056b3;
+      
+      /* Timing */
+      --animation-speed-fast: 0.3s;
+      --animation-speed-medium: 0.6s;
+      --animation-speed-slow: 0.8s;
+      --delay-short: 300ms;
+      --delay-medium: 600ms;
+      --delay-long: 1000ms;
+      
+      /* Game settings */
+      --initial-squares: 3;
+      --squares-increment-level: 5;
+      --initial-speed: 800;
+      --min-speed: 300;
+      --speed-decrease: 15;
+      --max-errors: 3;
+      
+      /* Sizes */
+      --border-radius: min(2vw, 8px);
+      --particle-size: min(3vw, 10px);
+      --button-height: 64px;
+      
+      /* Transforms */
+      --scale-hover: 0.95;
+      --scale-tap: 1.5;
+      --scale-error: 1.1;
+      
+      /* Layout */
+      --grid-size: min(90vw, 320px);
+      --grid-gap: min(3vw, 10px);
+      --safe-area: max(20px, env(safe-area-inset-left));
+      
+      /* Particles */
+      --particle-count: 20;
+      --particle-distance: 100;
+      --particle-distance-random: 50;
+      
+      /* Animation custom properties */
+      --tx: 0px;
+      --ty: 0px;
+    }
+
+    /* Update all hardcoded values to use custom properties */
+    .square {
+      border-radius: var(--border-radius);
+      transition: all var(--animation-speed-fast) ease;
+    }
+
+    .square.sequence {
+      background-color: var(--color-secondary);
+    }
+
+    .square.ready {
+      background-color: var(--color-primary);
+    }
+
+    /* Remove hover shadow effect */
+    .square.ready:hover {
+      /* Remove box-shadow line */
+    }
+
+    /* Ensure no shadows during animations */
+    .square.sequence,
+    .square.ready,
+    .square.tapped,
+    .square.wrong {
+      box-shadow: none !important;
+    }
+
+    .square:not(.ready) {
+      pointer-events: none; /* Disable interactions when not ready */
+    }
+
+    /* Add media query for very small screens */
+    @media (max-width: 360px) {
+      /* Removed start button rules */
+    }
+
+    @media (hover: hover) {
+      .square.ready:hover {
+        transform: scale(var(--scale-hover));
+      }
+    }
+
+  </style>
+</head>
+<body>
+    <div id="boot-loader" aria-hidden="true"></div>
+
+    <div class="top-left-nav">
+        <a id="backBtn" class="back-btn" href="./index.html" data-i18n-aria-label="nav_back" aria-label="Назад к играм"><svg class="back-arrow" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path d="M20 12H6M11.5 6 5.5 12 11.5 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <div data-lang-toggle></div>
+    </div>
+  <div id="levelDisplay">Уровень 1</div>
+  <!-- Game grid: 3x3 layout -->
+  <div id="game">
+    <button type="button" class="square" data-index="0"></button>
+    <button type="button" class="square" data-index="1"></button>
+    <button type="button" class="square" data-index="2"></button>
+    <button type="button" class="square" data-index="3"></button>
+    <button type="button" class="square" data-index="4"></button>
+    <button type="button" class="square" data-index="5"></button>
+    <button type="button" class="square" data-index="6"></button>
+    <button type="button" class="square" data-index="7"></button>
+    <button type="button" class="square" data-index="8"></button>
+  </div>
+  <div id="message">Запомни порядок появления квадратов и нажми их в обратном порядке</div>
+  <div id="buttonContainer">
+    <!-- Start Button Removed -->
+  </div>
+
+  <script>
+    // Use modern class syntax for game management
+    class MemoryGame {
+      constructor() {
+        // Game constants
+        this.INITIAL_SQUARES = parseInt(getComputedStyle(document.documentElement)
+          .getPropertyValue('--initial-squares'));
+        this.SQUARES_INCREMENT_LEVEL = parseInt(getComputedStyle(document.documentElement)
+          .getPropertyValue('--squares-increment-level'));
+        this.INITIAL_SPEED = parseInt(getComputedStyle(document.documentElement)
+          .getPropertyValue('--initial-speed'));
+        this.MIN_SPEED = parseInt(getComputedStyle(document.documentElement)
+          .getPropertyValue('--min-speed'));
+        this.SPEED_DECREASE = parseInt(getComputedStyle(document.documentElement)
+          .getPropertyValue('--speed-decrease'));
+        this.MAX_ERRORS = parseInt(getComputedStyle(document.documentElement)
+          .getPropertyValue('--max-errors'));
+        this.PARTICLE_COUNT = parseInt(getComputedStyle(document.documentElement)
+          .getPropertyValue('--particle-count'));
+        
+        // Initialize game
+        this.initializeGame();
+      }
+
+      initializeGame() {
+        // Move initialization logic here
+        this.squares = document.querySelectorAll('.square');
+        this.messageEl = document.getElementById('message');
+        this.levelDisplayEl = document.getElementById('levelDisplay');
+
+        this.squares.forEach((square, index) => {
+          square.setAttribute('aria-label', I18n.t('uftl_square_aria', { n: index + 1 }));
+          square.tabIndex = -1;
+        });
+
+        this.sequence = [];
+        this.playerSequence = [];
+        this.level = 0;
+        this.isPlayerTurn = false;
+        this.speed = this.INITIAL_SPEED;
+        this.consecutiveErrors = 0;
+        this.messageKey = 'uftl_remember';
+        this.messageParams = null;
+
+        this.bindEventListeners();
+
+        I18n.subscribe(() => {
+          this.setMessage(this.messageKey, this.messageParams);
+          this.levelDisplayEl.textContent = I18n.t('level_label', { n: Math.max(1, this.level) });
+          this.squares.forEach((square, index) => {
+            square.setAttribute('aria-label', I18n.t('uftl_square_aria', { n: index + 1 }));
+          });
+        });
+      }
+
+      bindEventListeners() {
+        this.squares.forEach(square => {
+            // Remove click listener
+            square.removeEventListener('click', this.handleSquareClick);
+            
+            // Add touch listener with passive true
+            square.addEventListener('touchstart', (e) => {
+                // Prevent scrolling by touching coordinates
+                if (e.cancelable) {
+                    e.preventDefault();
+                }
+                this.handleSquareClick(e);
+            });
+            
+            square.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                this.handleSquareClick(e);
+            });
+
+            square.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    this.handleSquareClick(e);
+                }
+            });
+        });
+
+        // Start the game directly after initializing listeners
+        this.startGameDirectly();
+      }
+
+      setMessage(key, params = null) {
+        this.messageKey = key;
+        this.messageParams = params;
+        this.messageEl.textContent = I18n.t(key, params);
+      }
+
+      // Update game logic to use constants
+      calculateTotalSquares(level) {
+        return this.INITIAL_SQUARES + Math.floor((level - 1) / this.SQUARES_INCREMENT_LEVEL);
+      }
+      resetGame() {
+        this.sequence = [];
+        this.playerSequence = [];
+        this.level = 0;
+        this.speed = this.INITIAL_SPEED;
+        this.isPlayerTurn = false;
+        this.consecutiveErrors = 0;
+        this.squares.forEach(square => {
+          square.classList.remove('sequence', 'ready');
+          square.tabIndex = -1;
+        });
+        this.levelDisplayEl.textContent = I18n.t('level_label', { n: 1 });
+      }
+
+      // Add new helper method for better randomization
+      getRandomSquare() {
+        // Get all available squares (those not in current sequence)
+        const availableSquares = Array.from(Array(9).keys())
+          .filter(i => !this.sequence.includes(i));
+        
+        // If no squares available, return null (shouldn't happen)
+        if (availableSquares.length === 0) return null;
+        
+        // Get random index from available squares
+        const randomIndex = Math.floor(Math.random() * availableSquares.length);
+        return availableSquares[randomIndex];
+      }
+
+      // Update startGame method
+      async startGameDirectly() {
+        const startLevel = Math.max(1, BrainWarsChallenge.startLevel());
+
+        this.resetGame();
+        this.setMessage('uftl_remember');
+
+        const totalSquares = this.calculateTotalSquares(startLevel);
+        while (this.sequence.length < totalSquares) {
+          const randomIndex = this.getRandomSquare();
+          if (randomIndex !== null) {
+            this.sequence.push(randomIndex);
+          }
+        }
+        this.level = startLevel;
+        this.speed = this.speedForLevel(startLevel);
+        this.levelDisplayEl.textContent = I18n.t('level_label', { n: startLevel });
+        await this.playSequence();
+      }
+
+      // A level that adds a square starts fresh; otherwise the sequence speeds up
+      speedForLevel(level) {
+        const grew = this.calculateTotalSquares(level - 1) > this.calculateTotalSquares(level - 2);
+        if (grew) return this.INITIAL_SPEED;
+        const increase = this.SPEED_DECREASE + Math.floor(level / 10) * 5;
+        return Math.max(this.MIN_SPEED, this.INITIAL_SPEED - (level - 1) * increase);
+      }
+
+      // Update nextLevel method
+      async nextLevel() {
+        this.level++;
+        this.levelDisplayEl.textContent = I18n.t('level_label', { n: this.level });
+        this.speed = this.speedForLevel(this.level);
+        this.setMessage('uftl_remember_next', { n: this.level });
+        this.playerSequence = [];
+
+        // Generate completely new sequence
+        const totalSquares = this.calculateTotalSquares(this.level);
+        this.sequence = []; // Clear existing sequence
+        
+        // Fill with new random squares
+        while (this.sequence.length < totalSquares) {
+          // Get all unused squares
+          const availableSquares = Array.from(Array(9).keys())
+            .filter(i => !this.sequence.includes(i));
+          
+          // Pick random square from available ones
+          const randomIndex = Math.floor(Math.random() * availableSquares.length);
+          this.sequence.push(availableSquares[randomIndex]);
+        }
+        
+        // Shuffle the sequence for extra randomness
+        this.sequence = this.sequence
+          .sort(() => Math.random() - 0.5);
+        
+        await this.playSequence();
+      }
+
+      async playSequence() {
+        this.isPlayerTurn = false;
+        
+        // Use Promise-based delay for better async handling
+        const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+        
+        // Show sequence
+        for (const squareIndex of this.sequence) {
+          this.squares[squareIndex].classList.add('sequence');
+          await delay(this.speed);
+        }
+
+        // Remove gray color and make squares ready immediately
+        this.sequence.forEach(squareIndex => {
+          this.squares[squareIndex].classList.remove('sequence');
+          this.squares[squareIndex].classList.add('ready');
+          this.squares[squareIndex].tabIndex = 0;
+        });
+
+        this.setMessage('uftl_your_turn');
+        this.isPlayerTurn = true;
+      }
+
+      async handleSquareClick(event) {
+        if (!this.isPlayerTurn) return;
+
+        const square = event.currentTarget;
+        const index = parseInt(square.getAttribute('data-index'), 10);
+        
+        // Ignore if square is not part of sequence or already tapped
+        if (!square.classList.contains('ready')) return;
+        
+        // Ignore if this square was just tapped (prevent double-tap)
+        if (square.classList.contains('tapped')) return;
+        
+        // Unfollow the Leader: taps must arrive in the reverse of the shown order
+        if (this.playerSequence.length >= this.sequence.length || 
+            index !== this.sequence[this.sequence.length - 1 - this.playerSequence.length]) {
+          await this.handleWrongMove(square);
+            return;
+          }
+
+        await this.handleCorrectMove(square);
+      }
+
+      async handleWrongMove(square) {
+        this.isPlayerTurn = false;
+        this.consecutiveErrors++;
+        this.setMessage('uftl_try_again');
+        
+        square.classList.add('wrong');
+        
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Only animate squares that were part of the sequence
+        this.sequence.forEach(squareIndex => {
+          const otherSquare = this.squares[squareIndex];
+          if (otherSquare !== square) {
+            otherSquare.classList.add('tapped');
+          }
+        });
+
+        await new Promise(resolve => setTimeout(resolve, 600));
+        
+        // Clean up all squares
+        this.squares.forEach(square => {
+          square.classList.remove('wrong', 'tapped', 'ready');
+          square.tabIndex = -1;
+        });
+        
+        // Check if we need to go back a level
+        if (this.consecutiveErrors >= this.MAX_ERRORS) {
+          this.consecutiveErrors = 0;
+          if (this.level > 1) {
+            this.level--;
+            this.levelDisplayEl.textContent = I18n.t('level_label', { n: this.level });
+          }
+        }
+        
+        // Generate new random sequence for current level
+        const totalSquares = this.calculateTotalSquares(this.level);
+        this.sequence = []; // Clear existing sequence
+        
+        // Fill with new random squares
+        while (this.sequence.length < totalSquares) {
+          const availableSquares = Array.from(Array(9).keys())
+            .filter(i => !this.sequence.includes(i));
+          const randomIndex = Math.floor(Math.random() * availableSquares.length);
+          this.sequence.push(availableSquares[randomIndex]);
+        }
+        
+        // Shuffle the sequence for extra randomness
+        this.sequence = this.sequence.sort(() => Math.random() - 0.5);
+        
+        this.playerSequence = [];
+        this.setMessage('uftl_remember');
+        await this.playSequence();
+      }
+
+      async handleCorrectMove(square) {
+        // Reset consecutive errors on correct move
+        this.consecutiveErrors = 0;
+        
+        square.classList.add('tapped');
+        square.tabIndex = -1;
+        setTimeout(() => {
+          square.classList.remove('tapped', 'ready');
+        }, 300);
+
+        this.playerSequence.push(parseInt(square.getAttribute('data-index'), 10));
+
+        if (this.playerSequence.length === this.sequence.length) {
+          this.isPlayerTurn = false;
+          this.setMessage('uftl_great_job');
+          
+          // Get the position of the last tapped square for the particle effect
+          const rect = square.getBoundingClientRect();
+          const x = rect.left + rect.width / 2;
+          const y = rect.top + rect.height / 2;
+          
+          // Create celebration particles
+          await this.createParticles(x, y);
+          
+          this.squares.forEach(s => {
+            if (s !== square) {
+              s.classList.remove('ready');
+              s.tabIndex = -1;
+            }
+          });
+          
+          // Add a slight delay to appreciate the animation
+          setTimeout(() => this.nextLevel(), 1000);
+        }
+      }
+
+      async createParticles(x, y) {
+        const colors = [
+          getComputedStyle(document.documentElement).getPropertyValue('--color-success'),
+          getComputedStyle(document.documentElement).getPropertyValue('--color-primary'),
+          '#FFC107', // Keep some colors for variety
+          '#9C27B0',
+          '#FF5722'
+        ];
+        
+        for (let i = 0; i < this.PARTICLE_COUNT; i++) {
+          const particle = document.createElement('div');
+          particle.className = 'particle';
+          
+          // Random position around the center
+          const angle = (i / this.PARTICLE_COUNT) * 360;
+          const distance = parseInt(getComputedStyle(document.documentElement)
+            .getPropertyValue('--particle-distance')) + 
+            Math.random() * parseInt(getComputedStyle(document.documentElement)
+            .getPropertyValue('--particle-distance-random'));
+          
+          const tx = Math.cos(angle * Math.PI / 180) * distance;
+          const ty = Math.sin(angle * Math.PI / 180) * distance;
+          
+          particle.style.left = `${x}px`;
+          particle.style.top = `${y}px`;
+          particle.style.setProperty('--tx', `${tx}px`);
+          particle.style.setProperty('--ty', `${ty}px`);
+          particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+          
+          document.body.appendChild(particle);
+          
+          // Remove particle after animation
+          setTimeout(() => particle.remove(), parseFloat(getComputedStyle(document.documentElement)
+            .getPropertyValue('--animation-speed-slow')) * 1000);
+        }
+      }
+    }
+
+    // Initialize game when DOM is loaded
+    document.addEventListener('DOMContentLoaded', () => {
+      new MemoryGame();
+    });
+  </script>
+</body>
+</html>
