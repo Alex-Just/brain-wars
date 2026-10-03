@@ -87,7 +87,6 @@ brain-wars/
 ├── icons/                # App and home-screen icons
 ├── test-i18n.js          # Node tests described above
 ├── test-sw.js            # Node tests described above
-├── docs/superpowers/     # Design spec and plan for the PWA work
 └── clock/, transformers-logo.svg   # Unused early artwork
 ```
 
