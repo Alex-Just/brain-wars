@@ -85,6 +85,9 @@
             --coin-border: #E0A800;
             --coin-fill: #FFF6DD;
 
+            /* One size for every text the child reads while playing */
+            --text-size: 16px;
+
             /* Radii & Shadows */
             --radius-sm: 6px;
             --radius-md: 12px;
@@ -287,7 +290,7 @@
         }
 
         .instruction-text {
-            font-size: clamp(14px, 3.8vw, 16px);
+            font-size: var(--text-size);
             font-weight: 500;
             text-align: center;
             color: var(--color-text);
@@ -295,7 +298,7 @@
         }
 
         .instruction-hint {
-            font-size: 13px;
+            font-size: var(--text-size);
             color: var(--color-purple-text);
             font-weight: 600;
             margin-top: 4px;
@@ -315,7 +318,7 @@
         }
 
         .wallet-intro {
-            font-size: 13px;
+            font-size: var(--text-size);
             color: var(--color-text-secondary);
             margin-bottom: 6px;
         }
@@ -333,7 +336,7 @@
         }
 
         .wallet-count {
-            font-size: 15px;
+            font-size: var(--text-size);
             font-weight: 700;
             color: var(--color-primary-text);
             min-width: 30px;
@@ -357,7 +360,7 @@
             border: 2px solid var(--bill-border);
             box-shadow: inset 0 0 0 2px #ffffff;
             color: var(--color-primary-text);
-            font-size: 15px;
+            font-size: var(--text-size);
         }
 
         .money-shape.is-coin {
@@ -369,11 +372,11 @@
             border: 2px solid var(--coin-border);
             box-shadow: inset 0 0 0 2px #ffffff;
             color: #8a6400;
-            font-size: 13px;
+            font-size: var(--text-size);
         }
 
         .wallet-unit {
-            font-size: 14px;
+            font-size: var(--text-size);
             font-weight: 600;
             color: var(--color-text-secondary);
         }
@@ -400,7 +403,7 @@
         }
 
         .item-name {
-            font-size: 15px;
+            font-size: var(--text-size);
             font-weight: 600;
             color: var(--color-text);
         }
@@ -409,7 +412,7 @@
             background: var(--color-purple-light);
             color: var(--color-purple-text);
             font-weight: 700;
-            font-size: 15px;
+            font-size: var(--text-size);
             padding: 4px 12px;
             border-radius: 999px;
             font-variant-numeric: tabular-nums;
@@ -459,7 +462,7 @@
             border-radius: 50%;
             background: #e2e8f0;
             color: var(--color-text-secondary);
-            font-size: 14px;
+            font-size: var(--text-size);
             font-weight: 700;
             display: flex;
             align-items: center;
@@ -485,7 +488,7 @@
         }
 
         .step-short {
-            font-size: 13px;
+            font-size: var(--text-size);
             font-weight: 600;
             color: var(--color-text-secondary);
         }
@@ -566,7 +569,7 @@
         }
 
         .amount-unit {
-            font-size: 13px;
+            font-size: var(--text-size);
             font-weight: 600;
             color: var(--color-text-secondary);
         }
@@ -585,7 +588,7 @@
             background: white;
             color: var(--color-text);
             font-family: inherit;
-            font-size: 15px;
+            font-size: var(--text-size);
             font-weight: 700;
             cursor: pointer;
             transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
@@ -742,18 +745,12 @@
             .money-shape.is-bill {
                 width: 48px;
                 height: 28px;
-                font-size: 13px;
             }
 
             .money-shape.is-coin {
                 width: 30px;
                 height: 30px;
                 margin: 0 8px;
-                font-size: 12px;
-            }
-
-            .step-short {
-                font-size: 12px;
             }
         }
 
