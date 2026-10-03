@@ -5,7 +5,9 @@
  *  1. Run model (create / load / save) used by challenge.html.
  *  2. Engine: when a game page is opened with ?challenge=1 it draws the top progress bar,
  *     pins the level, watches the game's completion and mistake signals and takes the
- *     player to the next game. Outside a challenge it is a no-op.
+ *     player to the next step. Every step replaces the current history entry, so Back
+ *     always exits to the hub instead of replaying earlier rounds. Outside a challenge
+ *     it is a no-op.
  *
  * Browser: window.BrainWarsChallenge. Depends on i18n.js and games.js.
  */
@@ -297,15 +299,6 @@
         return flag;
     }
 
-    function pointBackLink() {
-        const back = document.getElementById('backBtn');
-        if (!back) return;
-        // Leaving a step goes back to the challenge, not to the hub
-        back.setAttribute('href', PAGE);
-        back.setAttribute('data-i18n-aria-label', 'ch_title');
-        back.setAttribute('aria-label', global.I18n.t('ch_title'));
-    }
-
     function hideLevelPicker() {
         const picker = document.querySelector('.level-picker');
         if (picker) picker.style.display = 'none';
@@ -325,11 +318,12 @@
     /* ------------------------------ step flow ------------------------------ */
 
     // The game's own success screen is hidden during a run, so move on the moment the
-    // step registers: waiting here only looks like a freeze.
+    // step registers: waiting here only looks like a freeze. Replacing the entry (not
+    // pushing one) keeps Back meaning "leave the challenge" on every step.
     function finishStep(flag) {
         if (run.dirty && flag) flag.hidden = false;
         document.body.style.pointerEvents = 'none';
-        global.location.href = completeStep();
+        global.location.replace(completeStep());
     }
 
     function watchSignals(flag) {
@@ -351,7 +345,6 @@
     function init() {
         injectStyles();
         const flag = mountBar();
-        pointBackLink();
         hideLevelPicker();
         watchLanguageChoice();
         watchSignals(flag);

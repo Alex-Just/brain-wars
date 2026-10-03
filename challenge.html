@@ -346,7 +346,9 @@
 
             document.getElementById('startBtn').addEventListener('click', () => {
                 Challenge.createRun(games, level);
-                window.location.href = Challenge.stepUrl(Challenge.loadRun());
+                // Replace the setup entry: the run's steps own the history, so Back
+                // exits the challenge instead of returning to the setup or a round.
+                window.location.replace(Challenge.stepUrl(Challenge.loadRun()));
             });
 
             document.getElementById('againBtn').addEventListener('click', () => {
@@ -374,7 +376,7 @@
                 button.hidden = false;
                 button.textContent = I18n.t('ch_continue_run', { solved: run.solved, total: run.total });
                 button.addEventListener('click', () => {
-                    window.location.href = Challenge.stepUrl(run);
+                    window.location.replace(Challenge.stepUrl(run));
                 });
             }
 

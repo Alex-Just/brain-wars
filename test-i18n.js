@@ -259,6 +259,19 @@ check('a mistake re-queues the game at the end without duplicating it', () => {
     assert.strictEqual(queue[queue.length - 1], repeated, 'the game must come back at the end');
 });
 
+check('challenge navigation replaces history so Back always exits the run', () => {
+    // Steps used to push history entries, so Back revisited an earlier round and the
+    // stale-tab redirect threw the player forward again: a visible bounce. Replacing
+    // the entry keeps Back meaning "leave the challenge"; the engine must also leave
+    // the game's own back arrow pointing at the hub.
+    const challenge = fs.readFileSync(path.join(__dirname, 'challenge.js'), 'utf8');
+    assert.ok(!/(location\.href|location\.assign)/.test(challenge), 'challenge.js must not push step history');
+    assert.ok(!challenge.includes('backBtn'), 'challenge.js must not repoint the game back arrow');
+    assert.ok(/location\.replace\(/.test(challenge), 'challenge.js must replace the step entry');
+    const page = fs.readFileSync(path.join(__dirname, 'challenge.html'), 'utf8');
+    assert.ok(!/(location\.href|location\.assign)/.test(page), 'challenge.html must not push step history');
+});
+
 console.log('elapsed time');
 check('duration words read correctly in every language', () => {
     assert.strictEqual(I18n.durationWords('en', 45), '45 minutes');
