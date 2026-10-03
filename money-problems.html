@@ -389,12 +389,11 @@
             justify-content: center;
             gap: 8px;
             padding: 2px 0;
-            transition: opacity 0.2s ease;
         }
 
-        /* The item only matters from question b) on, so it starts dimmed like a locked step */
+        /* The item only matters from question b) on, so it stays hidden until then */
         .item-row.is-locked {
-            opacity: 0.4;
+            display: none;
         }
 
         .item-emoji {
@@ -434,7 +433,7 @@
             padding: 6px 8px;
             border-radius: var(--radius-md);
             border: 1px solid transparent;
-            transition: background-color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
         }
 
         .step.is-active {
@@ -442,8 +441,9 @@
             border-color: #cfe8ee;
         }
 
+        /* Future questions are hidden, not dimmed: only the current one is on screen */
         .step.is-locked {
-            opacity: 0.4;
+            display: none;
         }
 
         .step.is-done {
