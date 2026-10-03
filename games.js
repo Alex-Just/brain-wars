@@ -56,12 +56,20 @@
             completion: { kind: 'class', selector: '#operators', value: 'hidden' },
             mistake: { kind: 'class', selector: '.operator', value: 'wrong' },
             icon: `
-                <div class="operations-icon">
-                    <div class="operator">+</div>
-                    <div class="operator">−</div>
-                    <div class="operator multiply">×</div>
-                    <div class="operator">÷</div>
-                </div>
+                <!-- The app logo, reused as the Mental Math tile -->
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" style="width: 80%; height: 80%;" aria-hidden="true">
+                    <rect width="512" height="512" rx="112" fill="#60ACBD"/>
+                    <g stroke="#ffffff" stroke-width="28" stroke-linecap="round" fill="none">
+                        <path d="M128 176 H224"/>
+                        <path d="M176 128 V224"/>
+                        <path d="M288 176 H384"/>
+                        <path d="M128 288 L224 384"/>
+                        <path d="M224 288 L128 384"/>
+                        <path d="M288 336 H384"/>
+                    </g>
+                    <circle cx="336" cy="300" r="14" fill="#ffffff"/>
+                    <circle cx="336" cy="372" r="14" fill="#ffffff"/>
+                </svg>
             `
         },
         {
