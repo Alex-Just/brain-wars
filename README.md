@@ -107,7 +107,7 @@ flowchart LR
 
 **Translations.** `i18n.js` holds three dictionaries with identical key sets, a `data-i18n` attribute pass, `I18n.t()` interpolation, a per-language decimal separator, and a language toggle that every page mounts. The choice is remembered in `localStorage`; Challenge mode either rotates languages between steps or pins a chosen one.
 
-**Offline.** `sw.js` precaches the whole app on install and cleans old caches on activate. Navigations use network-first (fresh when online; cached page, then hub fallback, when offline), while everything else is stale-while-revalidate. Bump `VERSION` when the precache list changes; content edits to listed files refresh by themselves.
+**Offline.** `sw.js` precaches the whole app on install and cleans old caches on activate. Navigations use network-first (fresh when online; cached page, then hub fallback, when offline), while everything else is stale-while-revalidate. Precache and runtime fetches bypass or revalidate the browser's HTTP cache, a new worker takes over as soon as its fresh precache is ready, and the open page reloads once onto it — so installed copies update on the next launch. Bump `VERSION` when the precache list changes; content edits to listed files refresh by themselves.
 
 ## Deploying
 

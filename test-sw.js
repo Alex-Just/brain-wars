@@ -110,4 +110,18 @@ check('sw.js matches queries against the cache and only cleans its own caches', 
     assert.ok(swSource.includes("startsWith('brain-wars-')"), 'activate must not delete other projects caches');
 });
 
+console.log('service worker updates');
+check('a new worker takes over at once instead of waiting for every tab to close', () => {
+    assert.ok(swSource.includes('self.skipWaiting()'), 'install must call skipWaiting');
+    const pwaSource = fs.readFileSync(path.join(__dirname, 'pwa.js'), 'utf8');
+    assert.ok(pwaSource.includes('controllerchange'), 'pwa.js must notice an updated worker taking over');
+    assert.ok(pwaSource.includes('window.location.reload()'), 'pwa.js must reload once onto the new version');
+});
+
+check('precache and runtime fetches never trust the older browser HTTP cache', () => {
+    assert.ok(swSource.includes("cache: 'reload'"), 'precache fetches must bypass the HTTP cache');
+    assert.ok(swSource.includes('new Request(url, FRESH)'), 'every precache entry must be requested fresh');
+    assert.ok((swSource.match(/REVALIDATE/g) || []).length >= 4, 'runtime fetches must revalidate before use');
+});
+
 console.log('\nAll ' + passed + ' checks passed.');
