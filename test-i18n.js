@@ -10,10 +10,11 @@ const HOURS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 const MINUTES = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
 
 // Grows by one entry as each page is integrated (Tasks 3-7).
-const INTEGRATED_PAGES = ['index.html', 'long-division.html', 'long-multiplication.html', 'long-addition.html', 'long-subtraction.html', 'operations.html', 'follow-the-leader.html', 'unfollow-the-leader.html', 'telling-time-es.html', 'money-problems.html', 'elapsed-time.html', 'challenge.html'];
+const INTEGRATED_PAGES = ['index.html', 'long-division.html', 'long-multiplication.html', 'long-addition.html', 'long-subtraction.html', 'operations.html', 'follow-the-leader.html', 'unfollow-the-leader.html', 'telling-time-es.html', 'money-problems.html', 'elapsed-time.html', 'time-calculations.html', 'challenge.html'];
 const INTEGRATED_SCRIPTS = ['challenge.js'];
 const Games = require('./games.js');
 const Elapsed = require('./elapsed-time.js');
+const TimeCalc = require('./time-calculations.js');
 
 let passed = 0;
 function check(name, fn) {
@@ -537,6 +538,136 @@ check('toClock and formatClock read like a clock', () => {
     assert.strictEqual(Elapsed.formatClock(0), '12:00');
     assert.strictEqual(Elapsed.formatClock(185), '3:05');
     assert.strictEqual(Elapsed.formatClock(719), '11:59');
+});
+
+console.log('time calculations generator');
+
+check('the ladder has twenty levels', () => {
+    assert.strictEqual(TimeCalc.maxLevel, 20, 'expected twenty levels');
+});
+
+check('every generated time problem is mathematically sound', () => {
+    const rng = mulberry32(20261007);
+    for (let level = 1; level <= TimeCalc.maxLevel; level++) {
+        for (let i = 0; i < 120; i++) {
+            const p = TimeCalc.build(level, rng);
+            assert.ok(p.op === 'add' || p.op === 'sub', 'unknown op ' + p.op);
+            [p.a, p.b].forEach((time) => {
+                assert.ok(Number.isInteger(time.hours) && time.hours >= 1 && time.hours <= 89, 'bad hours: ' + JSON.stringify(time));
+                assert.ok(Number.isInteger(time.minutes) && time.minutes >= 1 && time.minutes <= 59, 'bad minutes: ' + JSON.stringify(time));
+            });
+            assert.ok(p.result.hours >= 0 && p.result.hours <= 99, 'result hours out of range: ' + JSON.stringify(p.result));
+            assert.ok(p.result.minutes >= 0 && p.result.minutes <= 59, 'result minutes out of range: ' + JSON.stringify(p.result));
+            const a = p.a.hours * 60 + p.a.minutes;
+            const b = p.b.hours * 60 + p.b.minutes;
+            const total = p.op === 'add' ? a + b : a - b;
+            assert.ok(total > 0, 'empty result: ' + JSON.stringify(p));
+            assert.strictEqual(total, p.result.hours * 60 + p.result.minutes, 'result mismatch: ' + JSON.stringify(p));
+        }
+    }
+});
+
+check('the step plan mirrors the column method', () => {
+    const rng = mulberry32(777);
+    for (let level = 1; level <= TimeCalc.maxLevel; level++) {
+        for (let i = 0; i < 80; i++) {
+            const p = TimeCalc.build(level, rng);
+            const steps = p.steps;
+            assert.ok(Array.isArray(steps) && steps.length >= 2, 'too few steps: ' + JSON.stringify(p));
+            const kinds = steps.map((step) => step.kind);
+            assert.strictEqual(kinds[kinds.length - 1], 'hours', 'the hours step must close the plan');
+            assert.strictEqual(steps[steps.length - 1].answer, String(p.result.hours), 'hours answer');
+            const minutesStep = steps.find((step) => step.kind === 'minutes');
+            assert.ok(minutesStep, 'a minutes step is required');
+            assert.strictEqual(minutesStep.answer, String(p.result.minutes).padStart(2, '0'), 'minutes answer');
+            steps.forEach((step) => {
+                assert.ok(Array.isArray(step.accepted) && step.accepted.includes(step.answer),
+                    'every step accepts its own answer: ' + JSON.stringify(step));
+            });
+            assert.ok(minutesStep.accepted.includes(String(Number(minutesStep.answer))),
+                'minutes accept the short form too: ' + JSON.stringify(minutesStep));
+            if (Number(minutesStep.answer) >= 10) {
+                assert.deepStrictEqual(minutesStep.accepted, [minutesStep.answer],
+                    'two-digit minutes keep their natural form only: ' + JSON.stringify(minutesStep));
+            }
+            if (p.op === 'add') {
+                const sum = p.a.minutes + p.b.minutes;
+                if (sum >= 60) {
+                    assert.deepStrictEqual(kinds, ['minutesSum', 'carry', 'minutes', 'hours'],
+                        'the conversion asks for the hour, then the remainder: ' + JSON.stringify(p));
+                    assert.strictEqual(steps[0].answer, String(sum), 'raw minutes total');
+                    assert.strictEqual(steps[1].answer, '1', 'the whole hour that carries');
+                } else {
+                    assert.ok(!kinds.includes('carry') && !kinds.includes('minutesSum'), 'no conversion without 60 minutes: ' + JSON.stringify(p));
+                }
+            } else {
+                if (p.a.minutes < p.b.minutes) {
+                    assert.deepStrictEqual(kinds.slice(0, 2), ['borrow', 'minutes'], 'borrow before subtracting: ' + JSON.stringify(p));
+                    assert.strictEqual(steps[0].answer, String(p.a.minutes + 60), 'borrowed minutes');
+                } else {
+                    assert.ok(!kinds.includes('borrow'), 'no borrow needed: ' + JSON.stringify(p));
+                }
+            }
+        }
+    }
+});
+
+check('the early levels teach one idea at a time', () => {
+    const rng = mulberry32(99);
+    const sample = (level, count) => {
+        const out = [];
+        for (let i = 0; i < count; i++) out.push(TimeCalc.build(level, rng));
+        return out;
+    };
+    sample(1, 60).forEach((p) => {
+        assert.strictEqual(p.op, 'add', 'level 1 adds');
+        assert.ok(p.a.minutes + p.b.minutes < 60, 'level 1 never carries');
+        assert.ok(p.a.hours <= 9 && p.b.hours <= 9, 'level 1 stays small');
+    });
+    sample(3, 60).forEach((p) => {
+        assert.strictEqual(p.op, 'add', 'level 3 adds');
+        assert.ok(p.a.minutes + p.b.minutes > 60, 'level 3 always carries');
+    });
+    sample(5, 60).forEach((p) => {
+        assert.strictEqual(p.op, 'add', 'level 5 adds');
+        assert.strictEqual(p.a.minutes + p.b.minutes, 60, 'level 5 is exactly one hour');
+    });
+    sample(6, 60).forEach((p) => {
+        assert.strictEqual(p.op, 'sub', 'level 6 subtracts');
+        assert.ok(p.a.minutes >= p.b.minutes, 'level 6 subtracts minutes directly');
+    });
+    sample(8, 60).forEach((p) => {
+        assert.strictEqual(p.op, 'sub', 'level 8 subtracts');
+        assert.ok(p.a.minutes < p.b.minutes, 'level 8 always borrows');
+    });
+    sample(10, 60).forEach((p) => {
+        assert.strictEqual(p.op, 'sub', 'level 10 subtracts');
+        assert.strictEqual(p.a.minutes, p.b.minutes, 'level 10 has matching minutes');
+    });
+});
+
+check('the same time problem never comes twice in a row', () => {
+    const key = (p) => [p.op, p.a.hours, p.a.minutes, p.b.hours, p.b.minutes].join(':');
+    const rng = mulberry32(4242);
+    for (let level = 1; level <= TimeCalc.maxLevel; level++) {
+        let previous = null;
+        for (let i = 0; i < 150; i++) {
+            const problem = TimeCalc.build(level, rng, previous);
+            if (previous) assert.notStrictEqual(key(problem), key(previous), 'level ' + level + ' repeated a problem');
+            previous = problem;
+        }
+    }
+});
+
+check('the time calculations page uses only defined tc_ keys', () => {
+    const source = fs.readFileSync(path.join(__dirname, 'time-calculations.html'), 'utf8');
+    const keys = [...new Set([...source.matchAll(/'(tc_[a-z0-9_]+)'/g)].map((match) => match[1]))];
+    assert.ok(keys.length > 10, 'the page should use its own tc_ keys');
+    keys.forEach((key) => {
+        LANGS.forEach((lang) => {
+            assert.ok(I18n.translations[lang][key] !== undefined, 'time-calculations.html: key "' + key + '" missing in ' + lang);
+        });
+    });
 });
 
 console.log('\nAll ' + passed + ' checks passed.');

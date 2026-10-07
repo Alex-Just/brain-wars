@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#f5f5f5">
+    <link rel="icon" type="image/png" href="./icons/icon-32.png">
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Brain Wars">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <script src="pwa.js" defer></script>
+    <style>
+        /* Boot loader: painted before the deferred scripts run, faded out when the page is ready */
+        #boot-loader {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f5f5f5;
+            transition: opacity 0.25s ease;
+        }
+        #boot-loader.is-done {
+            opacity: 0;
+            pointer-events: none;
+        }
+        #boot-loader::after {
+            content: '';
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 3px solid rgba(0, 0, 0, 0.12);
+            border-top-color: #4d8a98;
+            animation: boot-spin 0.8s linear infinite;
+        }
+        @keyframes boot-spin {
+            to { transform: rotate(360deg); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            #boot-loader::after { animation-duration: 2.4s; }
+        }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const loader = document.getElementById('boot-loader');
+            if (!loader) return;
+            loader.classList.add('is-done');
+            setTimeout(() => loader.remove(), 400);
+        });
+    </script>
+    <title>Вычисления со временем</title>
+    <script src="i18n.js" defer></script>
+    <script src="games.js" defer></script>
+    <script src="time-calculations.js" defer></script>
+    <script src="challenge.js" defer></script>
+    <style>
+        :root {
+            --color-primary: #60ACBD;
+            --color-primary-dark: #4d8a98;
+            --color-primary-text: #3B6D78;
+            --color-success: #4CAF50;
+            --color-success-dark: #2E7D32;
+            --color-error: #FF6B6B;
+            --color-error-dark: #D32F2F;
+            --color-purple-text: #6D4FD8;
+            --color-text: #333333;
+            --color-text-secondary: #666666;
+            --color-background: #f5f5f5;
+            --radius-md: 12px;
+            --radius-lg: 20px;
+            --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --cell-font: 23px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        [hidden] {
+            display: none !important;
+        }
+
+        :focus-visible {
+            outline: 3px solid var(--color-primary-text);
+            outline-offset: 2px;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--color-background);
+            color: var(--color-text);
+            min-height: 100vh;
+            min-height: 100svh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 8px;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+        }
+
+        @supports (padding: max(0px)) {
+            body {
+                padding-top: max(12px, env(safe-area-inset-top));
+                padding-bottom: max(12px, env(safe-area-inset-bottom));
+                padding-left: max(8px, env(safe-area-inset-left));
+                padding-right: max(8px, env(safe-area-inset-right));
+            }
+        }
+
+        /* Top Navigation */
+        .top-nav {
+            width: min(94vw, 420px);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            gap: 8px;
+            flex-wrap: wrap;
+            z-index: 10;
+        }
+
+        .nav-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border: 1px solid rgba(0,0,0,0.08);
+            color: var(--color-text-secondary);
+            border-radius: 10px;
+            min-height: 44px;
+            padding: 10px 14px;
+            font-size: 14px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .icon-btn {
+            min-width: 44px;
+            padding: 10px 12px;
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        .level-picker {
+            position: relative;
+        }
+
+        .level-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(0, 0, 0, 0.08);
+            color: var(--color-text-secondary);
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 600;
+            min-height: 44px;
+            padding: 10px 12px;
+            border: 1px solid transparent;
+            border-radius: 10px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .level-badge[aria-expanded="true"] {
+            background: rgba(0, 0, 0, 0.14);
+        }
+
+        .level-caret {
+            font-size: 11px;
+            line-height: 1;
+            color: var(--color-primary-text);
+        }
+
+        .level-menu {
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            z-index: 30;
+            display: none;
+            grid-template-columns: repeat(4, 44px);
+            gap: 6px;
+            padding: 8px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+            max-height: min(60vh, 60dvh);
+            overflow-y: auto;
+        }
+
+        .level-menu.open {
+            display: grid;
+        }
+
+        .level-menu-item {
+            width: 44px;
+            height: 44px;
+            padding: 0;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            background: #f8fafc;
+            color: var(--color-text);
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .level-menu-item.current {
+            background: var(--color-primary-dark);
+            border-color: var(--color-primary-dark);
+            color: white;
+        }
+
+        /* Main card */
+        .game-card {
+            width: min(94vw, 420px);
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-card);
+            padding: 12px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .instruction-box {
+            width: 100%;
+            background: #f8fafc;
+            border-radius: var(--radius-md);
+            padding: 8px 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 44px;
+        }
+
+        .instruction-hint {
+            font-size: clamp(15px, 4vw, 17px);
+            font-weight: 600;
+            color: var(--color-purple-text);
+            text-align: center;
+            line-height: 1.35;
+        }
+
+        .instruction-hint.is-error {
+            color: var(--color-error);
+        }
+
+        .instruction-hint.is-correct {
+            color: var(--color-success-dark);
+        }
+
+        /* The column of times: annotations on top, then the operands, the line
+           and the result. Cells read like the squared paper of the column games. */
+        .time-board {
+            display: grid;
+            grid-template-columns:
+                [sign] 30px
+                [hours] minmax(50px, auto)
+                [hours-unit] minmax(20px, auto)
+                [minutes] minmax(58px, auto)
+                [minutes-unit] minmax(36px, auto);
+            grid-template-rows: [annotation] auto [first] auto [second] auto [line] auto [result] auto;
+            gap: 6px 4px;
+            align-items: center;
+            justify-items: end;
+            padding: 2px;
+        }
+
+        #carryCell { grid-row: annotation; grid-column: hours; }
+        #scratchCell { grid-row: annotation; grid-column: minutes; min-width: 70px; }
+
+        #hoursA { grid-row: first; grid-column: hours; }
+        #minutesA { grid-row: first; grid-column: minutes; }
+        #hoursB { grid-row: second; grid-column: hours; }
+        #minutesB { grid-row: second; grid-column: minutes; }
+
+        .unit-ah { grid-row: first; grid-column: hours-unit; }
+        .unit-am { grid-row: first; grid-column: minutes-unit; }
+        .unit-bh { grid-row: second; grid-column: hours-unit; }
+        .unit-bm { grid-row: second; grid-column: minutes-unit; }
+        .unit-rh { grid-row: result; grid-column: hours-unit; }
+        .unit-rm { grid-row: result; grid-column: minutes-unit; }
+
+        #hoursResult { grid-row: result; grid-column: hours; }
+        #minutesResult { grid-row: result; grid-column: minutes; }
+
+        .op-sign {
+            grid-row: second;
+            grid-column: sign;
+            justify-self: center;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--color-text-secondary);
+        }
+
+        .board-line {
+            grid-row: line;
+            grid-column: hours / -1;
+            height: 0;
+            border-top: 3px solid #334155;
+            margin: 2px 0 4px;
+        }
+
+        .time-cell {
+            min-width: 54px;
+            min-height: 46px;
+            padding: 0 10px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            font-size: var(--cell-font);
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .time-cell.value {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            color: #334155;
+        }
+
+        .input-cell {
+            background: #fff;
+            border: 1px solid #cbd5e1;
+            color: var(--color-text);
+        }
+
+        .input-cell.is-active {
+            background-color: #FEF08A;
+            border: 2px dashed #EAB308;
+            border-radius: 8px;
+            animation: pulseActive 1.4s infinite;
+            z-index: 2;
+        }
+
+        .input-cell.is-correct {
+            border-color: var(--color-success);
+            background: #f1faf1;
+            color: var(--color-success-dark);
+        }
+
+        .input-cell.correct-flash {
+            animation: flashGreen 0.4s ease-out;
+        }
+
+        .input-cell.error-shake {
+            animation: shakeError 0.5s ease-out;
+        }
+
+        .input-cell.is-unused {
+            visibility: hidden;
+        }
+
+        /* The entered carried hour drops its box and reads as a small red note just
+           above the hours, the way the column games show their carries */
+        .input-cell.carry-note {
+            background: transparent;
+            border-color: transparent;
+            color: var(--color-error-dark);
+            font-size: 16px;
+            align-self: end;
+            justify-content: flex-end;
+            padding: 0 8px 0 0;
+        }
+
+        .unit {
+            justify-self: start;
+            padding-left: 2px;
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+        }
+
+        @keyframes pulseActive {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.4);
+            }
+            50% {
+                transform: scale(1.04);
+                box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.3);
+            }
+        }
+
+        @keyframes flashGreen {
+            0% {
+                background-color: var(--color-success);
+                border-color: var(--color-success);
+                color: white;
+            }
+            100% { background-color: transparent; }
+        }
+
+        @keyframes shakeError {
+            0%, 100% { transform: translateX(0); background-color: transparent; }
+            20%, 60% { transform: translateX(-4px); background-color: #FEE2E2; color: var(--color-error-dark); }
+            40%, 80% { transform: translateX(4px); background-color: #FEE2E2; color: var(--color-error-dark); }
+        }
+
+        /* Number pad */
+        .numpad-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            width: 100%;
+            max-width: 310px;
+        }
+
+        .numpad-btn {
+            background: white;
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 12px;
+            height: clamp(42px, 10vw, 50px);
+            font-size: clamp(19px, 5vw, 23px);
+            font-weight: 600;
+            color: var(--color-text);
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            transition: all 0.1s ease;
+        }
+
+        .numpad-btn:active {
+            transform: scale(0.96);
+            background: #f1f5f9;
+        }
+
+        .numpad-btn[data-key="0"] {
+            grid-column: 2;
+        }
+
+        /* Success: the keypad gives way to the next-question button */
+        .next-problem-btn {
+            width: 100%;
+            max-width: 310px;
+            min-height: 54px;
+            background: var(--color-primary-dark);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 14px 32px;
+            font-size: 20px;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(77, 138, 152, 0.4);
+            transition: transform 0.15s ease, background-color 0.2s;
+        }
+
+        .next-problem-btn:active {
+            transform: scale(0.96);
+        }
+
+        @media (max-width: 380px) {
+            :root {
+                --cell-font: 20px;
+            }
+
+            .time-cell {
+                min-width: 46px;
+                min-height: 42px;
+                padding: 0 7px;
+            }
+
+            #scratchCell {
+                min-width: 62px;
+            }
+
+            .unit {
+                font-size: 15px;
+            }
+
+            .op-sign {
+                font-size: 24px;
+            }
+        }
+
+        @media (hover: hover) {
+            .numpad-btn:hover {
+                background: #f8fafc;
+                border-color: rgba(0,0,0,0.15);
+            }
+            .level-menu-item:hover:not(.current) {
+                background: #f1f5f9;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="boot-loader" aria-hidden="true"></div>
+
+    <!-- Top Navigation -->
+    <header class="top-nav">
+        <a id="backBtn" class="nav-btn icon-btn" href="./index.html" data-i18n-aria-label="nav_back" aria-label="Назад к играм"><svg class="back-arrow" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path d="M20 12H6M11.5 6 5.5 12 11.5 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <div data-lang-toggle></div>
+        <div class="level-picker">
+            <button type="button" id="levelDisplay" class="level-badge" aria-haspopup="listbox" aria-expanded="false">
+                <span id="levelText" aria-live="polite">Уровень 1</span>
+                <span class="level-caret" aria-hidden="true">▾</span>
+            </button>
+            <div class="level-menu" id="levelMenu" role="listbox" data-i18n-aria-label="tc_level_menu_aria" aria-label="Выберите уровень"></div>
+        </div>
+    </header>
+
+    <!-- Main Game Card -->
+    <main class="game-card">
+        <div class="instruction-box" id="instructionBox" role="status" aria-live="polite">
+            <div class="instruction-hint" id="instructionHint"></div>
+        </div>
+
+        <div class="time-board" id="timeBoard" role="group" data-i18n-aria-label="tc_board_aria" aria-label="Пример">
+            <div class="time-cell input-cell" id="carryCell" data-i18n-aria-label="tc_carry_aria" aria-label="Перенос часов"></div>
+            <div class="time-cell input-cell" id="scratchCell" data-i18n-aria-label="tc_scratch_aria" aria-label="Рабочие минуты"></div>
+
+            <div class="time-cell value" id="hoursA"></div>
+            <span class="unit unit-ah" data-i18n="tc_unit_hours">ч</span>
+            <div class="time-cell value" id="minutesA"></div>
+            <span class="unit unit-am" data-i18n="tc_unit_minutes">мин</span>
+
+            <div class="op-sign" id="opSign" aria-hidden="true">+</div>
+            <div class="time-cell value" id="hoursB"></div>
+            <span class="unit unit-bh" data-i18n="tc_unit_hours">ч</span>
+            <div class="time-cell value" id="minutesB"></div>
+            <span class="unit unit-bm" data-i18n="tc_unit_minutes">мин</span>
+
+            <div class="board-line" aria-hidden="true"></div>
+
+            <div class="time-cell input-cell" id="hoursResult" data-i18n-aria-label="tc_result_hours_aria" aria-label="Часы ответа"></div>
+            <span class="unit unit-rh" data-i18n="tc_unit_hours">ч</span>
+            <div class="time-cell input-cell" id="minutesResult" data-i18n-aria-label="tc_result_minutes_aria" aria-label="Минуты ответа"></div>
+            <span class="unit unit-rm" data-i18n="tc_unit_minutes">мин</span>
+        </div>
+
+        <!-- Number pad -->
+        <div class="numpad-grid" id="numpadGrid" role="group" data-i18n-aria-label="tc_numpad_aria" aria-label="Цифровая клавиатура">
+            <button type="button" class="numpad-btn" data-key="1">1</button>
+            <button type="button" class="numpad-btn" data-key="2">2</button>
+            <button type="button" class="numpad-btn" data-key="3">3</button>
+            <button type="button" class="numpad-btn" data-key="4">4</button>
+            <button type="button" class="numpad-btn" data-key="5">5</button>
+            <button type="button" class="numpad-btn" data-key="6">6</button>
+            <button type="button" class="numpad-btn" data-key="7">7</button>
+            <button type="button" class="numpad-btn" data-key="8">8</button>
+            <button type="button" class="numpad-btn" data-key="9">9</button>
+            <button type="button" class="numpad-btn" data-key="0">0</button>
+        </div>
+
+        <button type="button" class="next-problem-btn" id="nextProblemBtn" data-i18n="tc_done_next" hidden>Следующая задача →</button>
+    </main>
+
+    <!-- Game Engine -->
+    <script>
+        class TimeCalcGame {
+            #state = {};
+            #elements = {};
+
+            constructor() {
+                this.#initElements();
+                this.#initState();
+                this.#bindEvents();
+                this.#subscribeToLanguageChanges();
+                this.#startNewRound();
+            }
+
+            #initElements() {
+                const byId = (id) => document.getElementById(id);
+                this.#elements = {
+                    levelText: byId('levelText'),
+                    levelDisplay: byId('levelDisplay'),
+                    levelMenu: byId('levelMenu'),
+                    instructionHint: byId('instructionHint'),
+                    opSign: byId('opSign'),
+                    hoursA: byId('hoursA'),
+                    minutesA: byId('minutesA'),
+                    hoursB: byId('hoursB'),
+                    minutesB: byId('minutesB'),
+                    carryCell: byId('carryCell'),
+                    scratchCell: byId('scratchCell'),
+                    hoursResult: byId('hoursResult'),
+                    minutesResult: byId('minutesResult'),
+                    numpadGrid: byId('numpadGrid'),
+                    nextProblemBtn: byId('nextProblemBtn')
+                };
+            }
+
+            #initState() {
+                this.#state = {
+                    level: Math.max(1, BrainWarsChallenge.startLevel()),
+                    problem: null,
+                    previous: null,
+                    stepIndex: 0,
+                    currentInput: '',
+                    expectedAnswer: '',
+                    accepted: [],
+                    activeCell: null,
+                    hadErrorThisRound: false,
+                    finished: false,
+                    checkTimer: null,
+                    hintTimer: null
+                };
+            }
+
+            #bindEvents() {
+                this.#elements.numpadGrid.addEventListener('click', (event) => {
+                    const button = event.target.closest('.numpad-btn');
+                    if (button) this.#handleKeyPress(button.dataset.key);
+                });
+
+                window.addEventListener('keydown', (event) => {
+                    if (event.key >= '0' && event.key <= '9') {
+                        this.#handleKeyPress(event.key);
+                    } else if (event.key === 'Backspace') {
+                        this.#handleKeyPress('backspace');
+                    } else if (event.key === 'Enter') {
+                        this.#handleKeyPress('enter');
+                    }
+                });
+
+                this.#elements.nextProblemBtn.addEventListener('click', () => this.#startNewRound());
+
+                this.#elements.levelDisplay.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    this.#toggleLevelMenu();
+                });
+                this.#elements.levelMenu.addEventListener('click', (event) => {
+                    const item = event.target.closest('.level-menu-item');
+                    if (item) this.#setLevel(Number(item.dataset.level));
+                });
+                document.addEventListener('click', () => this.#toggleLevelMenu(false));
+            }
+
+            #subscribeToLanguageChanges() {
+                I18n.subscribe(() => {
+                    this.#renderLevelBadge();
+                    if (this.#state.finished) {
+                        this.#renderHint(this.#successText(), 'correct');
+                        return;
+                    }
+                    const step = this.#state.problem && this.#state.problem.steps[this.#state.stepIndex];
+                    if (step) this.#renderHint(this.#hintFor(step), null);
+                });
+            }
+
+            /* ---------- round ---------- */
+
+            #startNewRound() {
+                this.#state.problem = BrainWarsTime.build(this.#state.level, Math.random, this.#state.previous);
+                this.#state.previous = this.#state.problem;
+                this.#beginRound();
+            }
+
+            #beginRound() {
+                const problem = this.#state.problem;
+                const padded = (value) => String(value).padStart(2, '0');
+
+                this.#state.hadErrorThisRound = false;
+                this.#state.finished = false;
+                this.#state.stepIndex = 0;
+                this.#state.currentInput = '';
+                this.#state.expectedAnswer = '';
+                this.#state.activeCell = null;
+                this.#elements.numpadGrid.hidden = false;
+                this.#elements.nextProblemBtn.hidden = true;
+
+                this.#renderLevelBadge();
+                this.#elements.opSign.textContent = problem.op === 'add' ? '+' : '−';
+                this.#elements.hoursA.textContent = String(problem.a.hours);
+                this.#elements.minutesA.textContent = padded(problem.a.minutes);
+                this.#elements.hoursB.textContent = String(problem.b.hours);
+                this.#elements.minutesB.textContent = padded(problem.b.minutes);
+
+                const inputCells = [
+                    this.#elements.carryCell,
+                    this.#elements.scratchCell,
+                    this.#elements.hoursResult,
+                    this.#elements.minutesResult
+                ];
+                inputCells.forEach((cell) => {
+                    cell.textContent = '';
+                    cell.classList.remove('is-active', 'is-correct', 'correct-flash', 'error-shake', 'carry-note');
+                });
+
+                const kinds = problem.steps.map((step) => step.kind);
+                const usesScratch = kinds.includes('minutesSum') || kinds.includes('borrow');
+                this.#elements.scratchCell.classList.toggle('is-unused', !usesScratch);
+                this.#elements.carryCell.classList.toggle('is-unused', !kinds.includes('carry'));
+
+                this.#promptCurrentStep();
+            }
+
+            #renderLevelBadge() {
+                this.#elements.levelText.textContent = I18n.t('level_label', { n: this.#state.level });
+            }
+
+            /* ---------- steps ---------- */
+
+            #cellFor(step) {
+                if (step.kind === 'minutesSum' || step.kind === 'borrow') return this.#elements.scratchCell;
+                if (step.kind === 'carry') return this.#elements.carryCell;
+                if (step.kind === 'minutes') return this.#elements.minutesResult;
+                return this.#elements.hoursResult;
+            }
+
+            #hintFor(step) {
+                const problem = this.#state.problem;
+                const sumsCarry = problem.op === 'add' && problem.a.minutes + problem.b.minutes >= 60;
+                const subtractsBorrow = problem.op === 'sub' && problem.a.minutes < problem.b.minutes;
+
+                switch (step.kind) {
+                    case 'minutesSum':
+                        return I18n.t('tc_hint_minutes_sum', { a: problem.a.minutes, b: problem.b.minutes });
+                    case 'borrow':
+                        return I18n.t('tc_hint_borrow', { a: problem.a.minutes, b: problem.b.minutes });
+                    case 'minutes':
+                        if (sumsCarry) {
+                            return I18n.t('tc_hint_write_minutes', { sum: problem.a.minutes + problem.b.minutes });
+                        }
+                        if (subtractsBorrow) {
+                            return I18n.t('tc_hint_minutes_from', { total: problem.a.minutes + 60, b: problem.b.minutes });
+                        }
+                        if (problem.op === 'add') {
+                            return I18n.t('tc_hint_minutes_sum', { a: problem.a.minutes, b: problem.b.minutes });
+                        }
+                        return I18n.t('tc_hint_subtract_minutes', { a: problem.a.minutes, b: problem.b.minutes });
+                    case 'carry':
+                        return I18n.t('tc_hint_carry', { sum: problem.a.minutes + problem.b.minutes });
+                    default:
+                        if (problem.op === 'add') {
+                            return sumsCarry
+                                ? I18n.t('tc_hint_add_hours_carry', { a: problem.a.hours, b: problem.b.hours })
+                                : I18n.t('tc_hint_add_hours', { a: problem.a.hours, b: problem.b.hours });
+                        }
+                        return subtractsBorrow
+                            ? I18n.t('tc_hint_subtract_hours_borrow', { a: problem.a.hours, b: problem.b.hours })
+                            : I18n.t('tc_hint_subtract_hours', { a: problem.a.hours, b: problem.b.hours });
+                }
+            }
+
+            #promptCurrentStep() {
+                const step = this.#state.problem.steps[this.#state.stepIndex];
+                if (!step) {
+                    this.#finishRound();
+                    return;
+                }
+
+                clearTimeout(this.#state.hintTimer);
+                this.#state.hintTimer = null;
+                this.#state.currentInput = '';
+                this.#state.expectedAnswer = step.answer;
+                this.#state.accepted = step.accepted;
+                if (this.#state.activeCell) this.#state.activeCell.classList.remove('is-active');
+                this.#state.activeCell = this.#cellFor(step);
+                this.#state.activeCell.classList.add('is-active');
+                this.#renderHint(this.#hintFor(step), null);
+            }
+
+            #renderHint(text, state) {
+                const hint = this.#elements.instructionHint;
+                hint.textContent = text;
+                hint.classList.toggle('is-error', state === 'error');
+                hint.classList.toggle('is-correct', state === 'correct');
+            }
+
+            /* ---------- input ---------- */
+
+            #handleKeyPress(key) {
+                if (!this.#state.activeCell) return;
+
+                if (key === 'backspace') {
+                    this.#state.currentInput = this.#state.currentInput.slice(0, -1);
+                    this.#renderInput();
+                    return;
+                }
+                if (key === 'enter') {
+                    this.#submitInput();
+                    return;
+                }
+                if (key >= '0' && key <= '9') {
+                    if (this.#state.currentInput.length >= this.#state.expectedAnswer.length) return;
+                    this.#renderHint(this.#hintFor(this.#state.problem.steps[this.#state.stepIndex]), null);
+                    this.#state.currentInput += key;
+                    this.#renderInput();
+                    const matches = this.#state.accepted.includes(this.#state.currentInput);
+                    const full = this.#state.currentInput.length === this.#state.expectedAnswer.length;
+                    if (matches || full) {
+                        clearTimeout(this.#state.checkTimer);
+                        this.#state.checkTimer = setTimeout(() => this.#submitInput(), 80);
+                    }
+                }
+            }
+
+            #renderInput() {
+                if (this.#state.activeCell) {
+                    this.#state.activeCell.textContent = this.#state.currentInput;
+                }
+            }
+
+            #submitInput() {
+                clearTimeout(this.#state.checkTimer);
+                this.#state.checkTimer = null;
+                if (!this.#state.currentInput) return;
+                if (this.#state.accepted.includes(this.#state.currentInput)) {
+                    this.#handleCorrect();
+                } else {
+                    this.#handleWrong();
+                }
+            }
+
+            #handleCorrect() {
+                const cell = this.#state.activeCell;
+                const step = this.#state.problem.steps[this.#state.stepIndex];
+                cell.textContent = this.#state.expectedAnswer;
+                cell.classList.remove('is-active');
+                cell.classList.toggle('carry-note', step.kind === 'carry');
+                cell.classList.toggle('is-correct', step.kind !== 'carry');
+                cell.classList.add('correct-flash');
+                setTimeout(() => cell.classList.remove('correct-flash'), 500);
+                this.#state.activeCell = null;
+                this.#state.stepIndex++;
+                this.#promptCurrentStep();
+            }
+
+            #handleWrong() {
+                this.#state.hadErrorThisRound = true;
+                const cell = this.#state.activeCell;
+                cell.classList.add('error-shake');
+                setTimeout(() => cell.classList.remove('error-shake'), 600);
+
+                this.#renderHint(I18n.t('tc_wrong'), 'error');
+                clearTimeout(this.#state.hintTimer);
+                this.#state.hintTimer = setTimeout(() => {
+                    this.#state.hintTimer = null;
+                    const step = this.#state.problem.steps[this.#state.stepIndex];
+                    if (step) this.#renderHint(this.#hintFor(step), null);
+                }, 1200);
+
+                this.#state.currentInput = '';
+                this.#renderInput();
+            }
+
+            #finishRound() {
+                if (this.#state.hadErrorThisRound) {
+                    this.#state.level = Math.max(1, this.#state.level - 1);
+                } else {
+                    this.#state.level = Math.min(BrainWarsTime.maxLevel, this.#state.level + 1);
+                }
+                this.#renderLevelBadge();
+                // A beat for the last green flash, then the screen turns into its
+                // success state: the keypad gives way to the next-question button.
+                setTimeout(() => {
+                    this.#state.finished = true;
+                    this.#elements.numpadGrid.hidden = true;
+                    this.#elements.nextProblemBtn.hidden = false;
+                    this.#renderHint(this.#successText(), 'correct');
+                }, 300);
+            }
+
+            #successText() {
+                return '🌟 ' + I18n.t('tc_done_title');
+            }
+
+            /* ---------- level menu ---------- */
+
+            #renderLevelMenu() {
+                const menu = this.#elements.levelMenu;
+                menu.innerHTML = '';
+                for (let level = 1; level <= BrainWarsTime.maxLevel; level++) {
+                    const item = document.createElement('button');
+                    item.type = 'button';
+                    item.className = 'level-menu-item' + (level === this.#state.level ? ' current' : '');
+                    item.dataset.level = String(level);
+                    item.setAttribute('role', 'option');
+                    item.setAttribute('aria-selected', String(level === this.#state.level));
+                    item.setAttribute('aria-label', I18n.t('level_label', { n: level }));
+                    item.textContent = String(level);
+                    menu.appendChild(item);
+                }
+            }
+
+            #toggleLevelMenu(open) {
+                const menu = this.#elements.levelMenu;
+                const willOpen = open !== undefined ? open : !menu.classList.contains('open');
+                menu.classList.toggle('open', willOpen);
+                this.#elements.levelDisplay.setAttribute('aria-expanded', String(willOpen));
+                if (willOpen) this.#renderLevelMenu();
+            }
+
+            #setLevel(level) {
+                this.#state.level = Math.min(Math.max(level, 1), BrainWarsTime.maxLevel);
+                this.#toggleLevelMenu(false);
+                this.#startNewRound();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            new TimeCalcGame();
+        });
+    </script>
+</body>
+</html>

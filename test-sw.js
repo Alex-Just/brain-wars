@@ -61,7 +61,7 @@ check('manifest icons exist on disk', () => {
 console.log('page wiring');
 check('every page is wired for the PWA', () => {
     const pages = fs.readdirSync(__dirname).filter((file) => file.endsWith('.html'));
-    assert.strictEqual(pages.length, 12, 'expected 12 pages, found ' + pages.length);
+    assert.strictEqual(pages.length, 13, 'expected 13 pages, found ' + pages.length);
     pages.forEach((file) => {
         const html = fs.readFileSync(path.join(__dirname, file), 'utf8');
         assert.ok(html.includes('rel="manifest"'), file + ' must link the manifest');
@@ -100,7 +100,7 @@ check('every registered game is precached', () => {
 });
 
 check('core runtime files are precached', () => {
-    ['./index.html', './i18n.js', './games.js', './challenge.js', './elapsed-time.js', './pwa.js', './manifest.json'].forEach((entry) => {
+    ['./index.html', './i18n.js', './games.js', './challenge.js', './elapsed-time.js', './time-calculations.js', './pwa.js', './manifest.json'].forEach((entry) => {
         assert.ok(PRECACHE.includes(entry), entry + ' is missing from PRECACHE');
     });
 });

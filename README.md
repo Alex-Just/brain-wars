@@ -5,7 +5,7 @@
 <h1 align="center">Brain Wars</h1>
 
 <p align="center">
-  <em>Playful math practice for kids: a challenge mode plus ten games, three languages, and offline play.</em>
+  <em>Playful math practice for kids: a challenge mode plus eleven games, three languages, and offline play.</em>
 </p>
 
 <p align="center">
@@ -34,12 +34,13 @@ Brain Wars is a collection of small, playful math games for primary-school child
 | **Long Subtraction** | Subtract in columns, including borrowing. |
 | **Money Problems** | Euro word problems: add up purchases and work out the change. |
 | **Elapsed Time** | Find the end time, the start time, or how long something took; type hours and minutes like a digital clock. Story problems join in from level 7. |
+| **Time Calculations** | Add and subtract hours and minutes in columns: carry 60 minutes into an hour, borrow an hour as 60 minutes, guided step by step. |
 
 ## Features
 
 - **Offline-first PWA.** The service worker precaches every page, script and icon, so the app installs to a home screen and plays with no connection; offline navigations fall back to the hub.
 - **Three languages, one code path.** EN / ES / RU dictionaries with identical key sets (the tests enforce it), a flag toggle on every page and locale-aware number formatting. The first visit starts in Russian, and your choice is remembered. In Challenge mode every step can appear in a different language — or pin one and it sticks for the run.
-- **Levels that fit the child.** Six games offer a menu of 20 levels; the other four ramp difficulty automatically; Challenge mode pins one difficulty across the whole run.
+- **Levels that fit the child.** Seven games offer a menu of 20 levels; the other four ramp difficulty automatically; Challenge mode pins one difficulty across the whole run.
 - **Custom equations.** All four column-arithmetic games accept numbers you type in — whole numbers or decimals, results up to eight digits.
 - **Kid-friendly and accessible.** Large touch targets, safe-area padding for notched phones, `prefers-reduced-motion` support, ARIA labels and live regions.
 - **Tested without a framework.** Plain Node.js scripts validate the translations, page wiring, game registry, challenge queue, question generators and service worker precache.
@@ -77,10 +78,12 @@ brain-wars/
 ├── games.js              # The single game registry: pages, level modes, signals, icons
 ├── i18n.js               # EN / ES / RU dictionaries, language toggle, number formatting
 ├── elapsed-time.js       # Elapsed-time question generator (shared with the tests)
+├── time-calculations.js  # Time add/subtract problems and steps (shared with the tests)
 ├── *.html                # One self-contained page per game (markup, styles and logic
 │                         #   together): follow-the-leader, unfollow-the-leader, operations,
 │                         #   telling-time-es, long-division, long-multiplication,
-│                         #   long-addition, long-subtraction, money-problems, elapsed-time
+│                         #   long-addition, long-subtraction, money-problems, elapsed-time,
+│                         #   time-calculations
 ├── pwa.js                # Registers the service worker on secure contexts
 ├── sw.js                 # Offline-first service worker (precache + fetch strategies)
 ├── manifest.json         # PWA metadata and icons

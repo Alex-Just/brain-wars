@@ -253,6 +253,24 @@
                 </svg>
             `
         },
+        {
+            id: 'time-calculations',
+            file: 'time-calculations.html',
+            titleKey: 'game_time_calc',
+            level: 'picker',
+            completion: { kind: 'class', selector: '#instructionHint', value: 'is-correct' },
+            mistake: { kind: 'class', selector: '#instructionHint', value: 'is-error' },
+            icon: `
+                <!-- A clock with a plus and a minus: adding and taking time -->
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" style="width: 80%; height: 80%;">
+                    <rect width="100" height="100" rx="14" fill="#F8FAFC"/>
+                    <circle cx="44" cy="58" r="25" fill="white" stroke="#60ACBD" stroke-width="5"/>
+                    <path d="M44 44 V58 H60" fill="none" stroke="#7B61FF" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M74 16 V34 M65 25 H83" stroke="#4CAF50" stroke-width="6" stroke-linecap="round"/>
+                    <path d="M65 70 H83" stroke="#FF6B6B" stroke-width="6" stroke-linecap="round"/>
+                </svg>
+            `
+        },
     ];
 
     const byId = new Map(games.map((game) => [game.id, game]));
