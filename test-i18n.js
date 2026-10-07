@@ -500,13 +500,32 @@ check('check() grades a typed span', () => {
     assert.strictEqual(Elapsed.check(longSpan, { hours: 0, minutes: 25 }), 'wrong');
 });
 
+check('check() reads 24-hour clock times on the dial', () => {
+    const oneOClock = { kind: 'end', start: 0, duration: 60, end: 60, story: false };
+    assert.strictEqual(Elapsed.check(oneOClock, { hours: 13, minutes: 0 }), 'correct');
+    assert.strictEqual(Elapsed.check(oneOClock, { hours: 1, minutes: 0 }), 'correct');
+    assert.strictEqual(Elapsed.check(oneOClock, { hours: 13, minutes: 30 }), 'wrong');
+
+    const noon = { kind: 'end', start: 660, duration: 60, end: 0, story: false };
+    assert.strictEqual(Elapsed.check(noon, { hours: 0, minutes: 0 }), 'correct');
+    assert.strictEqual(Elapsed.check(noon, { hours: 12, minutes: 0 }), 'correct');
+
+    const elevenAm = { kind: 'start', start: 660, duration: 85, end: 25, story: false };
+    assert.strictEqual(Elapsed.check(elevenAm, { hours: 23, minutes: 0 }), 'correct');
+    assert.strictEqual(Elapsed.check(elevenAm, { hours: 11, minutes: 0 }), 'correct');
+
+    const span = { kind: 'duration', start: 60, end: 180, duration: 120, format: 'hoursMinutes', story: false };
+    assert.strictEqual(Elapsed.check(span, { hours: 14, minutes: 0 }), 'hour-range');
+});
+
 check('check() asks for missing parts and flags impossible times', () => {
     const question = { kind: 'end', start: 580, duration: 85, end: 665, story: false };
     assert.strictEqual(Elapsed.check(question, { hours: null, minutes: null }), 'incomplete');
     assert.strictEqual(Elapsed.check(question, { hours: 11, minutes: null }), 'incomplete');
     assert.strictEqual(Elapsed.check(question, { hours: null, minutes: 5 }), 'incomplete');
-    assert.strictEqual(Elapsed.check(question, { hours: 13, minutes: 5 }), 'hour-range');
-    assert.strictEqual(Elapsed.check(question, { hours: 0, minutes: 5 }), 'hour-range');
+    assert.strictEqual(Elapsed.check(question, { hours: 24, minutes: 5 }), 'hour-range');
+    assert.strictEqual(Elapsed.check(question, { hours: 13, minutes: 5 }), 'wrong');
+    assert.strictEqual(Elapsed.check(question, { hours: 0, minutes: 5 }), 'wrong');
     assert.strictEqual(Elapsed.check(question, { hours: 11, minutes: 60 }), 'minute-range');
 });
 

@@ -913,7 +913,7 @@
                     hint.textContent = I18n.t('et_wrong');
                     hint.classList.add('is-error');
                 } else if (status === 'hour-range') {
-                    hint.textContent = I18n.t('et_range_hours');
+                    hint.textContent = I18n.t(this.#state.question.kind === 'duration' ? 'et_range_hours' : 'et_range_hours_time');
                     hint.classList.add('is-error');
                 } else if (status === 'minute-range') {
                     hint.textContent = I18n.t('et_range_minutes');
@@ -957,7 +957,10 @@
 
             #typeDigit(digit) {
                 const name = this.#openBoxFrom(this.#state.activeBox);
-                if (!name) return;
+                if (!name) {
+                    if (this.#hasAlternateReading()) this.#applyAlternateReading(digit);
+                    return;
+                }
                 this.#state.activeBox = name;
                 this.#clearHint();
                 this.#state.answers[name] += digit;
@@ -966,13 +969,44 @@
                 if (this.#allBoxesComplete()) this.#scheduleCheck();
             }
 
-            // The other games check the moment the last box fills; a beat later reads calmer
+            // The other games check the moment the last box fills; a beat later reads calmer.
+            // A filled time that could still grow into a 24-hour answer (1:3x vs 13:xx)
+            // waits longer, so a fourth digit can land before the verdict.
             #scheduleCheck() {
                 if (this.#state.checkTimer) return;
+                const delay = this.#hasAlternateReading() ? 1200 : 80;
                 this.#state.checkTimer = setTimeout(() => {
                     this.#state.checkTimer = null;
                     this.#checkAnswer();
-                }, 80);
+                }, delay);
+            }
+
+            // True while the filled boxes can also be read with the first minute digit
+            // moved into the hours: 1 + 3 read as 13, the 24-hour twin of 1:00.
+            #hasAlternateReading() {
+                const question = this.#state.question;
+                if (question.kind === 'duration') return false;
+                const hours = this.#state.answers.hours;
+                const minutes = this.#state.answers.minutes;
+                if (hours.length !== 1 || minutes.length !== 2) return false;
+                const moved = Number(hours + minutes[0]);
+                if (moved > 23) return false;
+                return (moved % 12 === 0 ? 12 : moved % 12) === this.#state.expectedHours.hours;
+            }
+
+            // The child kept typing after the boxes filled: move the first minute digit
+            // into the hours (1, 3, 0 + 0 reads as 13:00).
+            #applyAlternateReading(digit) {
+                if (this.#state.checkTimer) {
+                    clearTimeout(this.#state.checkTimer);
+                    this.#state.checkTimer = null;
+                }
+                const minutes = this.#state.answers.minutes;
+                this.#state.answers.hours += minutes[0];
+                this.#state.answers.minutes = minutes.slice(1) + digit;
+                this.#clearHint();
+                this.#renderBoxes();
+                this.#scheduleCheck();
             }
 
             #backspace() {

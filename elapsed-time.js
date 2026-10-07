@@ -161,6 +161,8 @@
      * Grades what the child typed against the question.
      * entered  { hours, minutes } for a time or a span with hours, { minutes } for a
      *          span under an hour; null/undefined stands for an empty box.
+     * Clock times are read on the 12-hour dial and in 24-hour form alike: 13:00 is
+     * 1:00, 23:00 is 11:00 and 0:00 is 12:00. A span stays literal.
      * Returns 'correct' | 'wrong' | 'incomplete' | 'hour-range' | 'minute-range'.
      */
     function check(question, entered) {
@@ -179,9 +181,10 @@
             if (hours > 12) return 'hour-range';
             return hours * 60 + minutes === question.duration ? 'correct' : 'wrong';
         }
-        if (hours < 1 || hours > 12) return 'hour-range';
+        if (hours < 0 || hours > 23) return 'hour-range';
         const expected = toClock(question.kind === 'end' ? question.end : question.start);
-        return hours === expected.hours && minutes === expected.minutes ? 'correct' : 'wrong';
+        const dialHours = hours % 12 === 0 ? 12 : hours % 12;
+        return dialHours === expected.hours && minutes === expected.minutes ? 'correct' : 'wrong';
     }
 
     global.BrainWarsElapsed = {
