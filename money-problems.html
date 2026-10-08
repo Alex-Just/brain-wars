@@ -103,6 +103,10 @@
             -webkit-tap-highlight-color: transparent;
         }
 
+        [hidden] {
+            display: none !important;
+        }
+
         :focus-visible {
             outline: 3px solid var(--color-primary-text);
             outline-offset: 2px;
@@ -307,6 +311,10 @@
 
         .instruction-hint.is-error {
             color: var(--color-error) !important;
+        }
+
+        .instruction-hint.is-correct {
+            color: var(--color-success-dark) !important;
         }
 
         /* Wallet */
@@ -654,76 +662,11 @@
             grid-column: 2;
         }
 
-        /* Success Completion Overlay */
-        .completion-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(255, 255, 255, 0.95);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 500;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-            padding: 20px;
-            text-align: center;
-        }
-
-        .completion-overlay.show {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .completion-icon {
-            font-size: 64px;
-            margin-bottom: 12px;
-            animation: bounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        @keyframes bounceIn {
-            0% { transform: scale(0); }
-            60% { transform: scale(1.15); }
-            100% { transform: scale(1); }
-        }
-
-        .completion-title {
-            font-size: 26px;
-            font-weight: 700;
-            color: var(--color-success-dark);
-            margin-bottom: 8px;
-        }
-
-        .completion-caption {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--color-text-light);
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-        }
-
-        .completion-equation {
-            font-size: 34px;
-            font-weight: 700;
-            color: var(--color-text);
-            margin: 4px 0 10px 0;
-            font-variant-numeric: tabular-nums;
-        }
-
-        .completion-verdict {
-            font-size: 18px;
-            font-weight: 600;
-            color: var(--color-primary-text);
-            margin-bottom: 20px;
-            max-width: 320px;
-            line-height: 1.4;
-        }
-
-        .completion-next-btn {
+        /* Success: the keypad gives way to the next-question button */
+        .next-problem-btn {
+            width: 100%;
+            max-width: 310px;
+            min-height: 54px;
             background: var(--color-primary-dark);
             color: white;
             border: none;
@@ -737,7 +680,7 @@
             transition: transform 0.15s ease, background-color 0.2s;
         }
 
-        .completion-next-btn:active {
+        .next-problem-btn:active {
             transform: scale(0.96);
         }
 
@@ -876,17 +819,9 @@
             <button type="button" class="numpad-btn" data-key="9">9</button>
             <button type="button" class="numpad-btn" data-key="0">0</button>
         </div>
-    </main>
 
-    <!-- Completion Overlay -->
-    <div class="completion-overlay" id="completionOverlay" role="dialog" aria-modal="true">
-        <div class="completion-icon">🌟</div>
-        <div class="completion-title" data-i18n="mp_done_title">Отлично!</div>
-        <div class="completion-caption" data-i18n="mp_total_caption">Всего</div>
-        <div class="completion-equation" id="completionTotal">16 € 40 центов</div>
-        <div class="completion-verdict" id="completionVerdict"></div>
-        <button type="button" class="completion-next-btn" id="nextProblemBtn" data-i18n="mp_done_next">Следующая задача →</button>
-    </div>
+        <button type="button" class="next-problem-btn" id="nextProblemBtn" data-i18n="mp_done_next" hidden>Следующая задача →</button>
+    </main>
 
     <!-- Game Engine -->
     <script>
@@ -933,6 +868,7 @@
                 this.#state = {
                     level: 1,
                     hadErrorThisRound: false,
+                    finished: false,
                     problem: null,
                     // Index into the mp_name_1..mp_name_20 pool of the active language
                     nameIndex: 1,
@@ -1108,9 +1044,6 @@
                     amountBoxes: Array.from(document.querySelectorAll('.amount-box')),
                     choiceButtons: Array.from(document.querySelectorAll('.choice-btn')),
                     numpadGrid: document.getElementById('numpadGrid'),
-                    completionOverlay: document.getElementById('completionOverlay'),
-                    completionTotal: document.getElementById('completionTotal'),
-                    completionVerdict: document.getElementById('completionVerdict'),
                     nextProblemBtn: document.getElementById('nextProblemBtn')
                 };
             }
@@ -1153,7 +1086,7 @@
                         }
                         return;
                     }
-                    if (this.#elements.completionOverlay.classList.contains('show')) {
+                    if (this.#state.finished) {
                         if (e.key === 'Enter' || e.key === ' ') this.#startNewRound();
                         return;
                     }
@@ -1181,6 +1114,7 @@
 
             #startNewRound() {
                 this.#state.hadErrorThisRound = false;
+                this.#state.finished = false;
                 this.#state.nameIndex = this.#randomInt(1, 20);
                 this.#state.step = 'a';
                 this.#state.activeBox = 'a-eur';
@@ -1188,8 +1122,9 @@
                 this.#state.done = { a: false, b: false, c: false };
                 this.#state.problem = this.#createProblem(this.#state.level);
 
-                this.#elements.completionOverlay.classList.remove('show');
-                this.#elements.instructionHint.classList.remove('is-error');
+                this.#elements.instructionHint.classList.remove('is-error', 'is-correct');
+                this.#elements.numpadGrid.hidden = false;
+                this.#elements.nextProblemBtn.hidden = true;
                 this.#renderLevelBadge();
                 this.#renderRound();
             }
@@ -1334,6 +1269,11 @@
                 }
 
                 this.#elements.instructionText.textContent = text;
+                if (this.#state.finished) {
+                    this.#elements.instructionHint.classList.remove('is-error');
+                    this.#elements.instructionHint.textContent = this.#successText();
+                    return;
+                }
                 if (!this.#elements.instructionHint.classList.contains('is-error')) {
                     this.#elements.instructionHint.textContent = hint;
                 }
@@ -1514,16 +1454,19 @@
                     this.#state.level = Math.min(this.#config.maxLevel, this.#state.level + 1);
                 }
                 this.#renderLevelBadge();
+                // A beat for the last green flash, then the screen turns into its
+                // success state: the keypad gives way to the next-question button.
+                setTimeout(() => {
+                    this.#state.finished = true;
+                    this.#elements.numpadGrid.hidden = true;
+                    this.#elements.nextProblemBtn.hidden = false;
+                    this.#elements.instructionHint.classList.add('is-correct');
+                    this.#elements.instructionHint.textContent = this.#successText();
+                }, 400);
+            }
 
-                const problem = this.#state.problem;
-                const amount = this.#formatMoney(Math.abs(problem.delta));
-                this.#elements.completionTotal.textContent = this.#formatMoney(problem.total);
-                this.#elements.completionVerdict.textContent = I18n.t(
-                    problem.afford ? 'mp_verdict_over' : 'mp_verdict_short',
-                    { amount }
-                );
-
-                setTimeout(() => this.#elements.completionOverlay.classList.add('show'), 400);
+            #successText() {
+                return '🌟 ' + I18n.t('mp_done_title');
             }
         }
 

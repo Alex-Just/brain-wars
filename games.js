@@ -229,7 +229,7 @@
             file: 'money-problems.html',
             titleKey: 'game_money',
             level: 'picker',
-            completion: { kind: 'class', selector: '#completionOverlay', value: 'show' },
+            completion: { kind: 'class', selector: '#instructionHint', value: 'is-correct' },
             mistake: { kind: 'class', selector: '#instructionHint', value: 'is-error' },
             icon: `
                 <!-- Money icon: a banknote with a coin -->
