@@ -2,6 +2,10 @@
  * Brain Wars game registry: the single list of games, used by the hub grid and by
  * challenge mode, so a new game only has to be added here.
  *
+ * hidden     the entry keeps its page, labels and signals (byId/byFile still find it),
+ *            but all() leaves it out: the hub and the challenge queue only offer
+ *            the visible games
+ *
  * Browser: window.BrainWarsGames. Node (tests): module.exports.
  *
  * level      'picker'  the page has a level badge and menu; the challenge sets the level there
@@ -21,6 +25,7 @@
             titleKey: 'game_follow',
             level: 'startup',
             highlight: true,
+            hidden: true,
             completion: { kind: 'text', selector: '#message', key: 'ftl_great_job' },
             mistake: { kind: 'text', selector: '#message', key: 'ftl_try_again' },
             icon: `
@@ -37,6 +42,7 @@
             file: 'unfollow-the-leader.html',
             titleKey: 'game_unfollow',
             level: 'startup',
+            hidden: true,
             completion: { kind: 'text', selector: '#message', key: 'uftl_great_job' },
             mistake: { kind: 'text', selector: '#message', key: 'uftl_try_again' },
             icon: `
@@ -276,7 +282,7 @@
     const byId = new Map(games.map((game) => [game.id, game]));
 
     global.BrainWarsGames = {
-        all: () => games.slice(),
+        all: () => games.filter((game) => !game.hidden),
         byId: (id) => byId.get(id) || null,
         byFile: (file) => games.find((game) => game.file === file) || null
     };

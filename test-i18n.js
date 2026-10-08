@@ -195,6 +195,14 @@ check('registered games exist, are localised and are wired for the challenge', (
     assert.strictEqual(new Set(ids).size, ids.length, 'game ids must be unique');
 });
 
+check('the memory games are parked out of the hub and the challenge', () => {
+    // Hidden entries keep their pages, labels and signals, but are not offered
+    ['follow-the-leader', 'unfollow-the-leader'].forEach((id) => {
+        assert.ok(!Games.all().some((game) => game.id === id), id + ' must not be offered');
+        assert.ok(Games.byId(id), id + ' must stay reachable by id');
+    });
+});
+
 check('the hub renders its grid from the registry', () => {
     const html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
     assert.ok(html.includes('src="games.js"'), 'index.html must load games.js');
