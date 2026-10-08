@@ -3,6 +3,7 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
+const vm = require('vm');
 const I18n = require('./i18n.js');
 
 const LANGS = ['en', 'es', 'ru'];
@@ -65,6 +66,35 @@ check('t() interpolates parameters per language', () => {
     I18n.setLang('es');
     assert.strictEqual(I18n.t('level_label', { n: 3 }), 'Nivel 3');
     I18n.setLang('ru');
+});
+
+check('Spanish is the default and a chosen language sticks to the device', () => {
+    // A tiny device: i18n.js loaded twice over the same pretend localStorage
+    const source = fs.readFileSync(path.join(__dirname, 'i18n.js'), 'utf8');
+    const store = new Map();
+    const context = vm.createContext({
+        console,
+        localStorage: {
+            getItem: (key) => (store.has(key) ? store.get(key) : null),
+            setItem: (key, value) => store.set(key, String(value)),
+            removeItem: (key) => store.delete(key)
+        }
+    });
+    const load = () => {
+        vm.runInContext(source, context);
+        return context.I18n;
+    };
+
+    const fresh = load();
+    assert.strictEqual(fresh.getLang(), 'es', 'a fresh device starts in Spanish');
+    fresh.setLang('ru');
+    assert.strictEqual(store.get('brain_wars_lang'), 'ru', 'the choice is stored on the device');
+
+    const reloaded = load();
+    assert.strictEqual(reloaded.getLang(), 'ru', 'the stored choice survives a reload');
+
+    store.set('brain_wars_lang', 'de');
+    assert.strictEqual(load().getLang(), 'es', 'an unsupported saved language falls back to Spanish');
 });
 
 console.log('time phrases');
@@ -279,6 +309,17 @@ check('challenge navigation replaces history so Back always exits the run', () =
     assert.ok(/location\.replace\(/.test(challenge), 'challenge.js must replace the step entry');
     const page = fs.readFileSync(path.join(__dirname, 'challenge.html'), 'utf8');
     assert.ok(!/(location\.href|location\.assign)/.test(page), 'challenge.html must not push step history');
+});
+
+check('the challenge keeps the device language instead of rotating it', () => {
+    // The language is the player's choice, stored by i18n.js; a run must never
+    // switch it (each step used to draw a random language).
+    const challenge = fs.readFileSync(path.join(__dirname, 'challenge.js'), 'utf8');
+    assert.ok(!challenge.includes('setLang'), 'challenge.js must not switch languages');
+    assert.ok(!challenge.includes('LANG_KEY'), 'no run-level language pinning is left');
+    assert.ok(!challenge.includes('watchLanguageChoice'), 'no language watching is left');
+    const page = fs.readFileSync(path.join(__dirname, 'challenge.html'), 'utf8');
+    assert.ok(!page.includes('watchLanguageChoice'), 'challenge.html must not pin languages');
 });
 
 console.log('elapsed time');

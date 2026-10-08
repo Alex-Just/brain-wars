@@ -41,7 +41,7 @@ Brain Wars is a collection of small, playful math games for primary-school child
 ## Features
 
 - **Offline-first PWA.** The service worker precaches every page, script and icon, so the app installs to a home screen and plays with no connection; offline navigations fall back to the hub.
-- **Three languages, one code path.** EN / ES / RU dictionaries with identical key sets (the tests enforce it), a flag toggle on every page and locale-aware number formatting. The first visit starts in Russian, and your choice is remembered. In Challenge mode every step can appear in a different language — or pin one and it sticks for the run.
+- **Three languages, one code path.** EN / ES / RU dictionaries with identical key sets (the tests enforce it), a flag toggle on every page and locale-aware number formatting. A fresh device starts in Spanish, and any language you pick stays on the device — in the games and in Challenge mode alike.
 - **Levels that fit the child.** Seven games offer a menu of 20 levels; the other two ramp difficulty automatically; Challenge mode pins one difficulty across the whole run.
 - **Custom equations.** All four column-arithmetic games accept numbers you type in — whole numbers or decimals, results up to eight digits.
 - **Kid-friendly and accessible.** Large touch targets, safe-area padding for notched phones, `prefers-reduced-motion` support, ARIA labels and live regions.
@@ -109,7 +109,7 @@ flowchart LR
 
 **Challenge mode.** `challenge.js` plays two roles: the run model used by `challenge.html` (queue and progress saved in `localStorage`, so an interrupted run can continue), and an engine injected into any game opened with `?challenge=1`. The engine draws the top progress bar, pins the level, polls the game's completion and mistake signals four times a second, and moves the player to the next step. Every step replaces the current history entry, so the back button always exits to the hub instead of replaying an earlier round. Games solved with mistakes come back later in the queue and mark the run with a ⚠; the results screen awards 1–3 stars based on retries.
 
-**Translations.** `i18n.js` holds three dictionaries with identical key sets, a `data-i18n` attribute pass, `I18n.t()` interpolation, a per-language decimal separator, and a language toggle that every page mounts. The choice is remembered in `localStorage`; Challenge mode either rotates languages between steps or pins a chosen one.
+**Translations.** `i18n.js` holds three dictionaries with identical key sets, a `data-i18n` attribute pass, `I18n.t()` interpolation, a per-language decimal separator, and a language toggle that every page mounts. A fresh device starts in Spanish; the chosen language is remembered in `localStorage` and the challenge steps keep it too.
 
 **Offline.** `sw.js` precaches the whole app on install and cleans old caches on activate. Navigations use network-first (fresh when online; cached page, then hub fallback, when offline), while everything else is stale-while-revalidate. Precache and runtime fetches bypass or revalidate the browser's HTTP cache, a new worker takes over as soon as its fresh precache is ready, and the open page reloads once onto it — so installed copies update on the next launch. Bump `VERSION` when the precache list changes; content edits to listed files refresh by themselves.
 

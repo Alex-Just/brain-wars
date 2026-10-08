@@ -8,7 +8,7 @@
 
     const STORAGE_KEY = 'brain_wars_lang';
     const SUPPORTED_LANGS = ['en', 'es', 'ru'];
-    const DEFAULT_LANG = 'ru';
+    const DEFAULT_LANG = 'es';
     const FLAGS = { en: '🇬🇧', es: '🇪🇸', ru: '🇷🇺' };
 
     const translations = {
@@ -886,6 +886,7 @@
         return SUPPORTED_LANGS.indexOf(lang) !== -1;
     }
 
+    // The language picked on this device wins; a fresh device always starts in Spanish
     function detectInitialLang() {
         try {
             if (typeof localStorage !== 'undefined') {
@@ -893,10 +894,6 @@
                 if (isSupported(saved)) return saved;
             }
         } catch (error) { /* storage unavailable: ignore */ }
-        if (typeof navigator !== 'undefined') {
-            const short = String(navigator.language || navigator.userLanguage || '').slice(0, 2).toLowerCase();
-            if (isSupported(short)) return short;
-        }
         return DEFAULT_LANG;
     }
 
