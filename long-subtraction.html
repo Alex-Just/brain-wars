@@ -792,8 +792,8 @@
             transform: scale(0.96);
         }
 
-        /* Borrow dot (subtraction) */
-        .borrow-dot {
+        /* Borrow mark (subtraction) */
+        .borrow-mark {
             position: absolute;
             top: -3px;
             left: 50%;
@@ -1495,7 +1495,7 @@
             #writeStep(step) {
                 this.#setCellValue(step.row, step.col, String(step.writeDigit), ['correct-flash']);
                 if (step.badge) {
-                    this.#setBorrowDot(step.badge.row, step.badge.col);
+                    this.#setBorrowMark(step.badge.row, step.badge.col);
                 }
             }
 
@@ -1624,17 +1624,17 @@
                 }
             }
 
-            #setBorrowDot(r, c) {
+            #setBorrowMark(r, c) {
                 const cell = document.getElementById(`cell-${r}-${c}`);
                 if (!cell) return;
-                const dot = document.createElement('span');
-                dot.className = 'borrow-dot';
-                dot.textContent = '•';
-                cell.appendChild(dot);
+                const mark = document.createElement('span');
+                mark.className = 'borrow-mark';
+                mark.textContent = '−1';
+                cell.appendChild(mark);
             }
 
-            #clearBorrowDots() {
-                document.querySelectorAll('.borrow-dot').forEach(dot => dot.remove());
+            #clearBorrowMarks() {
+                document.querySelectorAll('.borrow-mark').forEach(mark => mark.remove());
             }
 
             // ---------------------------------------------------------------
@@ -1672,9 +1672,9 @@
 
                 } else if (term === 'borrow') {
                     clearHighlight('term-highlight-purple');
-                    const dot = document.querySelector('.borrow-dot');
+                    const mark = document.querySelector('.borrow-mark');
                     const step = this.#state.steps[Math.min(this.#state.stepIndex, this.#state.steps.length - 1)];
-                    const target = dot ? dot.parentElement : (step ? document.getElementById(`cell-0-${step.col - 1}`) : null);
+                    const target = mark ? mark.parentElement : (step ? document.getElementById(`cell-0-${step.col - 1}`) : null);
                     if (target) target.classList.add('term-highlight-purple');
                     setTimeout(() => clearHighlight('term-highlight-purple'), 1000);
                 }
@@ -1699,7 +1699,7 @@
 
             #finishRound() {
                 this.#state.activeTargetCells = [];
-                this.#clearBorrowDots();
+                this.#clearBorrowMarks();
 
                 // Custom equations don't affect the level progression
                 if (!this.#state.isCustomRound) {

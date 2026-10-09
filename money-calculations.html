@@ -52,10 +52,10 @@
             setTimeout(() => loader.remove(), 400);
         });
     </script>
-    <title>Вычисления со временем</title>
+    <title data-i18n="game_money_calc">Вычисления с деньгами</title>
     <script src="i18n.js" defer></script>
     <script src="games.js" defer></script>
-    <script src="time-calculations.js" defer></script>
+    <script src="money-calculations.js" defer></script>
     <script src="challenge.js" defer></script>
     <style>
         :root {
@@ -273,14 +273,14 @@
         }
 
         /* The column: annotations on top, then the operands, the rule and the result */
-        .time-board {
+        .money-board {
             display: grid;
             grid-template-columns:
                 [sign] 30px
-                [hours] minmax(50px, auto)
-                [hours-unit] minmax(20px, auto)
-                [minutes] minmax(58px, auto)
-                [minutes-unit] minmax(36px, auto);
+                [euros] minmax(50px, auto)
+                [euros-unit] minmax(20px, auto)
+                [cents] minmax(58px, auto)
+                [cents-unit] minmax(36px, auto);
             grid-template-rows: [annotation] auto [first] auto [second] auto [line] auto [result] auto;
             gap: 6px 4px;
             align-items: center;
@@ -288,23 +288,23 @@
             padding: 2px;
         }
 
-        #carryCell { grid-row: annotation; grid-column: hours; }
-        #scratchCell { grid-row: annotation; grid-column: minutes; }
+        #carryCell { grid-row: annotation; grid-column: euros; }
+        #scratchCell { grid-row: annotation; grid-column: cents; }
 
-        #hoursA { grid-row: first; grid-column: hours; }
-        #minutesA { grid-row: first; grid-column: minutes; }
-        #hoursB { grid-row: second; grid-column: hours; }
-        #minutesB { grid-row: second; grid-column: minutes; }
+        #eurosA { grid-row: first; grid-column: euros; }
+        #centsA { grid-row: first; grid-column: cents; }
+        #eurosB { grid-row: second; grid-column: euros; }
+        #centsB { grid-row: second; grid-column: cents; }
 
-        .unit-ah { grid-row: first; grid-column: hours-unit; }
-        .unit-am { grid-row: first; grid-column: minutes-unit; }
-        .unit-bh { grid-row: second; grid-column: hours-unit; }
-        .unit-bm { grid-row: second; grid-column: minutes-unit; }
-        .unit-rh { grid-row: result; grid-column: hours-unit; }
-        .unit-rm { grid-row: result; grid-column: minutes-unit; }
+        .unit-ae { grid-row: first; grid-column: euros-unit; }
+        .unit-ac { grid-row: first; grid-column: cents-unit; }
+        .unit-be { grid-row: second; grid-column: euros-unit; }
+        .unit-bc { grid-row: second; grid-column: cents-unit; }
+        .unit-re { grid-row: result; grid-column: euros-unit; }
+        .unit-rc { grid-row: result; grid-column: cents-unit; }
 
-        #hoursResult { grid-row: result; grid-column: hours; }
-        #minutesResult { grid-row: result; grid-column: minutes; }
+        #eurosResult { grid-row: result; grid-column: euros; }
+        #centsResult { grid-row: result; grid-column: cents; }
 
         .op-sign {
             grid-row: second;
@@ -322,7 +322,7 @@
 
         .board-line {
             grid-row: line;
-            grid-column: hours / -1;
+            grid-column: euros / -1;
             justify-self: stretch;
             height: 0;
             border-top: 3px solid #334155;
@@ -330,7 +330,7 @@
         }
 
         /* One width for every cell, wide enough for a three-digit scratch ("105") */
-        .time-cell {
+        .money-cell {
             min-width: 70px;
             min-height: 46px;
             padding: 0 10px;
@@ -343,7 +343,7 @@
             font-variant-numeric: tabular-nums;
         }
 
-        .time-cell.value {
+        .money-cell.value {
             background: #f8fafc;
             border: 1px solid #e2e8f0;
             color: #334155;
@@ -489,7 +489,7 @@
                 --cell-font: 20px;
             }
 
-            .time-cell {
+            .money-cell {
                 min-width: 58px;
                 min-height: 42px;
                 padding: 0 7px;
@@ -527,7 +527,7 @@
                 <span id="levelText" aria-live="polite">Уровень 1</span>
                 <span class="level-caret" aria-hidden="true">▾</span>
             </button>
-            <div class="level-menu" id="levelMenu" role="listbox" data-i18n-aria-label="tc_level_menu_aria" aria-label="Выберите уровень"></div>
+            <div class="level-menu" id="levelMenu" role="listbox" data-i18n-aria-label="mc_level_menu_aria" aria-label="Выберите уровень"></div>
         </div>
     </header>
 
@@ -537,31 +537,31 @@
             <div class="instruction-hint" id="instructionHint"></div>
         </div>
 
-        <div class="time-board" id="timeBoard" role="group" data-i18n-aria-label="tc_board_aria" aria-label="Пример">
-            <div class="time-cell input-cell" id="carryCell" data-i18n-aria-label="tc_carry_aria" aria-label="Перенос часов"></div>
-            <div class="time-cell input-cell" id="scratchCell" data-i18n-aria-label="tc_scratch_aria" aria-label="Рабочие минуты"></div>
+        <div class="money-board" id="moneyBoard" role="group" data-i18n-aria-label="mc_board_aria" aria-label="Пример">
+            <div class="money-cell input-cell" id="carryCell" data-i18n-aria-label="mc_carry_aria" aria-label="Перенос евро"></div>
+            <div class="money-cell input-cell" id="scratchCell" data-i18n-aria-label="mc_scratch_aria" aria-label="Рабочие центы"></div>
 
-            <div class="time-cell value" id="hoursA"></div>
-            <span class="unit unit-ah" data-i18n="tc_unit_hours">ч</span>
-            <div class="time-cell value" id="minutesA"></div>
-            <span class="unit unit-am" data-i18n="tc_unit_minutes">мин</span>
+            <div class="money-cell value" id="eurosA"></div>
+            <span class="unit unit-ae" data-i18n="mc_unit_euros">€</span>
+            <div class="money-cell value" id="centsA"></div>
+            <span class="unit unit-ac" data-i18n="mc_unit_cents">центов</span>
 
             <div class="op-sign" id="opSign" aria-hidden="true">+</div>
-            <div class="time-cell value" id="hoursB"></div>
-            <span class="unit unit-bh" data-i18n="tc_unit_hours">ч</span>
-            <div class="time-cell value" id="minutesB"></div>
-            <span class="unit unit-bm" data-i18n="tc_unit_minutes">мин</span>
+            <div class="money-cell value" id="eurosB"></div>
+            <span class="unit unit-be" data-i18n="mc_unit_euros">€</span>
+            <div class="money-cell value" id="centsB"></div>
+            <span class="unit unit-bc" data-i18n="mc_unit_cents">центов</span>
 
             <div class="board-line" aria-hidden="true"></div>
 
-            <div class="time-cell input-cell" id="hoursResult" data-i18n-aria-label="tc_result_hours_aria" aria-label="Часы ответа"></div>
-            <span class="unit unit-rh" data-i18n="tc_unit_hours">ч</span>
-            <div class="time-cell input-cell" id="minutesResult" data-i18n-aria-label="tc_result_minutes_aria" aria-label="Минуты ответа"></div>
-            <span class="unit unit-rm" data-i18n="tc_unit_minutes">мин</span>
+            <div class="money-cell input-cell" id="eurosResult" data-i18n-aria-label="mc_result_euros_aria" aria-label="Евро ответа"></div>
+            <span class="unit unit-re" data-i18n="mc_unit_euros">€</span>
+            <div class="money-cell input-cell" id="centsResult" data-i18n-aria-label="mc_result_cents_aria" aria-label="Центы ответа"></div>
+            <span class="unit unit-rc" data-i18n="mc_unit_cents">центов</span>
         </div>
 
         <!-- Number pad -->
-        <div class="numpad-grid" id="numpadGrid" role="group" data-i18n-aria-label="tc_numpad_aria" aria-label="Цифровая клавиатура">
+        <div class="numpad-grid" id="numpadGrid" role="group" data-i18n-aria-label="mc_numpad_aria" aria-label="Цифровая клавиатура">
             <button type="button" class="numpad-btn" data-key="1">1</button>
             <button type="button" class="numpad-btn" data-key="2">2</button>
             <button type="button" class="numpad-btn" data-key="3">3</button>
@@ -574,12 +574,12 @@
             <button type="button" class="numpad-btn" data-key="0">0</button>
         </div>
 
-        <button type="button" class="next-problem-btn" id="nextProblemBtn" data-i18n="tc_done_next" hidden>Следующая задача →</button>
+        <button type="button" class="next-problem-btn" id="nextProblemBtn" data-i18n="mc_done_next" hidden>Следующая задача →</button>
     </main>
 
     <!-- Game Engine -->
     <script>
-        class TimeCalcGame {
+        class MoneyCalcGame {
             #state = {};
             #elements = {};
 
@@ -599,14 +599,14 @@
                     levelMenu: byId('levelMenu'),
                     instructionHint: byId('instructionHint'),
                     opSign: byId('opSign'),
-                    hoursA: byId('hoursA'),
-                    minutesA: byId('minutesA'),
-                    hoursB: byId('hoursB'),
-                    minutesB: byId('minutesB'),
+                    eurosA: byId('eurosA'),
+                    centsA: byId('centsA'),
+                    eurosB: byId('eurosB'),
+                    centsB: byId('centsB'),
                     carryCell: byId('carryCell'),
                     scratchCell: byId('scratchCell'),
-                    hoursResult: byId('hoursResult'),
-                    minutesResult: byId('minutesResult'),
+                    eurosResult: byId('eurosResult'),
+                    centsResult: byId('centsResult'),
                     numpadGrid: byId('numpadGrid'),
                     nextProblemBtn: byId('nextProblemBtn')
                 };
@@ -673,7 +673,7 @@
             /* ---------- round ---------- */
 
             #startNewRound() {
-                this.#state.problem = BrainWarsTime.build(this.#state.level, Math.random, this.#state.previous);
+                this.#state.problem = BrainWarsMoney.build(this.#state.level, Math.random, this.#state.previous);
                 this.#state.previous = this.#state.problem;
                 this.#beginRound();
             }
@@ -694,16 +694,16 @@
                 this.#renderLevelBadge();
                 this.#elements.opSign.textContent = problem.op === 'add' ? '+' : '−';
                 this.#elements.opSign.classList.toggle('is-sub', problem.op === 'sub');
-                this.#elements.hoursA.textContent = String(problem.a.hours);
-                this.#elements.minutesA.textContent = padded(problem.a.minutes);
-                this.#elements.hoursB.textContent = String(problem.b.hours);
-                this.#elements.minutesB.textContent = padded(problem.b.minutes);
+                this.#elements.eurosA.textContent = String(problem.a.euros);
+                this.#elements.centsA.textContent = padded(problem.a.cents);
+                this.#elements.eurosB.textContent = String(problem.b.euros);
+                this.#elements.centsB.textContent = padded(problem.b.cents);
 
                 const inputCells = [
                     this.#elements.carryCell,
                     this.#elements.scratchCell,
-                    this.#elements.hoursResult,
-                    this.#elements.minutesResult
+                    this.#elements.eurosResult,
+                    this.#elements.centsResult
                 ];
                 inputCells.forEach((cell) => {
                     cell.textContent = '';
@@ -712,7 +712,7 @@
                 });
 
                 const kinds = problem.steps.map((step) => step.kind);
-                const usesScratch = kinds.includes('minutesSum') || kinds.includes('borrow');
+                const usesScratch = kinds.includes('centsSum') || kinds.includes('borrow');
                 this.#elements.scratchCell.classList.toggle('is-unused', !usesScratch);
                 this.#elements.carryCell.classList.toggle('is-unused', !kinds.includes('carry'));
 
@@ -726,44 +726,44 @@
             /* ---------- steps ---------- */
 
             #cellFor(step) {
-                if (step.kind === 'minutesSum' || step.kind === 'borrow') return this.#elements.scratchCell;
+                if (step.kind === 'centsSum' || step.kind === 'borrow') return this.#elements.scratchCell;
                 if (step.kind === 'carry') return this.#elements.carryCell;
-                if (step.kind === 'minutes') return this.#elements.minutesResult;
-                return this.#elements.hoursResult;
+                if (step.kind === 'cents') return this.#elements.centsResult;
+                return this.#elements.eurosResult;
             }
 
             #hintFor(step) {
                 const problem = this.#state.problem;
-                const sumsCarry = problem.op === 'add' && problem.a.minutes + problem.b.minutes >= 60;
-                const subtractsBorrow = problem.op === 'sub' && problem.a.minutes < problem.b.minutes;
+                const sumsCarry = problem.op === 'add' && problem.a.cents + problem.b.cents >= 100;
+                const subtractsBorrow = problem.op === 'sub' && problem.a.cents < problem.b.cents;
 
                 switch (step.kind) {
-                    case 'minutesSum':
-                        return I18n.t('tc_hint_minutes_sum', { a: problem.a.minutes, b: problem.b.minutes });
+                    case 'centsSum':
+                        return I18n.t('mc_hint_cents_sum', { a: problem.a.cents, b: problem.b.cents });
                     case 'borrow':
-                        return I18n.t('tc_hint_borrow', { a: problem.a.minutes, b: problem.b.minutes });
-                    case 'minutes':
+                        return I18n.t('mc_hint_borrow', { a: problem.a.cents, b: problem.b.cents });
+                    case 'cents':
                         if (sumsCarry) {
-                            return I18n.t('tc_hint_write_minutes', { sum: problem.a.minutes + problem.b.minutes });
+                            return I18n.t('mc_hint_write_cents', { sum: problem.a.cents + problem.b.cents });
                         }
                         if (subtractsBorrow) {
-                            return I18n.t('tc_hint_minutes_from', { total: problem.a.minutes + 60, b: problem.b.minutes });
+                            return I18n.t('mc_hint_cents_from', { total: problem.a.cents + 100, b: problem.b.cents });
                         }
                         if (problem.op === 'add') {
-                            return I18n.t('tc_hint_minutes_sum', { a: problem.a.minutes, b: problem.b.minutes });
+                            return I18n.t('mc_hint_cents_sum', { a: problem.a.cents, b: problem.b.cents });
                         }
-                        return I18n.t('tc_hint_subtract_minutes', { a: problem.a.minutes, b: problem.b.minutes });
+                        return I18n.t('mc_hint_subtract_cents', { a: problem.a.cents, b: problem.b.cents });
                     case 'carry':
-                        return I18n.t('tc_hint_carry', { sum: problem.a.minutes + problem.b.minutes });
+                        return I18n.t('mc_hint_carry', { sum: problem.a.cents + problem.b.cents });
                     default:
                         if (problem.op === 'add') {
                             return sumsCarry
-                                ? I18n.t('tc_hint_add_hours_carry', { a: problem.a.hours, b: problem.b.hours })
-                                : I18n.t('tc_hint_add_hours', { a: problem.a.hours, b: problem.b.hours });
+                                ? I18n.t('mc_hint_add_euros_carry', { a: problem.a.euros, b: problem.b.euros })
+                                : I18n.t('mc_hint_add_euros', { a: problem.a.euros, b: problem.b.euros });
                         }
                         return subtractsBorrow
-                            ? I18n.t('tc_hint_subtract_hours_borrow', { a: problem.a.hours, b: problem.b.hours })
-                            : I18n.t('tc_hint_subtract_hours', { a: problem.a.hours, b: problem.b.hours });
+                            ? I18n.t('mc_hint_subtract_euros_borrow', { a: problem.a.euros, b: problem.b.euros })
+                            : I18n.t('mc_hint_subtract_euros', { a: problem.a.euros, b: problem.b.euros });
                 }
             }
 
@@ -868,7 +868,7 @@
                 cell.classList.add('error-shake');
                 setTimeout(() => cell.classList.remove('error-shake'), 600);
 
-                this.#renderHint(I18n.t('tc_wrong'), 'error');
+                this.#renderHint(I18n.t('mc_wrong'), 'error');
                 clearTimeout(this.#state.hintTimer);
                 this.#state.hintTimer = setTimeout(() => {
                     this.#state.hintTimer = null;
@@ -884,7 +884,7 @@
                 if (this.#state.hadErrorThisRound) {
                     this.#state.level = Math.max(1, this.#state.level - 1);
                 } else {
-                    this.#state.level = Math.min(BrainWarsTime.maxLevel, this.#state.level + 1);
+                    this.#state.level = Math.min(BrainWarsMoney.maxLevel, this.#state.level + 1);
                 }
                 this.#renderLevelBadge();
                 // A beat for the last flash, then the success state
@@ -897,7 +897,7 @@
             }
 
             #successText() {
-                return '🌟 ' + I18n.t('tc_done_title');
+                return '🌟 ' + I18n.t('mc_done_title');
             }
 
             /* ---------- level menu ---------- */
@@ -905,7 +905,7 @@
             #renderLevelMenu() {
                 const menu = this.#elements.levelMenu;
                 menu.innerHTML = '';
-                for (let level = 1; level <= BrainWarsTime.maxLevel; level++) {
+                for (let level = 1; level <= BrainWarsMoney.maxLevel; level++) {
                     const item = document.createElement('button');
                     item.type = 'button';
                     item.className = 'level-menu-item' + (level === this.#state.level ? ' current' : '');
@@ -927,14 +927,14 @@
             }
 
             #setLevel(level) {
-                this.#state.level = Math.min(Math.max(level, 1), BrainWarsTime.maxLevel);
+                this.#state.level = Math.min(Math.max(level, 1), BrainWarsMoney.maxLevel);
                 this.#toggleLevelMenu(false);
                 this.#startNewRound();
             }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            new TimeCalcGame();
+            new MoneyCalcGame();
         });
     </script>
 </body>

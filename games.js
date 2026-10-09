@@ -277,6 +277,24 @@
                 </svg>
             `
         },
+        {
+            id: 'money-calculations',
+            file: 'money-calculations.html',
+            titleKey: 'game_money_calc',
+            level: 'picker',
+            completion: { kind: 'class', selector: '#instructionHint', value: 'is-correct' },
+            mistake: { kind: 'class', selector: '#instructionHint', value: 'is-error' },
+            icon: `
+                <!-- A banknote with a plus and a minus: adding and taking money -->
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" style="width: 80%; height: 80%;">
+                    <rect width="100" height="100" rx="14" fill="#F8FAFC"/>
+                    <rect x="8" y="30" width="56" height="34" rx="6" fill="#E3F2FD" stroke="#60ACBD" stroke-width="4"/>
+                    <text x="36" y="54" font-family="system-ui, sans-serif" font-size="22" font-weight="700" fill="#60ACBD" text-anchor="middle">€</text>
+                    <path d="M76 16 V34 M67 25 H85" stroke="#4CAF50" stroke-width="6" stroke-linecap="round"/>
+                    <path d="M67 70 H85" stroke="#FF6B6B" stroke-width="6" stroke-linecap="round"/>
+                </svg>
+            `
+        },
     ];
 
     const byId = new Map(games.map((game) => [game.id, game]));

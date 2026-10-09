@@ -10,12 +10,13 @@ const LANGS = ['en', 'es', 'ru'];
 const HOURS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 const MINUTES = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
 
-// Grows by one entry as each page is integrated (Tasks 3-7).
-const INTEGRATED_PAGES = ['index.html', 'long-division.html', 'long-multiplication.html', 'long-addition.html', 'long-subtraction.html', 'operations.html', 'follow-the-leader.html', 'unfollow-the-leader.html', 'telling-time-es.html', 'money-problems.html', 'elapsed-time.html', 'time-calculations.html', 'challenge.html'];
+// Pages wired for i18n and the shared checks.
+const INTEGRATED_PAGES = ['index.html', 'long-division.html', 'long-multiplication.html', 'long-addition.html', 'long-subtraction.html', 'operations.html', 'follow-the-leader.html', 'unfollow-the-leader.html', 'telling-time-es.html', 'money-problems.html', 'elapsed-time.html', 'time-calculations.html', 'money-calculations.html', 'challenge.html'];
 const INTEGRATED_SCRIPTS = ['challenge.js'];
 const Games = require('./games.js');
 const Elapsed = require('./elapsed-time.js');
 const TimeCalc = require('./time-calculations.js');
+const MoneyCalc = require('./money-calculations.js');
 
 let passed = 0;
 function check(name, fn) {
@@ -715,6 +716,136 @@ check('the time calculations page uses only defined tc_ keys', () => {
     keys.forEach((key) => {
         LANGS.forEach((lang) => {
             assert.ok(I18n.translations[lang][key] !== undefined, 'time-calculations.html: key "' + key + '" missing in ' + lang);
+        });
+    });
+});
+
+console.log('money calculations generator');
+
+check('the money ladder has twenty levels', () => {
+    assert.strictEqual(MoneyCalc.maxLevel, 20, 'expected twenty levels');
+});
+
+check('every generated money problem is mathematically sound', () => {
+    const rng = mulberry32(20261009);
+    for (let level = 1; level <= MoneyCalc.maxLevel; level++) {
+        for (let i = 0; i < 120; i++) {
+            const p = MoneyCalc.build(level, rng);
+            assert.ok(p.op === 'add' || p.op === 'sub', 'unknown op ' + p.op);
+            [p.a, p.b].forEach((amount) => {
+                assert.ok(Number.isInteger(amount.euros) && amount.euros >= 1 && amount.euros <= 89, 'bad euros: ' + JSON.stringify(amount));
+                assert.ok(Number.isInteger(amount.cents) && amount.cents >= 1 && amount.cents <= 99, 'bad cents: ' + JSON.stringify(amount));
+            });
+            assert.ok(p.result.euros >= 0 && p.result.euros <= 99, 'result euros out of range: ' + JSON.stringify(p.result));
+            assert.ok(p.result.cents >= 0 && p.result.cents <= 99, 'result cents out of range: ' + JSON.stringify(p.result));
+            const a = p.a.euros * 100 + p.a.cents;
+            const b = p.b.euros * 100 + p.b.cents;
+            const total = p.op === 'add' ? a + b : a - b;
+            assert.ok(total > 0, 'empty result: ' + JSON.stringify(p));
+            assert.strictEqual(total, p.result.euros * 100 + p.result.cents, 'result mismatch: ' + JSON.stringify(p));
+        }
+    }
+});
+
+check('the money step plan mirrors the column method', () => {
+    const rng = mulberry32(777);
+    for (let level = 1; level <= MoneyCalc.maxLevel; level++) {
+        for (let i = 0; i < 80; i++) {
+            const p = MoneyCalc.build(level, rng);
+            const steps = p.steps;
+            assert.ok(Array.isArray(steps) && steps.length >= 2, 'too few steps: ' + JSON.stringify(p));
+            const kinds = steps.map((step) => step.kind);
+            assert.strictEqual(kinds[kinds.length - 1], 'euros', 'the euros step must close the plan');
+            assert.strictEqual(steps[steps.length - 1].answer, String(p.result.euros), 'euros answer');
+            const centsStep = steps.find((step) => step.kind === 'cents');
+            assert.ok(centsStep, 'a cents step is required');
+            assert.strictEqual(centsStep.answer, String(p.result.cents).padStart(2, '0'), 'cents answer');
+            steps.forEach((step) => {
+                assert.ok(Array.isArray(step.accepted) && step.accepted.includes(step.answer),
+                    'every step accepts its own answer: ' + JSON.stringify(step));
+            });
+            assert.ok(centsStep.accepted.includes(String(Number(centsStep.answer))),
+                'cents accept the short form too: ' + JSON.stringify(centsStep));
+            if (Number(centsStep.answer) >= 10) {
+                assert.deepStrictEqual(centsStep.accepted, [centsStep.answer],
+                    'two-digit cents keep their natural form only: ' + JSON.stringify(centsStep));
+            }
+            if (p.op === 'add') {
+                const sum = p.a.cents + p.b.cents;
+                if (sum >= 100) {
+                    assert.deepStrictEqual(kinds, ['centsSum', 'carry', 'cents', 'euros'],
+                        'the conversion asks for the euro, then the remainder: ' + JSON.stringify(p));
+                    assert.strictEqual(steps[0].answer, String(sum), 'raw cents total');
+                    assert.strictEqual(steps[1].answer, '1', 'the whole euro that carries');
+                } else {
+                    assert.ok(!kinds.includes('carry') && !kinds.includes('centsSum'), 'no conversion without 100 cents: ' + JSON.stringify(p));
+                }
+            } else {
+                if (p.a.cents < p.b.cents) {
+                    assert.deepStrictEqual(kinds.slice(0, 2), ['borrow', 'cents'], 'borrow before subtracting: ' + JSON.stringify(p));
+                    assert.strictEqual(steps[0].answer, String(p.a.cents + 100), 'borrowed cents');
+                } else {
+                    assert.ok(!kinds.includes('borrow'), 'no borrow needed: ' + JSON.stringify(p));
+                }
+            }
+        }
+    }
+});
+
+check('the early money levels teach one idea at a time', () => {
+    const rng = mulberry32(99);
+    const sample = (level, count) => {
+        const out = [];
+        for (let i = 0; i < count; i++) out.push(MoneyCalc.build(level, rng));
+        return out;
+    };
+    sample(1, 60).forEach((p) => {
+        assert.strictEqual(p.op, 'add', 'level 1 adds');
+        assert.ok(p.a.cents + p.b.cents < 100, 'level 1 never carries');
+        assert.ok(p.a.euros <= 9 && p.b.euros <= 9, 'level 1 stays small');
+    });
+    sample(3, 60).forEach((p) => {
+        assert.strictEqual(p.op, 'add', 'level 3 adds');
+        assert.ok(p.a.cents + p.b.cents > 100, 'level 3 always carries');
+    });
+    sample(5, 60).forEach((p) => {
+        assert.strictEqual(p.op, 'add', 'level 5 adds');
+        assert.strictEqual(p.a.cents + p.b.cents, 100, 'level 5 is exactly one euro');
+    });
+    sample(6, 60).forEach((p) => {
+        assert.strictEqual(p.op, 'sub', 'level 6 subtracts');
+        assert.ok(p.a.cents >= p.b.cents, 'level 6 subtracts cents directly');
+    });
+    sample(8, 60).forEach((p) => {
+        assert.strictEqual(p.op, 'sub', 'level 8 subtracts');
+        assert.ok(p.a.cents < p.b.cents, 'level 8 always borrows');
+    });
+    sample(10, 60).forEach((p) => {
+        assert.strictEqual(p.op, 'sub', 'level 10 subtracts');
+        assert.strictEqual(p.a.cents, p.b.cents, 'level 10 has matching cents');
+    });
+});
+
+check('the same money problem never comes twice in a row', () => {
+    const key = (p) => [p.op, p.a.euros, p.a.cents, p.b.euros, p.b.cents].join(':');
+    const rng = mulberry32(4242);
+    for (let level = 1; level <= MoneyCalc.maxLevel; level++) {
+        let previous = null;
+        for (let i = 0; i < 150; i++) {
+            const problem = MoneyCalc.build(level, rng, previous);
+            if (previous) assert.notStrictEqual(key(problem), key(previous), 'level ' + level + ' repeated a problem');
+            previous = problem;
+        }
+    }
+});
+
+check('the money calculations page uses only defined mc_ keys', () => {
+    const source = fs.readFileSync(path.join(__dirname, 'money-calculations.html'), 'utf8');
+    const keys = [...new Set([...source.matchAll(/'(mc_[a-z0-9_]+)'/g)].map((match) => match[1]))];
+    assert.ok(keys.length > 10, 'the page should use its own mc_ keys');
+    keys.forEach((key) => {
+        LANGS.forEach((lang) => {
+            assert.ok(I18n.translations[lang][key] !== undefined, 'money-calculations.html: key "' + key + '" missing in ' + lang);
         });
     });
 });
