@@ -1,8 +1,8 @@
 'use strict';
 
-const assert = require('assert');
-const fs = require('fs');
-const path = require('path');
+const assert = require('node:assert');
+const fs = require('node:fs');
+const path = require('node:path');
 const { I18n, createI18n } = require('./i18n.js');
 
 const LANGS = ['en', 'es', 'ru'];
@@ -206,7 +206,7 @@ check('registered games exist, are localised and are wired for the challenge', (
         });
         ['completion', 'mistake'].forEach((kind) => {
             const signal = game[kind];
-            assert.ok(signal && signal.selector && signal.kind, game.file + ': no ' + kind + ' signal');
+            assert.ok(signal?.selector && signal.kind, `${game.file}: no ${kind} signal`);
             if (signal.kind === 'text') {
                 LANGS.forEach((lang) => {
                     assert.ok(I18n.translations[lang][signal.key], game.file + ': ' + signal.key + ' missing in ' + lang);
@@ -357,7 +357,7 @@ console.log('elapsed time generator');
 
 function mulberry32(seed) {
     // A small deterministic PRNG, so every run covers the same questions
-    return function () {
+    return () => {
         seed = Math.trunc(seed + 0x6D2B79F5); // integral seed; the xors below re-wrap into int32
         let value = Math.imul(seed ^ (seed >>> 15), 1 | seed);
         value = (value + Math.imul(value ^ (value >>> 7), 61 | value)) ^ value;

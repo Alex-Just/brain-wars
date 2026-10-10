@@ -39,10 +39,12 @@
 ### Task 1: Client core — events, queue, capture policy, flush state machine
 
 **Files:**
+
 - Create: `analytics.js`
 - Create: `test-analytics.js`
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces (exported by `analytics.js` as `window.BrainWarsAnalytics` / `module.exports`):
   - `buildEvent(game, correct, now, device) → { id, game, correct, ts, device }`
@@ -325,10 +327,12 @@ git commit -m "Add the answers analytics client core"
 ### Task 2: Worker validation and the game allowlist
 
 **Files:**
+
 - Create: `analytics-worker/worker.mjs`
 - Modify: `test-analytics.js` (append the worker section)
 
 **Interfaces:**
+
 - Consumes: nothing from Task 1.
 - Produces (from `analytics-worker/worker.mjs`):
   - `GAME_IDS: string[]` — every registry id, hidden ones included.
@@ -479,10 +483,12 @@ git commit -m "Add the answers analytics worker validation"
 ### Task 3: Worker ingest pipeline
 
 **Files:**
+
 - Modify: `analytics-worker/worker.mjs` (add helpers + default export with `fetch`)
 - Modify: `test-analytics.js` (append handler checks inside the async main, before the final `console.log`)
 
 **Interfaces:**
+
 - Consumes: `GAME_IDS`, `validateEvents` from Task 2.
 - Produces: `export default { fetch(request, env) }` — routes: `POST /ingest`; `OPTIONS` → 204; otherwise 405. Responses: `200 { inserted, ignored, rejected }`, `400 { error }`, `429 { error: 'rate_limit' }`. Uses `env.DB` (D1 binding): `prepare().bind().first()` for the rate count, `prepare().bind()` + `batch()` for inserts. Server fields: `ip` from `CF-Connecting-IP` (or null), `country` from `request.cf.country` (or null), `received_at = Date.now()`.
 
@@ -720,12 +726,14 @@ git commit -m "Add the answers analytics worker ingest pipeline"
 ### Task 4: Scheduled IP cleanup, schema, and worker README
 
 **Files:**
+
 - Modify: `analytics-worker/worker.mjs` (add `scheduled` to the default export)
 - Modify: `test-analytics.js` (append the scheduled check)
 - Create: `analytics-worker/schema.sql`
 - Create: `analytics-worker/README.md`
 
 **Interfaces:**
+
 - Consumes: the default export from Task 3.
 - Produces: `default.scheduled(event, env, ctx)` — clears `ip` for rows older than 90 days, in batches of 500, up to 20 rounds per run.
 
@@ -878,10 +886,12 @@ git commit -m "Add the answers analytics cleanup, schema and worker guide"
 ### Task 5: Browser bootstrap — capture, outbox, flush
 
 **Files:**
+
 - Modify: `analytics.js` (add the guarded bootstrap after the core)
 - Modify: `test-analytics.js` (no new checks; the require-safety is already covered)
 
 **Interfaces:**
+
 - Consumes: the Task 1 core (`buildEvent`, `enqueue`, `takeBatch`, `ack`, `risingEdges`, `captureEvent`, `flushOnce`) and `BrainWarsGames.byFile`, `I18n.t`.
 - Produces: no new exports; the module side effect runs only in a browser with a non-empty `ENDPOINT` on a game page.
 
@@ -1040,10 +1050,12 @@ git commit -m "Add the answers analytics capture and flush bootstrap"
 ### Task 6: Wire the game pages
 
 **Files:**
+
 - Modify: `test-i18n.js` (new page-wiring check)
 - Modify: 12 game pages: `follow-the-leader.html`, `unfollow-the-leader.html`, `operations.html`, `telling-time-es.html`, `long-division.html`, `long-multiplication.html`, `long-addition.html`, `long-subtraction.html`, `money-problems.html`, `elapsed-time.html`, `time-calculations.html`, `money-calculations.html`
 
 **Interfaces:**
+
 - Consumes: `analytics.js` from Task 5.
 - Produces: every game page loads the module; the check iterates `INTEGRATED_PAGES` (hidden games included), unlike the existing `Games.all()` loop.
 
@@ -1101,11 +1113,13 @@ git commit -m "Load the answers analytics module on every game page"
 ### Task 7: Precache, version bump, and documentation
 
 **Files:**
+
 - Modify: `sw.js` (precache entry, `VERSION`)
 - Modify: `test-sw.js` (precache and core-files expectations)
 - Modify: `README.md` (tests list, structure, Analytics section, intro wording)
 
 **Interfaces:**
+
 - Consumes: `analytics.js` (Task 5) and the page wiring (Task 6).
 - Produces: offline availability of the module; docs.
 
@@ -1162,10 +1176,12 @@ git commit -m "Precache the analytics module and document the feature"
 ### Task 8: Deploy, enable, and verify end-to-end
 
 **Files:**
+
 - Modify: `analytics.js` (`ENDPOINT`)
 - Modify: `sw.js` (`VERSION` `v6` → `v7` — same commit as enabling)
 
 **Interfaces:**
+
 - Consumes: everything above.
 - Produces: the deployed pipeline; no new code interfaces.
 

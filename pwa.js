@@ -8,7 +8,7 @@
  */
 'use strict';
 
-(function () {
+(() => {
     if (!('serviceWorker' in navigator)) return;
     if (!window.isSecureContext) return;
 

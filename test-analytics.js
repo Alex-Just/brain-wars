@@ -1,8 +1,8 @@
 'use strict';
 
-const assert = require('assert');
-const fs = require('fs');
-const path = require('path');
+const assert = require('node:assert');
+const fs = require('node:fs');
+const path = require('node:path');
 
 let passed = 0;
 function check(name, fn) {
@@ -446,7 +446,7 @@ const Games = require('./games.js');
             assert.strictEqual(result.ok, true);
             assert.strictEqual(result.provider, 'resend');
             assert.strictEqual(sentUrl, 'https://api.resend.com/emails');
-            assert.strictEqual(sentHeaders['Authorization'], 'Bearer re_test_key_123');
+            assert.strictEqual(sentHeaders.Authorization, 'Bearer re_test_key_123');
             assert.deepStrictEqual(sentBody.to, ['parent@example.com']);
             assert.ok(sentBody.subject.includes('Brain Wars Weekly'));
         } finally {

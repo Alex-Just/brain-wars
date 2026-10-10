@@ -101,7 +101,7 @@ async function networkFirst(request) {
         // Revalidate on every navigation so content edits show up right away
         // instead of being served from the browser's HTTP cache.
         const response = await fetch(request, REVALIDATE);
-        if (response && response.ok) await cache.put(request, response.clone());
+        if (response?.ok) await cache.put(request, response.clone());
         return response;
     } catch (error) {
         // Match ignoring the query string so a challenge step (?challenge=1) still
@@ -121,12 +121,12 @@ async function staleWhileRevalidate(request) {
     if (cached) {
         fetch(request, REVALIDATE)
             .then((response) => {
-                if (response && response.ok) cache.put(request, response.clone());
+                if (response?.ok) cache.put(request, response.clone());
             })
             .catch(() => {});
         return cached;
     }
     const response = await fetch(request, REVALIDATE);
-    if (response && response.ok) await cache.put(request, response.clone());
+    if (response?.ok) await cache.put(request, response.clone());
     return response;
 }

@@ -98,7 +98,7 @@
 
     const inChallenge = typeof global.location !== 'undefined' &&
         new URLSearchParams(global.location.search).has(PARAM);
-    let run = inChallenge ? loadRun() : null;
+    const run = inChallenge ? loadRun() : null;
     const active = Boolean(inChallenge && run);
 
     const Challenge = {

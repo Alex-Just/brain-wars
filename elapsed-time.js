@@ -13,7 +13,7 @@
  *
  * Browser: window.BrainWarsElapsed. Node (tests): module.exports.
  */
-(function (global) {
+((global) => {
     'use strict';
 
     const DIAL = 720;                 // minutes on a 12-hour dial

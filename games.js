@@ -15,7 +15,7 @@
  *            { kind: 'style', selector, property, value }   inline style equals the value
  *            { kind: 'text',  selector, key }               text equals I18n.t(key)
  */
-(function (global) {
+((global) => {
     'use strict';
 
     const games = [

@@ -150,7 +150,7 @@
 
     function deviceId(storage) {
         try {
-            const existing = storage && storage.getItem(DEVICE_KEY);
+            const existing = storage?.getItem(DEVICE_KEY);
             if (existing) return existing;
             const created = randomId('d-');
             if (storage) storage.setItem(DEVICE_KEY, created);
@@ -246,7 +246,7 @@
 
     if (typeof document !== 'undefined' && ENDPOINT) {
         const file = global.location.pathname.split('/').pop() || 'index.html';
-        const game = global.BrainWarsGames && global.BrainWarsGames.byFile(file);
+        const game = global.BrainWarsGames?.byFile(file);
         if (game) start(game);
     }
 })(typeof window !== 'undefined' ? window : globalThis);

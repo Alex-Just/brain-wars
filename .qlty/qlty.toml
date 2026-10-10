@@ -79,3 +79,16 @@ name = "markdownlint"
 [[triage]]
 match.rules = ["markdownlint:MD013"]
 set.ignored = true
+
+# The README opens with a centred logo and uses inline HTML for its badges.
+# Both are deliberate, so the Markdown HTML rules stay off.
+[[triage]]
+match.rules = ["markdownlint:MD033", "markdownlint:MD041"]
+set.ignored = true
+
+# This project ships classic <script> files and CommonJS test files. Both are
+# sloppy mode by default, so the "use strict" directives are load-bearing.
+# Biome parses the files as modules and reports them as redundant.
+[[triage]]
+match.rules = ["biome:lint/suspicious/noRedundantUseStrict"]
+set.ignored = true

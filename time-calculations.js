@@ -15,7 +15,7 @@
  *
  * Browser: window.BrainWarsTime. Node (tests): module.exports.
  */
-(function (global) {
+((global) => {
     'use strict';
 
     const ATTEMPTS = 50; // re-rolls when a random pick lands outside the level's idea

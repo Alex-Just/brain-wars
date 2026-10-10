@@ -118,14 +118,14 @@ export async function generateWeeklySummary(db, options = {}) {
     const totalsRow = await db.prepare(totalsQuery).bind(...totalsArgs).first();
     const gamesResult = await db.prepare(gamesQuery).bind(...gamesArgs).all();
 
-    const total = (totalsRow && totalsRow.total) || 0;
-    const correct = (totalsRow && totalsRow.correct_count) || 0;
-    const wrong = (totalsRow && totalsRow.wrong_count) || 0;
-    const activeDays = (totalsRow && totalsRow.active_days) || 0;
-    const deviceCount = (totalsRow && totalsRow.device_count) || 0;
+    const total = totalsRow?.total || 0;
+    const correct = totalsRow?.correct_count || 0;
+    const wrong = totalsRow?.wrong_count || 0;
+    const activeDays = totalsRow?.active_days || 0;
+    const deviceCount = totalsRow?.device_count || 0;
     const accuracyPct = total > 0 ? Math.round((correct * 1000) / total) / 10 : 0;
 
-    const rawGames = (gamesResult && gamesResult.results) || [];
+    const rawGames = gamesResult?.results || [];
     const games = rawGames.map((row) => {
         const info = SKILL_INFO[row.game] || { name: row.game, skill: row.game, tip: '' };
         return {
@@ -352,7 +352,7 @@ export function renderReportHtml(summary) {
 export function renderReportText(summary) {
     const { period, total, correct, wrong, accuracyPct, activeDays, topPractice, mastered, games } = summary;
 
-    let lines = [
+    const lines = [
         'BRAIN WARS - WEEKLY MATH REPORT',
         `Period: ${period.sinceFormatted} - ${period.nowFormatted}`,
         '----------------------------------------',
@@ -405,7 +405,7 @@ export function renderReportText(summary) {
  * Dispatches the email through Resend, Brevo, or native Cloudflare Email Routing.
  */
 export async function sendReportEmail(env, summary, options = {}) {
-    const to = options.to || (env && env.REPORT_EMAIL);
+    const to = options.to || env?.REPORT_EMAIL;
     if (!to) {
         return {
             ok: false,
@@ -415,13 +415,13 @@ export async function sendReportEmail(env, summary, options = {}) {
         };
     }
 
-    const from = options.from || (env && env.EMAIL_FROM) || 'Brain Wars <onboarding@resend.dev>';
+    const from = options.from || env?.EMAIL_FROM || 'Brain Wars <onboarding@resend.dev>';
     const subject = options.subject || `Brain Wars Weekly: ${summary.total} questions (${summary.accuracyPct}% accuracy)`;
     const html = renderReportHtml(summary);
     const text = renderReportText(summary);
 
     // 1. Resend API
-    if (env && env.RESEND_API_KEY) {
+    if (env?.RESEND_API_KEY) {
         const response = await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: {
@@ -449,7 +449,7 @@ export async function sendReportEmail(env, summary, options = {}) {
     }
 
     // 2. Brevo API
-    if (env && env.BREVO_API_KEY) {
+    if (env?.BREVO_API_KEY) {
         const recipients = (Array.isArray(to) ? to : [to]).map((email) => ({ email }));
         const response = await fetch('https://api.brevo.com/v3/smtp/email', {
             method: 'POST',

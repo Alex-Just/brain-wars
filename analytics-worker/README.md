@@ -19,6 +19,7 @@ The worker ignores a repeated event id. The client can send the same batch again
 Every Sunday at 18:00 UTC, the worker aggregates answer attempts from the last seven days and emails a progress report to the configured recipient.
 
 The report includes:
+
 - Total attempts, correct answers, and overall accuracy percentage.
 - Active practice days out of seven.
 - Top three skills that need practice, ranked by mistake count and error rate.
@@ -28,6 +29,7 @@ The report includes:
 ### Free email sending (Resend)
 
 Sending is free via [Resend](https://resend.com):
+
 - Free plan: 3000 emails per month (100 per day).
 - When sending to your registered account email, Resend allows `onboarding@resend.dev` as the sender without needing a custom domain or DNS records.
 
@@ -39,6 +41,7 @@ npx wrangler secret put REPORT_EMAIL --name brain-wars-answers
 ```
 
 Optional settings (secrets or environment variables):
+
 - `REPORT_EMAIL`: recipient email address.
 - `REPORT_TOKEN`: bearer token to protect the preview and send endpoints.
 - `REPORT_DEVICE`: filter stats to one device id.

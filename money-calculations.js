@@ -9,7 +9,7 @@
  *
  * Browser: window.BrainWarsMoney. Node (tests): module.exports.
  */
-(function (global) {
+((global) => {
     'use strict';
 
     const ATTEMPTS = 50; // retries when a pick misses the level's mode

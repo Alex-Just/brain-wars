@@ -33,7 +33,7 @@ and are idempotent.
 
 ## Architecture
 
-```
+```text
 game page (any of the 12)
   └─ analytics.js
        ├─ capture: registry completion/mistake signals via MutationObserver
