@@ -22,7 +22,7 @@ const manifestSource = fs.existsSync(manifestPath) ? fs.readFileSync(manifestPat
 let manifest = null;
 try {
     manifest = JSON.parse(manifestSource);
-} catch (error) {
+} catch {
     manifest = null;
 }
 

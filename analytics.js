@@ -2,7 +2,7 @@
  * Answer analytics: capture game results, queue them offline, upload them idempotently.
  * Disabled unless ENDPOINT is set. Browser: window.BrainWarsAnalytics. Node (tests): module.exports.
  */
-(function (global) {
+((global) => {
     'use strict';
 
     const ENDPOINT = 'https://brain-wars-answers.alex-just.workers.dev/ingest';
@@ -88,7 +88,7 @@
         let status = 0;
         try {
             status = await post(batch);
-        } catch (error) {
+        } catch {
             status = 0;
         }
         const kind = classifyResponse(status);
@@ -134,7 +134,7 @@
     function safeStorage() {
         try {
             return global.localStorage;
-        } catch (error) {
+        } catch {
             return null;
         }
     }
@@ -143,7 +143,7 @@
         try {
             const parsed = storage ? JSON.parse(storage.getItem(QUEUE_KEY) || '[]') : [];
             return Array.isArray(parsed) ? parsed : [];
-        } catch (error) {
+        } catch {
             return [];
         }
     }
@@ -155,7 +155,7 @@
             const created = randomId('d-');
             if (storage) storage.setItem(DEVICE_KEY, created);
             return created;
-        } catch (error) {
+        } catch {
             return randomId('d-');
         }
     }
@@ -173,7 +173,7 @@
         const persist = () => {
             try {
                 if (storage) storage.setItem(QUEUE_KEY, JSON.stringify(queue));
-            } catch (error) {
+            } catch {
                 // Storage full or unavailable: the in-memory queue still works.
             }
         };

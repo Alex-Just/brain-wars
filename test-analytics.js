@@ -246,7 +246,9 @@ const Games = require('./games.js');
             },
             async batch(statements) {
                 log.batches.push(statements);
-                statements.forEach((statement) => log.inserts.push(statement));
+                statements.forEach((statement) => {
+                    log.inserts.push(statement);
+                });
                 return statements.map(() => ({ meta: { changes } }));
             }
         };

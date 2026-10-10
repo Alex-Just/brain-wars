@@ -440,7 +440,7 @@ export async function sendReportEmail(env, summary, options = {}) {
         const status = response.status;
         const responseText = await response.text();
         let payload;
-        try { payload = JSON.parse(responseText); } catch (e) { payload = { raw: responseText }; }
+        try { payload = JSON.parse(responseText); } catch { payload = { raw: responseText }; }
 
         if (!response.ok) {
             return { ok: false, provider: 'resend', status, error: payload };
@@ -469,7 +469,7 @@ export async function sendReportEmail(env, summary, options = {}) {
         const status = response.status;
         const responseText = await response.text();
         let payload;
-        try { payload = JSON.parse(responseText); } catch (e) { payload = { raw: responseText }; }
+        try { payload = JSON.parse(responseText); } catch { payload = { raw: responseText }; }
 
         if (!response.ok) {
             return { ok: false, provider: 'brevo', status, error: payload };

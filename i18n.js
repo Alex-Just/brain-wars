@@ -3,7 +3,7 @@
  * Pure vanilla ES6+, no dependencies. Works over HTTP(S) and file:// URLs.
  * Browser: window.I18n. Node (tests): module.exports = { I18n, createI18n }.
  */
-(function (global) {
+((global) => {
     'use strict';
 
     const STORAGE_KEY = 'brain_wars_lang';
@@ -1140,7 +1140,7 @@
             try {
                 const saved = storage ? storage.getItem(STORAGE_KEY) : null;
                 if (isSupported(saved)) return saved;
-            } catch (error) { /* storage unavailable: ignore */ }
+            } catch { /* storage unavailable: ignore */ }
             return DEFAULT_LANG;
         }
 
@@ -1156,7 +1156,7 @@
             currentLang = lang;
             try {
                 if (storage) storage.setItem(STORAGE_KEY, lang);
-            } catch (error) { /* storage unavailable: ignore */ }
+            } catch { /* storage unavailable: ignore */ }
             if (typeof document !== 'undefined') {
                 document.documentElement.lang = lang;
             }
@@ -1296,7 +1296,7 @@
     function resolveDeviceStorage() {
         try {
             return typeof localStorage !== 'undefined' ? localStorage : null;
-        } catch (error) {
+        } catch {
             return null;
         }
     }

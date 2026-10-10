@@ -277,7 +277,9 @@ check('every game type is played once before any of them comes back', () => {
         // before the others had their turn
         const firstRound = plan.slice(0, ids.length);
         assert.strictEqual(new Set(firstRound).size, ids.length, 'first round repeats a game: ' + firstRound.join(', '));
-        ids.forEach((id) => assert.ok(firstRound.includes(id), 'first round skips ' + id));
+        ids.forEach((id) => {
+            assert.ok(firstRound.includes(id), `first round skips ${id}`);
+        });
         // And no game is ever played twice in a row
         plan.forEach((id, index) => {
             assert.ok(ids.includes(id), 'unknown game in the plan: ' + id);
@@ -420,8 +422,12 @@ check('each level offers exactly its own question kinds', () => {
     expected.forEach((kinds, index) => {
         const level = index + 1;
         const seen = new Set(sampleQuestions(level, 200).map((question) => question.kind));
-        seen.forEach((kind) => assert.ok(kinds.includes(kind), 'level ' + level + ' used ' + kind));
-        kinds.forEach((kind) => assert.ok(seen.has(kind), 'level ' + level + ' never used ' + kind));
+        seen.forEach((kind) => {
+            assert.ok(kinds.includes(kind), `level ${level} used ${kind}`);
+        });
+        kinds.forEach((kind) => {
+            assert.ok(seen.has(kind), `level ${level} never used ${kind}`);
+        });
     });
 });
 

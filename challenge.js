@@ -11,7 +11,7 @@
  *
  * Browser: window.BrainWarsChallenge. Depends on i18n.js and games.js.
  */
-(function (global) {
+((global) => {
     'use strict';
 
     const RUN_KEY = 'brainwars_challenge_v1';
@@ -33,7 +33,7 @@
         try {
             const run = JSON.parse(global.localStorage.getItem(RUN_KEY));
             return run && typeof run === 'object' && Array.isArray(run.queue) ? run : null;
-        } catch (error) {
+        } catch {
             return null; // private mode or corrupted value
         }
     }
@@ -41,7 +41,7 @@
     function saveRun(run) {
         try {
             global.localStorage.setItem(RUN_KEY, JSON.stringify(run));
-        } catch (error) {
+        } catch {
             /* private mode: the run simply will not survive a reload */
         }
     }
@@ -49,7 +49,7 @@
     function clearRun() {
         try {
             global.localStorage.removeItem(RUN_KEY);
-        } catch (error) {
+        } catch {
             /* private mode */
         }
     }

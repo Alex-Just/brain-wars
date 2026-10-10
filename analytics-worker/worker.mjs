@@ -51,7 +51,7 @@ function corsHeaders(origin) {
     let url;
     try {
         url = new URL(origin);
-    } catch (error) {
+    } catch {
         return {};
     }
     const allowed = ALLOWED_HOSTS.includes(url.hostname) || LOCAL_HOSTS.includes(url.hostname);
@@ -129,7 +129,7 @@ export default {
         let payload = null;
         try {
             payload = JSON.parse(body);
-        } catch (error) {
+        } catch {
             payload = null;
         }
         const now = Date.now();
