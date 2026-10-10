@@ -48,8 +48,9 @@ dist/
 .env.local
 .env.*.local
 
-# ---- Playwright CLI scratch output ----
+# ---- Playwright scratch output ----
 .playwright-cli/
+.playwright-mcp/
 
 # ---- Logs ----
 *.log
