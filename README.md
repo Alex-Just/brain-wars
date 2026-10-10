@@ -13,6 +13,7 @@
   <img src="https://img.shields.io/badge/PWA-installable-5A0FC8?style=flat-square" alt="Installable PWA">
   <img src="https://img.shields.io/badge/languages-EN%20%7C%20ES%20%7C%20RU-4CAF50?style=flat-square" alt="English, Spanish and Russian">
   <img src="https://img.shields.io/badge/dependencies-none-brightgreen?style=flat-square" alt="No dependencies">
+  <a href="https://qlty.sh/gh/Alex-Just/projects/brain-wars"><img src="https://qlty.sh/gh/Alex-Just/projects/brain-wars/maintainability.svg" alt="Maintainability"></a>
 </p>
 
 Brain Wars is a set of small math games for primary-school children. The app is plain HTML, CSS, and JavaScript. It has no `package.json` and no accounts. A service worker stores the pages on the first visit, so the app installs on a home screen and works offline. The languages are English, Spanish, and Russian. A new device starts in Spanish.
