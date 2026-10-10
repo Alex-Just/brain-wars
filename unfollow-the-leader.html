@@ -96,7 +96,7 @@
   <script>
     // Unfollow the Leader: the shared module plus this page's wording.
     document.addEventListener('DOMContentLoaded', () => {
-      new BrainWarsMemoryGame({
+      window.memoryGame = new BrainWarsMemoryGame({
         reversed: true,
         keys: {
           squareAria: 'uftl_square_aria',

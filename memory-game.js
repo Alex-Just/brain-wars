@@ -20,19 +20,19 @@
       this.keys = options.keys || {};
 
       // Game constants
-      this.INITIAL_SQUARES = parseInt(getComputedStyle(document.documentElement)
+      this.INITIAL_SQUARES = Number.parseInt(getComputedStyle(document.documentElement)
         .getPropertyValue('--initial-squares'), 10);
-      this.SQUARES_INCREMENT_LEVEL = parseInt(getComputedStyle(document.documentElement)
+      this.SQUARES_INCREMENT_LEVEL = Number.parseInt(getComputedStyle(document.documentElement)
         .getPropertyValue('--squares-increment-level'), 10);
-      this.INITIAL_SPEED = parseInt(getComputedStyle(document.documentElement)
+      this.INITIAL_SPEED = Number.parseInt(getComputedStyle(document.documentElement)
         .getPropertyValue('--initial-speed'), 10);
-      this.MIN_SPEED = parseInt(getComputedStyle(document.documentElement)
+      this.MIN_SPEED = Number.parseInt(getComputedStyle(document.documentElement)
         .getPropertyValue('--min-speed'), 10);
-      this.SPEED_DECREASE = parseInt(getComputedStyle(document.documentElement)
+      this.SPEED_DECREASE = Number.parseInt(getComputedStyle(document.documentElement)
         .getPropertyValue('--speed-decrease'), 10);
-      this.MAX_ERRORS = parseInt(getComputedStyle(document.documentElement)
+      this.MAX_ERRORS = Number.parseInt(getComputedStyle(document.documentElement)
         .getPropertyValue('--max-errors'), 10);
-      this.PARTICLE_COUNT = parseInt(getComputedStyle(document.documentElement)
+      this.PARTICLE_COUNT = Number.parseInt(getComputedStyle(document.documentElement)
         .getPropertyValue('--particle-count'), 10);
 
       // Initialize game
@@ -81,24 +81,24 @@
               if (e.cancelable) {
                   e.preventDefault();
               }
-              this.handleSquareClick(e);
+              void this.handleSquareClick(e);
           });
 
           square.addEventListener('mousedown', (e) => {
               e.preventDefault();
-              this.handleSquareClick(e);
+              void this.handleSquareClick(e);
           });
 
           square.addEventListener('keydown', (e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
-                  this.handleSquareClick(e);
+                  void this.handleSquareClick(e);
               }
           });
       });
 
       // Start the game directly after initializing listeners
-      this.startGameDirectly();
+      void this.startGameDirectly();
     }
 
     setMessage(key, params = null) {
@@ -128,7 +128,7 @@
     // Add new helper method for better randomization
     getRandomSquare() {
       // Get all available squares (those not in current sequence)
-      const availableSquares = Array.from(Array(9).keys())
+      const availableSquares = Array.from(new Array(9).keys())
         .filter(i => !this.sequence.includes(i));
 
       // If no squares available, return null (shouldn't happen)
@@ -192,7 +192,7 @@
       // Fill with new random squares
       while (this.sequence.length < totalSquares) {
         // Get all unused squares
-        const availableSquares = Array.from(Array(9).keys())
+        const availableSquares = Array.from(new Array(9).keys())
           .filter(i => !this.sequence.includes(i));
 
         // Pick random square from available ones
@@ -234,7 +234,7 @@
       if (!this.isPlayerTurn) return;
 
       const square = event.currentTarget;
-      const index = parseInt(square.dataset.index, 10);
+      const index = Number.parseInt(square.dataset.index, 10);
 
       // Ignore if square is not part of sequence or already tapped
       if (!square.classList.contains('ready')) return;
@@ -291,7 +291,7 @@
 
       // Fill with new random squares
       while (this.sequence.length < totalSquares) {
-        const availableSquares = Array.from(Array(9).keys())
+        const availableSquares = Array.from(new Array(9).keys())
           .filter(i => !this.sequence.includes(i));
         const randomIndex = Math.floor(BrainWarsGames.random() * availableSquares.length);
         this.sequence.push(availableSquares[randomIndex]);
@@ -315,7 +315,7 @@
         square.classList.remove('tapped', 'ready');
       }, 300);
 
-      this.playerSequence.push(parseInt(square.dataset.index, 10));
+      this.playerSequence.push(Number.parseInt(square.dataset.index, 10));
 
       if (this.playerSequence.length === this.sequence.length) {
         this.isPlayerTurn = false;
@@ -356,9 +356,9 @@
 
         // Random position around the center
         const angle = (i / this.PARTICLE_COUNT) * 360;
-        const distance = parseInt(getComputedStyle(document.documentElement)
+        const distance = Number.parseInt(getComputedStyle(document.documentElement)
           .getPropertyValue('--particle-distance'), 10) +
-          BrainWarsGames.random() * parseInt(getComputedStyle(document.documentElement)
+          BrainWarsGames.random() * Number.parseInt(getComputedStyle(document.documentElement)
           .getPropertyValue('--particle-distance-random'), 10);
 
         const tx = Math.cos(angle * Math.PI / 180) * distance;
@@ -373,7 +373,7 @@
         document.body.appendChild(particle);
 
         // Remove particle after animation
-        setTimeout(() => particle.remove(), parseFloat(getComputedStyle(document.documentElement)
+        setTimeout(() => particle.remove(), Number.parseFloat(getComputedStyle(document.documentElement)
           .getPropertyValue('--animation-speed-slow')) * 1000);
       }
     }
