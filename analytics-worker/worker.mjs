@@ -42,3 +42,86 @@ export function validateEvents(events, now) {
     }
     return { valid, rejected };
 }
+
+function corsHeaders(origin) {
+    if (!origin) return {};
+    let url;
+    try {
+        url = new URL(origin);
+    } catch (error) {
+        return {};
+    }
+    const allowed = ALLOWED_HOSTS.includes(url.hostname) || LOCAL_HOSTS.includes(url.hostname);
+    if (!allowed) return {};
+    return {
+        'Access-Control-Allow-Origin': origin,
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Vary': 'Origin'
+    };
+}
+
+function json(body, status, headers) {
+    return new Response(JSON.stringify(body), {
+        status,
+        headers: Object.assign({ 'Content-Type': 'application/json' }, headers)
+    });
+}
+
+export default {
+    async fetch(request, env) {
+        const cors = corsHeaders(request.headers.get('Origin') || '');
+        const url = new URL(request.url);
+
+        if (request.method === 'OPTIONS') {
+            return new Response(null, { status: 204, headers: cors });
+        }
+        if (request.method !== 'POST' || url.pathname !== '/ingest') {
+            return json({ error: 'not_found' }, 405, cors);
+        }
+
+        const body = await request.text();
+        if (body.length > BODY_MAX_BYTES) {
+            return json({ error: 'too_large' }, 400, cors);
+        }
+        let payload = null;
+        try {
+            payload = JSON.parse(body);
+        } catch (error) {
+            payload = null;
+        }
+        const now = Date.now();
+        const checked = payload && validateEvents(payload.events, now);
+        if (!checked) {
+            return json({ error: 'invalid' }, 400, cors);
+        }
+
+        const ip = request.headers.get('CF-Connecting-IP') || null;
+        const country = (request.cf && request.cf.country) || null;
+
+        if (ip) {
+            const row = await env.DB.prepare(
+                'SELECT COUNT(*) AS n FROM answers WHERE ip = ? AND received_at > ?'
+            ).bind(ip, now - RATE_WINDOW_MS).first();
+            if ((row ? row.n : 0) + checked.valid.length > RATE_LIMIT) {
+                return json({ error: 'rate_limit' }, 429, cors);
+            }
+        }
+
+        let inserted = 0;
+        for (let start = 0; start < checked.valid.length; start += INSERT_CHUNK) {
+            const chunk = checked.valid.slice(start, start + INSERT_CHUNK);
+            const statements = chunk.map((event) => env.DB.prepare(
+                'INSERT OR IGNORE INTO answers (id, game, correct, ts, device, ip, country, received_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+            ).bind(event.id, event.game, event.correct, event.ts, event.device, ip, country, now));
+            const results = await env.DB.batch(statements);
+            inserted += results.reduce((sum, result) => sum + (result.meta ? result.meta.changes : 0), 0);
+        }
+
+        return json({
+            inserted,
+            ignored: checked.valid.length - inserted,
+            rejected: checked.rejected
+        }, 200, cors);
+    }
+};

@@ -179,6 +179,123 @@ const Games = require('./games.js');
         assert.strictEqual(Worker.validateEvents(new Array(201).fill(validEvent()), NOW), null);
     });
 
+    const stubRequest = ({ method = 'POST', path = '/ingest', origin, body = '', cf, ip }) => ({
+        method,
+        url: 'https://worker.example' + path,
+        headers: new Headers(Object.assign(
+            origin ? { Origin: origin } : {},
+            ip ? { 'CF-Connecting-IP': ip } : {}
+        )),
+        cf,
+        text: async () => body
+    });
+
+    const stubDB = ({ count = 0, changes = 1 } = {}) => {
+        const log = { inserts: [], updates: [], batches: 0 };
+        return {
+            log,
+            prepare(sql) {
+                return {
+                    bind(...values) {
+                        return {
+                            sql,
+                            values,
+                            first: async () => ({ n: count }),
+                            run: async () => {
+                                log.updates.push({ sql, values });
+                                return { meta: { changes } };
+                            }
+                        };
+                    }
+                };
+            },
+            async batch(statements) {
+                log.batches += 1;
+                statements.forEach((statement) => log.inserts.push(statement));
+                return statements.map(() => ({ meta: { changes } }));
+            }
+        };
+    };
+
+    const batchBody = (events) => JSON.stringify({ events });
+
+    await checkAsync('fetch inserts a valid batch with server fields', async () => {
+        const db = stubDB();
+        const response = await Worker.default.fetch(
+            stubRequest({ origin: 'https://alex-just.github.io', ip: '203.0.113.7', cf: { country: 'ES' }, body: batchBody([validEvent()]) }),
+            { DB: db }
+        );
+        assert.strictEqual(response.status, 200);
+        assert.deepStrictEqual(await response.json(), { inserted: 1, ignored: 0, rejected: 0 });
+        assert.strictEqual(db.log.inserts.length, 1);
+        const statement = db.log.inserts[0];
+        assert.ok(statement.sql.includes('INSERT OR IGNORE INTO answers'));
+        assert.deepStrictEqual(statement.values.slice(0, 5), ['e-0123456789', 'time-calculations', 1, NOW, 'dev-1']);
+        assert.strictEqual(statement.values[5], '203.0.113.7');
+        assert.strictEqual(statement.values[6], 'ES');
+        assert.ok(Number.isInteger(statement.values[7]));
+    });
+
+    await checkAsync('fetch counts ignored rows from meta.changes', async () => {
+        const db = stubDB({ changes: 0 });
+        const response = await Worker.default.fetch(
+            stubRequest({ body: batchBody([validEvent()]) }),
+            { DB: db }
+        );
+        assert.deepStrictEqual(await response.json(), { inserted: 0, ignored: 1, rejected: 0 });
+    });
+
+    await checkAsync('fetch drops invalid events without failing the batch', async () => {
+        const db = stubDB();
+        const response = await Worker.default.fetch(
+            stubRequest({ body: batchBody([validEvent(), validEvent({ game: 'nope' })]) }),
+            { DB: db }
+        );
+        assert.deepStrictEqual(await response.json(), { inserted: 1, ignored: 0, rejected: 1 });
+    });
+
+    await checkAsync('fetch chunks large batches', async () => {
+        const db = stubDB();
+        const events = Array.from({ length: 120 }, (_, index) => validEvent({ id: 'e-01234567' + String(index).padStart(2, '0') }));
+        const response = await Worker.default.fetch(stubRequest({ body: batchBody(events) }), { DB: db });
+        assert.strictEqual((await response.json()).inserted, 120);
+        assert.strictEqual(db.log.inserts.length, 120);
+        assert.strictEqual(db.log.batches, 3); // 50 + 50 + 20
+    });
+
+    await checkAsync('fetch rejects malformed requests', async () => {
+        const db = stubDB();
+        assert.strictEqual((await Worker.default.fetch(stubRequest({ body: 'not json' }), { DB: db })).status, 400);
+        assert.strictEqual((await Worker.default.fetch(stubRequest({ body: batchBody(new Array(201).fill(validEvent())) }), { DB: db })).status, 400);
+        assert.strictEqual((await Worker.default.fetch(stubRequest({ body: 'x'.repeat(70000) }), { DB: db })).status, 400);
+    });
+
+    await checkAsync('fetch rejects other routes and methods', async () => {
+        const db = stubDB();
+        assert.strictEqual((await Worker.default.fetch(stubRequest({ method: 'GET', path: '/ingest' }), { DB: db })).status, 405);
+        assert.strictEqual((await Worker.default.fetch(stubRequest({ path: '/other' }), { DB: db })).status, 405);
+    });
+
+    await checkAsync('fetch rate-limits by server-side arrival', async () => {
+        const db = stubDB({ count: 5000 });
+        const response = await Worker.default.fetch(
+            stubRequest({ ip: '203.0.113.7', body: batchBody([validEvent()]) }),
+            { DB: db }
+        );
+        assert.strictEqual(response.status, 429);
+        assert.strictEqual(db.log.inserts.length, 0);
+    });
+
+    await checkAsync('fetch answers OPTIONS and scopes CORS to allowed origins', async () => {
+        const db = stubDB();
+        const preflight = await Worker.default.fetch(stubRequest({ method: 'OPTIONS', origin: 'https://alex-just.github.io' }), { DB: db });
+        assert.strictEqual(preflight.status, 204);
+        assert.strictEqual(preflight.headers.get('Access-Control-Allow-Origin'), 'https://alex-just.github.io');
+
+        const evil = await Worker.default.fetch(stubRequest({ origin: 'http://localhost.evil.com', body: batchBody([]) }), { DB: db });
+        assert.strictEqual(evil.headers.get('Access-Control-Allow-Origin'), null);
+    });
+
     console.log('\nAll ' + passed + ' checks passed.');
 })().catch((error) => {
     console.error(error);
