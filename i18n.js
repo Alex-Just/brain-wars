@@ -988,46 +988,38 @@
         ];
     }
 
+    // Minute phrasings that are fixed rather than read from ES_MINUTES.
+    const ES_FIXED_MINUTES = {
+        0: { connector: null, word: 'en punto' },
+        15: { connector: 'y', word: 'cuarto' },
+        30: { connector: 'y', word: 'media' },
+        45: { connector: 'menos', word: 'cuarto' }
+    };
+
     function esTokens(hour, minute) {
         const nextHour = (hour % 12) + 1;
-        let verb;
-        let article;
-        let hourWord;
+        const subjectHour = minute > 30 ? nextHour : hour;
+        const isSingular = subjectHour === 1;
+        const verb = isSingular ? 'Es' : 'Son';
+        const article = isSingular ? 'la' : 'las';
+
+        const fixed = ES_FIXED_MINUTES[minute];
         let connector = null;
-        let minuteWord = null;
-
-        if (minute > 30) {
-            verb = (nextHour === 1) ? 'Es' : 'Son';
-            article = (nextHour === 1) ? 'la' : 'las';
-            hourWord = ES_HOURS[nextHour];
-        } else {
-            verb = (hour === 1) ? 'Es' : 'Son';
-            article = (hour === 1) ? 'la' : 'las';
-            hourWord = ES_HOURS[hour];
-        }
-
-        if (minute === 0) {
-            minuteWord = 'en punto';
-        } else if (minute === 15) {
-            connector = 'y';
-            minuteWord = 'cuarto';
-        } else if (minute === 30) {
-            connector = 'y';
-            minuteWord = 'media';
-        } else if (minute === 45) {
-            connector = 'menos';
-            minuteWord = 'cuarto';
-        } else if (minute < 30) {
-            connector = 'y';
-            minuteWord = ES_MINUTES[minute];
-        } else {
+        let minuteWord;
+        if (fixed) {
+            connector = fixed.connector;
+            minuteWord = fixed.word;
+        } else if (minute > 30) {
             connector = 'menos';
             minuteWord = ES_MINUTES[60 - minute];
+        } else {
+            connector = 'y';
+            minuteWord = ES_MINUTES[minute];
         }
 
         const tokens = [
             { text: verb, type: 'verb' },
-            { text: article + ' ' + hourWord, type: 'hour' }
+            { text: `${article} ${ES_HOURS[subjectHour]}`, type: 'hour' }
         ];
         if (connector) tokens.push({ text: connector, type: 'minute' });
         tokens.push({ text: minuteWord, type: 'minute' });
@@ -1192,16 +1184,16 @@
             if (typeof document === 'undefined') return;
             const scope = root || document;
             scope.querySelectorAll('[data-i18n]').forEach((el) => {
-                el.textContent = t(el.getAttribute('data-i18n'));
+                el.textContent = t(el.dataset.i18n);
             });
             scope.querySelectorAll('[data-i18n-html]').forEach((el) => {
-                el.innerHTML = t(el.getAttribute('data-i18n-html'));
+                el.innerHTML = t(el.dataset.i18nHtml);
             });
             scope.querySelectorAll('[data-i18n-aria-label]').forEach((el) => {
-                el.setAttribute('aria-label', t(el.getAttribute('data-i18n-aria-label')));
+                el.setAttribute('aria-label', t(el.dataset.i18nAriaLabel));
             });
             scope.querySelectorAll('[data-i18n-title]').forEach((el) => {
-                el.setAttribute('title', t(el.getAttribute('data-i18n-title')));
+                el.setAttribute('title', t(el.dataset.i18nTitle));
             });
         }
 

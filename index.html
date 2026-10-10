@@ -290,7 +290,7 @@
 
                 const title = document.createElement('div');
                 title.className = 'game-title';
-                title.setAttribute('data-i18n', game.titleKey);
+                title.dataset.i18n = game.titleKey;
                 title.textContent = window.I18n.t(game.titleKey);
 
                 card.append(icon, title);

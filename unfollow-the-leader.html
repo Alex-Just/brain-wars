@@ -617,7 +617,7 @@
         if (!this.isPlayerTurn) return;
 
         const square = event.currentTarget;
-        const index = parseInt(square.getAttribute('data-index'), 10);
+        const index = parseInt(square.dataset.index, 10);
         
         // Ignore if square is not part of sequence or already tapped
         if (!square.classList.contains('ready')) return;
@@ -699,7 +699,7 @@
           square.classList.remove('tapped', 'ready');
         }, 300);
 
-        this.playerSequence.push(parseInt(square.getAttribute('data-index'), 10));
+        this.playerSequence.push(parseInt(square.dataset.index, 10));
 
         if (this.playerSequence.length === this.sequence.length) {
           this.isPlayerTurn = false;

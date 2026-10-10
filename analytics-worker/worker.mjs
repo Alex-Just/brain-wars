@@ -71,100 +71,108 @@ function json(body, status, headers) {
     });
 }
 
+// Returns an error response when the report token is required and wrong, else null.
+function checkReportToken(request, url, env, cors) {
+    if (!env?.REPORT_TOKEN) return null;
+    const auth = request.headers.get('Authorization');
+    const token = url.searchParams.get('token');
+    if (auth === `Bearer ${env.REPORT_TOKEN}` || token === env.REPORT_TOKEN) return null;
+    return json({ error: 'unauthorized' }, 401, cors);
+}
+
+async function handlePreview(url, env, cors) {
+    const days = parseInt(url.searchParams.get('days') || '7', 10);
+    const device = url.searchParams.get('device') || env?.REPORT_DEVICE || null;
+    const summary = await generateWeeklySummary(env.DB, { days, device });
+    if (url.searchParams.get('format') === 'json') {
+        return json(summary, 200, cors);
+    }
+    const html = renderReportHtml(summary);
+    return new Response(html, {
+        status: 200,
+        headers: Object.assign({ 'Content-Type': 'text/html; charset=utf-8' }, cors)
+    });
+}
+
+async function handleSend(url, env, cors) {
+    const days = parseInt(url.searchParams.get('days') || '7', 10);
+    const device = url.searchParams.get('device') || env?.REPORT_DEVICE || null;
+    const summary = await generateWeeklySummary(env.DB, { days, device });
+    const result = await sendReportEmail(env, summary);
+    return json(result, result.ok ? 200 : 500, cors);
+}
+
+async function handleIngest(request, env, cors) {
+    const body = await request.text();
+    if (body.length > BODY_MAX_BYTES) {
+        return json({ error: 'too_large' }, 400, cors);
+    }
+    let payload = null;
+    try {
+        payload = JSON.parse(body);
+    } catch {
+        payload = null;
+    }
+    const now = Date.now();
+    const checked = payload && validateEvents(payload.events, now);
+    if (!checked) {
+        return json({ error: 'invalid' }, 400, cors);
+    }
+
+    const ip = request.headers.get('CF-Connecting-IP') || null;
+    const country = request.cf?.country || null;
+
+    if (ip) {
+        const row = await env.DB.prepare(
+            'SELECT COUNT(*) AS n FROM answers WHERE ip = ? AND received_at > ?'
+        ).bind(ip, now - RATE_WINDOW_MS).first();
+        if ((row ? row.n : 0) + checked.valid.length > RATE_LIMIT) {
+            return json({ error: 'rate_limit' }, 429, cors);
+        }
+    }
+
+    let inserted = 0;
+    for (let start = 0; start < checked.valid.length; start += INSERT_CHUNK) {
+        const chunk = checked.valid.slice(start, start + INSERT_CHUNK);
+        const statements = chunk.map((event) => env.DB.prepare(
+            'INSERT OR IGNORE INTO answers (id, game, correct, ts, device, ip, country, received_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+        ).bind(event.id, event.game, event.correct, event.ts, event.device, ip, country, now));
+        const results = await env.DB.batch(statements);
+        inserted += results.reduce((sum, result) => sum + (result.meta ? result.meta.changes : 0), 0);
+    }
+
+    return json({
+        inserted,
+        ignored: checked.valid.length - inserted,
+        rejected: checked.rejected
+    }, 200, cors);
+}
+
 export default {
     async fetch(request, env) {
         const cors = corsHeaders(request.headers.get('Origin') || '');
         const url = new URL(request.url);
+        const route = `${request.method} ${url.pathname}`;
 
         if (request.method === 'OPTIONS') {
             return new Response(null, { status: 204, headers: cors });
         }
 
-        // Preview weekly report HTML or JSON
-        if (request.method === 'GET' && url.pathname === '/report/preview') {
-            if (env?.REPORT_TOKEN) {
-                const auth = request.headers.get('Authorization');
-                const token = url.searchParams.get('token');
-                if (auth !== `Bearer ${env.REPORT_TOKEN}` && token !== env.REPORT_TOKEN) {
-                    return json({ error: 'unauthorized' }, 401, cors);
-                }
-            }
-            const days = parseInt(url.searchParams.get('days') || '7', 10);
-            const device = url.searchParams.get('device') || env?.REPORT_DEVICE || null;
-            const summary = await generateWeeklySummary(env.DB, { days, device });
-            if (url.searchParams.get('format') === 'json') {
-                return json(summary, 200, cors);
-            }
-            const html = renderReportHtml(summary);
-            return new Response(html, {
-                status: 200,
-                headers: Object.assign({ 'Content-Type': 'text/html; charset=utf-8' }, cors)
-            });
+        if (route === 'GET /report/preview') {
+            const denied = checkReportToken(request, url, env, cors);
+            return denied || handlePreview(url, env, cors);
         }
 
-        // On-demand send weekly report
-        if (request.method === 'POST' && url.pathname === '/report/send') {
-            if (env?.REPORT_TOKEN) {
-                const auth = request.headers.get('Authorization');
-                const token = url.searchParams.get('token');
-                if (auth !== `Bearer ${env.REPORT_TOKEN}` && token !== env.REPORT_TOKEN) {
-                    return json({ error: 'unauthorized' }, 401, cors);
-                }
-            }
-            const days = parseInt(url.searchParams.get('days') || '7', 10);
-            const device = url.searchParams.get('device') || env?.REPORT_DEVICE || null;
-            const summary = await generateWeeklySummary(env.DB, { days, device });
-            const result = await sendReportEmail(env, summary);
-            return json(result, result.ok ? 200 : 500, cors);
+        if (route === 'POST /report/send') {
+            const denied = checkReportToken(request, url, env, cors);
+            return denied || handleSend(url, env, cors);
         }
 
-        if (request.method !== 'POST' || url.pathname !== '/ingest') {
-            return json({ error: 'not_found' }, 405, cors);
+        if (route === 'POST /ingest') {
+            return handleIngest(request, env, cors);
         }
 
-        const body = await request.text();
-        if (body.length > BODY_MAX_BYTES) {
-            return json({ error: 'too_large' }, 400, cors);
-        }
-        let payload = null;
-        try {
-            payload = JSON.parse(body);
-        } catch {
-            payload = null;
-        }
-        const now = Date.now();
-        const checked = payload && validateEvents(payload.events, now);
-        if (!checked) {
-            return json({ error: 'invalid' }, 400, cors);
-        }
-
-        const ip = request.headers.get('CF-Connecting-IP') || null;
-        const country = request.cf?.country || null;
-
-        if (ip) {
-            const row = await env.DB.prepare(
-                'SELECT COUNT(*) AS n FROM answers WHERE ip = ? AND received_at > ?'
-            ).bind(ip, now - RATE_WINDOW_MS).first();
-            if ((row ? row.n : 0) + checked.valid.length > RATE_LIMIT) {
-                return json({ error: 'rate_limit' }, 429, cors);
-            }
-        }
-
-        let inserted = 0;
-        for (let start = 0; start < checked.valid.length; start += INSERT_CHUNK) {
-            const chunk = checked.valid.slice(start, start + INSERT_CHUNK);
-            const statements = chunk.map((event) => env.DB.prepare(
-                'INSERT OR IGNORE INTO answers (id, game, correct, ts, device, ip, country, received_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-            ).bind(event.id, event.game, event.correct, event.ts, event.device, ip, country, now));
-            const results = await env.DB.batch(statements);
-            inserted += results.reduce((sum, result) => sum + (result.meta ? result.meta.changes : 0), 0);
-        }
-
-        return json({
-            inserted,
-            ignored: checked.valid.length - inserted,
-            rejected: checked.rejected
-        }, 200, cors);
+        return json({ error: 'not_found' }, 405, cors);
     },
 
     async scheduled(event, env) {

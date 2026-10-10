@@ -79,6 +79,24 @@
         return step * randomInt(rng, first, last);
     }
 
+    // The window a shown time falls in, by crossing mode and by whether the
+    // time on show is the end (kind 'start') or the start (every other kind).
+    const CROSS_WINDOWS = {
+        never: {
+            end: (span) => [span, DIAL - 1],
+            start: (span) => [0, DIAL - 1 - span]
+        },
+        always: {
+            end: (span) => [0, span - 1],
+            start: (span) => [DIAL - span, DIAL - 1]
+        }
+    };
+
+    function shownWindow(cross, span, role) {
+        const windows = CROSS_WINDOWS[cross];
+        return windows ? windows[role](span) : [0, DIAL - 1];
+    }
+
     function makeQuestion(config, rng) {
         const step = pick(rng, config.steps);
         const units = [];
@@ -88,28 +106,12 @@
         const span = step * pick(rng, units);
 
         const kind = pick(rng, config.kinds);
-        let start;
-        let end;
-        if (kind === 'start') {
-            // The end is shown and the start is the answer
-            if (config.cross === 'never') {
-                end = alignedTime(rng, step, span, DIAL - 1);
-            } else if (config.cross === 'always') {
-                end = alignedTime(rng, step, 0, span - 1);
-            } else {
-                end = alignedTime(rng, step, 0, DIAL - 1);
-            }
-            start = (end - span + DIAL) % DIAL;
-        } else {
-            if (config.cross === 'never') {
-                start = alignedTime(rng, step, 0, DIAL - 1 - span);
-            } else if (config.cross === 'always') {
-                start = alignedTime(rng, step, DIAL - span, DIAL - 1);
-            } else {
-                start = alignedTime(rng, step, 0, DIAL - 1);
-            }
-            end = (start + span) % DIAL;
-        }
+        // The answer is hidden: 'start' shows the end, every other kind shows the start.
+        const showsEnd = kind === 'start';
+        const [low, high] = shownWindow(config.cross, span, showsEnd ? 'end' : 'start');
+        const shown = alignedTime(rng, step, low, high);
+        const start = showsEnd ? (shown - span + DIAL) % DIAL : shown;
+        const end = showsEnd ? shown : (shown + span) % DIAL;
 
         const question = {
             kind,
@@ -165,6 +167,24 @@
      * 1:00, 23:00 is 11:00 and 0:00 is 12:00. A span stays literal.
      * Returns 'correct' | 'wrong' | 'incomplete' | 'hour-range' | 'minute-range'.
      */
+    // A span typed as whole minutes only.
+    function checkMinuteSpan(question, minutes) {
+        if (minutes === null) return 'incomplete';
+        return minutes === question.duration ? 'correct' : 'wrong';
+    }
+
+    function checkDuration(question, hours, minutes) {
+        if (hours > 12) return 'hour-range';
+        return hours * 60 + minutes === question.duration ? 'correct' : 'wrong';
+    }
+
+    function checkClockTime(question, hours, minutes) {
+        if (hours < 0 || hours > 23) return 'hour-range';
+        const expected = toClock(question.kind === 'end' ? question.end : question.start);
+        const dialHours = hours % 12 === 0 ? 12 : hours % 12;
+        return dialHours === expected.hours && minutes === expected.minutes ? 'correct' : 'wrong';
+    }
+
     function check(question, entered) {
         const answer = entered || {};
         const given = (value) => value !== null && value !== undefined && value !== '';
@@ -172,19 +192,14 @@
         const minutes = given(answer.minutes) ? Number(answer.minutes) : null;
 
         if (question.kind === 'duration' && question.format === 'minutes') {
-            if (minutes === null) return 'incomplete';
-            return minutes === question.duration ? 'correct' : 'wrong';
+            return checkMinuteSpan(question, minutes);
         }
         if (hours === null || minutes === null) return 'incomplete';
         if (minutes > 59) return 'minute-range';
         if (question.kind === 'duration') {
-            if (hours > 12) return 'hour-range';
-            return hours * 60 + minutes === question.duration ? 'correct' : 'wrong';
+            return checkDuration(question, hours, minutes);
         }
-        if (hours < 0 || hours > 23) return 'hour-range';
-        const expected = toClock(question.kind === 'end' ? question.end : question.start);
-        const dialHours = hours % 12 === 0 ? 12 : hours % 12;
-        return dialHours === expected.hours && minutes === expected.minutes ? 'correct' : 'wrong';
+        return checkClockTime(question, hours, minutes);
     }
 
     global.BrainWarsElapsed = {

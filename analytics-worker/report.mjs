@@ -404,6 +404,60 @@ export function renderReportText(summary) {
 /**
  * Dispatches the email through Resend, Brevo, or native Cloudflare Email Routing.
  */
+async function postJson(url, headers, body) {
+    const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body)
+    });
+    const status = response.status;
+    const responseText = await response.text();
+    let payload;
+    try { payload = JSON.parse(responseText); } catch { payload = { raw: responseText }; }
+    return { ok: response.ok, status, payload };
+}
+
+async function sendViaResend(env, message) {
+    const { ok, status, payload } = await postJson(
+        'https://api.resend.com/emails',
+        {
+            'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+            'Content-Type': 'application/json'
+        },
+        {
+            from: message.from,
+            to: Array.isArray(message.to) ? message.to : [message.to],
+            subject: message.subject,
+            html: message.html,
+            text: message.text
+        }
+    );
+    return ok
+        ? { ok: true, provider: 'resend', status, data: payload }
+        : { ok: false, provider: 'resend', status, error: payload };
+}
+
+async function sendViaBrevo(env, message) {
+    const recipients = (Array.isArray(message.to) ? message.to : [message.to]).map((email) => ({ email }));
+    const { ok, status, payload } = await postJson(
+        'https://api.brevo.com/v3/smtp/email',
+        {
+            'api-key': env.BREVO_API_KEY,
+            'Content-Type': 'application/json'
+        },
+        {
+            sender: { name: 'Brain Wars', email: env.EMAIL_FROM_BREVO || (Array.isArray(message.to) ? message.to[0] : message.to) },
+            to: recipients,
+            subject: message.subject,
+            htmlContent: message.html,
+            textContent: message.text
+        }
+    );
+    return ok
+        ? { ok: true, provider: 'brevo', status, data: payload }
+        : { ok: false, provider: 'brevo', status, error: payload };
+}
+
 export async function sendReportEmail(env, summary, options = {}) {
     const to = options.to || env?.REPORT_EMAIL;
     if (!to) {
@@ -415,69 +469,18 @@ export async function sendReportEmail(env, summary, options = {}) {
         };
     }
 
-    const from = options.from || env?.EMAIL_FROM || 'Brain Wars <onboarding@resend.dev>';
-    const subject = options.subject || `Brain Wars Weekly: ${summary.total} questions (${summary.accuracyPct}% accuracy)`;
-    const html = renderReportHtml(summary);
-    const text = renderReportText(summary);
+    const message = {
+        to,
+        from: options.from || env?.EMAIL_FROM || 'Brain Wars <onboarding@resend.dev>',
+        subject: options.subject || `Brain Wars Weekly: ${summary.total} questions (${summary.accuracyPct}% accuracy)`,
+        html: renderReportHtml(summary),
+        text: renderReportText(summary)
+    };
 
-    // 1. Resend API
-    if (env?.RESEND_API_KEY) {
-        const response = await fetch('https://api.resend.com/emails', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${env.RESEND_API_KEY}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                from,
-                to: Array.isArray(to) ? to : [to],
-                subject,
-                html,
-                text
-            })
-        });
+    if (env?.RESEND_API_KEY) return sendViaResend(env, message);
+    if (env?.BREVO_API_KEY) return sendViaBrevo(env, message);
 
-        const status = response.status;
-        const responseText = await response.text();
-        let payload;
-        try { payload = JSON.parse(responseText); } catch { payload = { raw: responseText }; }
-
-        if (!response.ok) {
-            return { ok: false, provider: 'resend', status, error: payload };
-        }
-        return { ok: true, provider: 'resend', status, data: payload };
-    }
-
-    // 2. Brevo API
-    if (env?.BREVO_API_KEY) {
-        const recipients = (Array.isArray(to) ? to : [to]).map((email) => ({ email }));
-        const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-            method: 'POST',
-            headers: {
-                'api-key': env.BREVO_API_KEY,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                sender: { name: 'Brain Wars', email: env.EMAIL_FROM_BREVO || (Array.isArray(to) ? to[0] : to) },
-                to: recipients,
-                subject,
-                htmlContent: html,
-                textContent: text
-            })
-        });
-
-        const status = response.status;
-        const responseText = await response.text();
-        let payload;
-        try { payload = JSON.parse(responseText); } catch { payload = { raw: responseText }; }
-
-        if (!response.ok) {
-            return { ok: false, provider: 'brevo', status, error: payload };
-        }
-        return { ok: true, provider: 'brevo', status, data: payload };
-    }
-
-    // 3. Dry run / not configured
+    // Dry run or no provider configured
     return {
         ok: false,
         provider: 'none',

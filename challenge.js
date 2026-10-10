@@ -208,7 +208,7 @@
         const bar = document.createElement('div');
         bar.className = 'ch-bar';
         bar.setAttribute('role', 'status');
-        bar.setAttribute('data-i18n-aria-label', 'ch_progress_aria');
+        bar.dataset.i18nAriaLabel = 'ch_progress_aria';
         bar.setAttribute('aria-label', global.I18n.t('ch_progress_aria'));
 
         const track = document.createElement('div');

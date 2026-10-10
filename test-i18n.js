@@ -623,49 +623,63 @@ check('every generated time problem is mathematically sound', () => {
     }
 });
 
-check('the step plan mirrors the column method', () => {
+// Both column games build the same four-step plan; only the unit words differ.
+function checkStepPlan(opts) {
     const rng = mulberry32(777);
-    for (let level = 1; level <= TimeCalc.maxLevel; level++) {
+    for (let level = 1; level <= opts.module.maxLevel; level++) {
         for (let i = 0; i < 80; i++) {
-            const p = TimeCalc.build(level, rng);
-            const steps = p.steps;
-            assert.ok(Array.isArray(steps) && steps.length >= 2, 'too few steps: ' + JSON.stringify(p));
-            const kinds = steps.map((step) => step.kind);
-            assert.strictEqual(kinds[kinds.length - 1], 'hours', 'the hours step must close the plan');
-            assert.strictEqual(steps[steps.length - 1].answer, String(p.result.hours), 'hours answer');
-            const minutesStep = steps.find((step) => step.kind === 'minutes');
-            assert.ok(minutesStep, 'a minutes step is required');
-            assert.strictEqual(minutesStep.answer, String(p.result.minutes).padStart(2, '0'), 'minutes answer');
-            steps.forEach((step) => {
-                assert.ok(Array.isArray(step.accepted) && step.accepted.includes(step.answer),
-                    'every step accepts its own answer: ' + JSON.stringify(step));
-            });
-            assert.ok(minutesStep.accepted.includes(String(Number(minutesStep.answer))),
-                'minutes accept the short form too: ' + JSON.stringify(minutesStep));
-            if (Number(minutesStep.answer) >= 10) {
-                assert.deepStrictEqual(minutesStep.accepted, [minutesStep.answer],
-                    'two-digit minutes keep their natural form only: ' + JSON.stringify(minutesStep));
-            }
-            if (p.op === 'add') {
-                const sum = p.a.minutes + p.b.minutes;
-                if (sum >= 60) {
-                    assert.deepStrictEqual(kinds, ['minutesSum', 'carry', 'minutes', 'hours'],
-                        'the conversion asks for the hour, then the remainder: ' + JSON.stringify(p));
-                    assert.strictEqual(steps[0].answer, String(sum), 'raw minutes total');
-                    assert.strictEqual(steps[1].answer, '1', 'the whole hour that carries');
-                } else {
-                    assert.ok(!kinds.includes('carry') && !kinds.includes('minutesSum'), 'no conversion without 60 minutes: ' + JSON.stringify(p));
-                }
-            } else {
-                if (p.a.minutes < p.b.minutes) {
-                    assert.deepStrictEqual(kinds.slice(0, 2), ['borrow', 'minutes'], 'borrow before subtracting: ' + JSON.stringify(p));
-                    assert.strictEqual(steps[0].answer, String(p.a.minutes + 60), 'borrowed minutes');
-                } else {
-                    assert.ok(!kinds.includes('borrow'), 'no borrow needed: ' + JSON.stringify(p));
-                }
-            }
+            assertStepPlanFor(opts.module.build(level, rng), opts);
         }
     }
+}
+
+function assertStepPlanFor(p, opts) {
+    const { unit, closing } = opts;
+    const steps = p.steps;
+    assert.ok(Array.isArray(steps) && steps.length >= 2, `too few steps: ${JSON.stringify(p)}`);
+    const kinds = steps.map((step) => step.kind);
+    assert.strictEqual(kinds[kinds.length - 1], closing, `the ${closing} step must close the plan`);
+    assert.strictEqual(steps[steps.length - 1].answer, String(p.result[closing]), `${closing} answer`);
+    const unitStep = steps.find((step) => step.kind === unit);
+    assert.ok(unitStep, `a ${unit} step is required`);
+    assert.strictEqual(unitStep.answer, String(p.result[unit]).padStart(2, '0'), `${unit} answer`);
+    steps.forEach((step) => {
+        assert.ok(Array.isArray(step.accepted) && step.accepted.includes(step.answer),
+            `every step accepts its own answer: ${JSON.stringify(step)}`);
+    });
+    assert.ok(unitStep.accepted.includes(String(Number(unitStep.answer))),
+        `${unit} accept the short form too: ${JSON.stringify(unitStep)}`);
+    if (Number(unitStep.answer) >= 10) {
+        assert.deepStrictEqual(unitStep.accepted, [unitStep.answer],
+            `two-digit ${unit} keep their natural form only: ${JSON.stringify(unitStep)}`);
+    }
+    assertCarryOrBorrow(p, kinds, steps, opts);
+}
+
+function assertCarryOrBorrow(p, kinds, steps, { unit, closing, closingName, sumKind, scale }) {
+    if (p.op === 'add') {
+        const sum = p.a[unit] + p.b[unit];
+        if (sum >= scale) {
+            assert.deepStrictEqual(kinds, [sumKind, 'carry', unit, closing],
+                `the conversion asks for the ${closingName}, then the remainder: ${JSON.stringify(p)}`);
+            assert.strictEqual(steps[0].answer, String(sum), `raw ${unit} total`);
+            assert.strictEqual(steps[1].answer, '1', `the whole ${closingName} that carries`);
+        } else {
+            assert.ok(!kinds.includes('carry') && !kinds.includes(sumKind),
+                `no conversion without ${scale} ${unit}: ${JSON.stringify(p)}`);
+        }
+        return;
+    }
+    if (p.a[unit] < p.b[unit]) {
+        assert.deepStrictEqual(kinds.slice(0, 2), ['borrow', unit], `borrow before subtracting: ${JSON.stringify(p)}`);
+        assert.strictEqual(steps[0].answer, String(p.a[unit] + scale), `borrowed ${unit}`);
+    } else {
+        assert.ok(!kinds.includes('borrow'), `no borrow needed: ${JSON.stringify(p)}`);
+    }
+}
+
+check('the step plan mirrors the column method', () => {
+    checkStepPlan({ module: TimeCalc, unit: 'minutes', closing: 'hours', closingName: 'hour', sumKind: 'minutesSum', scale: 60 });
 });
 
 check('the early levels teach one idea at a time', () => {
@@ -754,48 +768,7 @@ check('every generated money problem is mathematically sound', () => {
 });
 
 check('the money step plan mirrors the column method', () => {
-    const rng = mulberry32(777);
-    for (let level = 1; level <= MoneyCalc.maxLevel; level++) {
-        for (let i = 0; i < 80; i++) {
-            const p = MoneyCalc.build(level, rng);
-            const steps = p.steps;
-            assert.ok(Array.isArray(steps) && steps.length >= 2, 'too few steps: ' + JSON.stringify(p));
-            const kinds = steps.map((step) => step.kind);
-            assert.strictEqual(kinds[kinds.length - 1], 'euros', 'the euros step must close the plan');
-            assert.strictEqual(steps[steps.length - 1].answer, String(p.result.euros), 'euros answer');
-            const centsStep = steps.find((step) => step.kind === 'cents');
-            assert.ok(centsStep, 'a cents step is required');
-            assert.strictEqual(centsStep.answer, String(p.result.cents).padStart(2, '0'), 'cents answer');
-            steps.forEach((step) => {
-                assert.ok(Array.isArray(step.accepted) && step.accepted.includes(step.answer),
-                    'every step accepts its own answer: ' + JSON.stringify(step));
-            });
-            assert.ok(centsStep.accepted.includes(String(Number(centsStep.answer))),
-                'cents accept the short form too: ' + JSON.stringify(centsStep));
-            if (Number(centsStep.answer) >= 10) {
-                assert.deepStrictEqual(centsStep.accepted, [centsStep.answer],
-                    'two-digit cents keep their natural form only: ' + JSON.stringify(centsStep));
-            }
-            if (p.op === 'add') {
-                const sum = p.a.cents + p.b.cents;
-                if (sum >= 100) {
-                    assert.deepStrictEqual(kinds, ['centsSum', 'carry', 'cents', 'euros'],
-                        'the conversion asks for the euro, then the remainder: ' + JSON.stringify(p));
-                    assert.strictEqual(steps[0].answer, String(sum), 'raw cents total');
-                    assert.strictEqual(steps[1].answer, '1', 'the whole euro that carries');
-                } else {
-                    assert.ok(!kinds.includes('carry') && !kinds.includes('centsSum'), 'no conversion without 100 cents: ' + JSON.stringify(p));
-                }
-            } else {
-                if (p.a.cents < p.b.cents) {
-                    assert.deepStrictEqual(kinds.slice(0, 2), ['borrow', 'cents'], 'borrow before subtracting: ' + JSON.stringify(p));
-                    assert.strictEqual(steps[0].answer, String(p.a.cents + 100), 'borrowed cents');
-                } else {
-                    assert.ok(!kinds.includes('borrow'), 'no borrow needed: ' + JSON.stringify(p));
-                }
-            }
-        }
-    }
+    checkStepPlan({ module: MoneyCalc, unit: 'cents', closing: 'euros', closingName: 'euro', sumKind: 'centsSum', scale: 100 });
 });
 
 check('the early money levels teach one idea at a time', () => {
