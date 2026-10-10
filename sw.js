@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'v5';
+const VERSION = 'v6';
 const CACHE = 'brain-wars-' + VERSION;
 
 // The browser's HTTP cache may hold older copies than the server. A new worker must
@@ -40,6 +40,7 @@ const PRECACHE = [
     './time-calculations.html',
     './i18n.js',
     './games.js',
+    './analytics.js',
     './challenge.js',
     './elapsed-time.js',
     './time-calculations.js',

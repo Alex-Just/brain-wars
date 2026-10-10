@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/dependencies-none-brightgreen?style=flat-square" alt="No dependencies">
 </p>
 
-Brain Wars is a collection of small, playful math games for primary-school children. The whole app is plain HTML, CSS and JavaScript — no frameworks, no build step, no accounts, no trackers. A service worker caches every page on the first visit, so it installs like an app and keeps working offline, and the interface comes in **English, Spanish and Russian**.
+Brain Wars is a collection of small, playful math games for primary-school children. The whole app is plain HTML, CSS and JavaScript — no frameworks, no build step, no accounts, no third-party trackers. A service worker caches every page on the first visit, so it installs like an app and keeps working offline, and the interface comes in **English, Spanish and Russian**.
 
 **Play it now → <https://alex-just.github.io/brain-wars/>**
 
@@ -48,6 +48,14 @@ Brain Wars is a collection of small, playful math games for primary-school child
 - **Kid-friendly and accessible.** Large touch targets, safe-area padding for notched phones, `prefers-reduced-motion` support, ARIA labels and live regions.
 - **Tested without a framework.** Plain Node.js scripts validate the translations, page wiring, game registry, challenge queue, question generators and service worker precache.
 
+## Analytics (self-hosted)
+
+The live app records one event per answer attempt in the author's own Cloudflare database: the
+game, the result, the time, a random device id, and the request's IP address and country (set by
+Cloudflare's edge). IP addresses are cleared after 90 days. Nothing is sent when no endpoint is
+configured — the repository ships disabled. No cookies, no third parties, no accounts. To run your
+own, see [`analytics-worker/README.md`](analytics-worker/README.md).
+
 ## Getting started
 
 There is nothing to build and nothing to install — not even a `package.json`:
@@ -67,6 +75,7 @@ Opening `index.html` straight from disk also works for playing; service workers 
 ```bash
 node test-i18n.js   # translations, pages, registry, challenge queue, question generators
 node test-sw.js     # manifest, page wiring, service worker precache
+node test-analytics.js # analytics client core and worker
 ```
 
 Both scripts use only Node's standard library, so no `npm install` is needed.
@@ -79,6 +88,7 @@ brain-wars/
 ├── challenge.html        # Challenge setup and results screen
 ├── challenge.js          # Challenge run model + engine injected into game pages
 ├── games.js              # The single game registry: pages, level modes, signals, icons
+├── analytics.js          # capture, queue, and flush (disabled until ENDPOINT is set)
 ├── i18n.js               # EN / ES / RU dictionaries, language toggle, number formatting
 ├── elapsed-time.js       # Elapsed-time question generator (shared with the tests)
 ├── time-calculations.js  # Time add/subtract problems and steps (shared with the tests)
@@ -94,6 +104,8 @@ brain-wars/
 ├── icons/                # App and home-screen icons
 ├── test-i18n.js          # Node tests described above
 ├── test-sw.js            # Node tests described above
+├── test-analytics.js     # Node tests for the client core and the worker
+├── analytics-worker/     # Cloudflare worker, schema, and deploy notes
 └── clock/, transformers-logo.svg   # Unused early artwork
 ```
 

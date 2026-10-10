@@ -100,7 +100,7 @@ check('every registered game is precached', () => {
 });
 
 check('core runtime files are precached', () => {
-    ['./index.html', './i18n.js', './games.js', './challenge.js', './elapsed-time.js', './time-calculations.js', './money-calculations.js', './pwa.js', './manifest.json'].forEach((entry) => {
+    ['./index.html', './i18n.js', './games.js', './challenge.js', './analytics.js', './elapsed-time.js', './time-calculations.js', './money-calculations.js', './pwa.js', './manifest.json'].forEach((entry) => {
         assert.ok(PRECACHE.includes(entry), entry + ' is missing from PRECACHE');
     });
 });
