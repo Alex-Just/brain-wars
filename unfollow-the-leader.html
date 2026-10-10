@@ -528,7 +528,7 @@
         if (availableSquares.length === 0) return null;
         
         // Get random index from available squares
-        const randomIndex = Math.floor(Math.random() * availableSquares.length);
+        const randomIndex = Math.floor(BrainWarsGames.random() * availableSquares.length);
         return availableSquares[randomIndex];
       }
 
@@ -579,13 +579,13 @@
             .filter(i => !this.sequence.includes(i));
           
           // Pick random square from available ones
-          const randomIndex = Math.floor(Math.random() * availableSquares.length);
+          const randomIndex = Math.floor(BrainWarsGames.random() * availableSquares.length);
           this.sequence.push(availableSquares[randomIndex]);
         }
         
         // Shuffle the sequence for extra randomness
         this.sequence = this.sequence
-          .sort(() => Math.random() - 0.5);
+          .sort(() => BrainWarsGames.random() - 0.5);
         
         await this.playSequence();
       }
@@ -677,12 +677,12 @@
         while (this.sequence.length < totalSquares) {
           const availableSquares = Array.from(Array(9).keys())
             .filter(i => !this.sequence.includes(i));
-          const randomIndex = Math.floor(Math.random() * availableSquares.length);
+          const randomIndex = Math.floor(BrainWarsGames.random() * availableSquares.length);
           this.sequence.push(availableSquares[randomIndex]);
         }
         
         // Shuffle the sequence for extra randomness
-        this.sequence = this.sequence.sort(() => Math.random() - 0.5);
+        this.sequence = this.sequence.sort(() => BrainWarsGames.random() - 0.5);
         
         this.playerSequence = [];
         this.setMessage('uftl_remember');
@@ -742,7 +742,7 @@
           const angle = (i / this.PARTICLE_COUNT) * 360;
           const distance = parseInt(getComputedStyle(document.documentElement)
             .getPropertyValue('--particle-distance')) + 
-            Math.random() * parseInt(getComputedStyle(document.documentElement)
+            BrainWarsGames.random() * parseInt(getComputedStyle(document.documentElement)
             .getPropertyValue('--particle-distance-random'));
           
           const tx = Math.cos(angle * Math.PI / 180) * distance;
@@ -752,7 +752,7 @@
           particle.style.top = `${y}px`;
           particle.style.setProperty('--tx', `${tx}px`);
           particle.style.setProperty('--ty', `${ty}px`);
-          particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+          particle.style.backgroundColor = colors[Math.floor(BrainWarsGames.random() * colors.length)];
           
           document.body.appendChild(particle);
           

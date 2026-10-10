@@ -789,7 +789,7 @@
                     this.#state.operationsQueue = [...operations];
                     // Fisher-Yates shuffle
                     for (let i = this.#state.operationsQueue.length - 1; i > 0; i--) {
-                        const j = Math.floor(Math.random() * (i + 1));
+                        const j = Math.floor(BrainWarsGames.random() * (i + 1));
                         [this.#state.operationsQueue[i], this.#state.operationsQueue[j]] = 
                         [this.#state.operationsQueue[j], this.#state.operationsQueue[i]];
                     }
@@ -803,26 +803,26 @@
                 while (!validProblem) {
                     switch (operation.symbol) {
                         case this.#config.operators.add:
-                            a = Math.floor(Math.random() * (max / 2)) + min;
-                            b = Math.floor(Math.random() * (max - a)) + min;
+                            a = Math.floor(BrainWarsGames.random() * (max / 2)) + min;
+                            b = Math.floor(BrainWarsGames.random() * (max - a)) + min;
                             result = a + b;
                             break;
 
                         case this.#config.operators.subtract:
-                            a = Math.floor(Math.random() * max) + min;
-                            b = Math.floor(Math.random() * a) + min;
+                            a = Math.floor(BrainWarsGames.random() * max) + min;
+                            b = Math.floor(BrainWarsGames.random() * a) + min;
                             result = a - b;
                             break;
 
                         case this.#config.operators.multiply:
-                            a = Math.floor(Math.random() * maxMultiplier) + min;
-                            b = Math.floor(Math.random() * (max / a)) + min;
+                            a = Math.floor(BrainWarsGames.random() * maxMultiplier) + min;
+                            b = Math.floor(BrainWarsGames.random() * (max / a)) + min;
                             result = a * b;
                             break;
 
                         case this.#config.operators.divide:
-                            b = Math.floor(Math.random() * maxDivisor) + min;
-                            result = Math.floor(Math.random() * maxQuotient) + min;
+                            b = Math.floor(BrainWarsGames.random() * maxDivisor) + min;
+                            result = Math.floor(BrainWarsGames.random() * maxQuotient) + min;
                             a = b * result;
                             break;
                     }

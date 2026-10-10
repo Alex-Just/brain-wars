@@ -22,9 +22,14 @@
 
     /* ---------- pure core ---------- */
 
+    // Event ids only have to be unique per attempt, and crypto keeps them
+    // unguessable as well. Every browser this app supports has both methods,
+    // and so does the Node the tests run on.
     function randomId(prefix) {
-        if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
-        return prefix + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+        if (crypto.randomUUID) return crypto.randomUUID();
+        const buffer = new Uint32Array(2);
+        crypto.getRandomValues(buffer);
+        return `${prefix}${buffer[0].toString(36)}${buffer[1].toString(36)}`;
     }
 
     function buildEvent(game, correct, now, device) {

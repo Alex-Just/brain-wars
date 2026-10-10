@@ -674,7 +674,7 @@
             /* ---------- round ---------- */
 
             #startNewRound() {
-                this.#state.problem = BrainWarsTime.build(this.#state.level, Math.random, this.#state.previous);
+                this.#state.problem = BrainWarsTime.build(this.#state.level, BrainWarsGames.random, this.#state.previous);
                 this.#state.previous = this.#state.problem;
                 this.#beginRound();
             }

@@ -299,10 +299,20 @@
 
     const byId = new Map(games.map((game) => [game.id, game]));
 
+    // One randomness source for game content: question numbers, shuffles and
+    // effects. crypto.getRandomValues is available in every browser this app
+    // supports, including when a page is opened from disk.
+    function random() {
+        const buffer = new Uint32Array(1);
+        crypto.getRandomValues(buffer);
+        return buffer[0] / 4294967296;
+    }
+
     global.BrainWarsGames = {
         all: () => games.filter((game) => !game.hidden),
         byId: (id) => byId.get(id) || null,
-        byFile: (file) => games.find((game) => game.file === file) || null
+        byFile: (file) => games.find((game) => game.file === file) || null,
+        random
     };
 
     if (typeof module !== 'undefined' && module.exports) {

@@ -8,13 +8,15 @@
  * - Bump VERSION whenever PRECACHE changes (a page added or removed); the activate
  *   handler then deletes the old cache.
  * - Content edits to already-listed files need no bump: pages are network-first and
- *   other assets stale-while-revalidate, so they refresh on their own.
+ *   other assets stale-while-revalidate, so they refresh on their own. Bump anyway
+ *   when a page starts calling a new name on a shared script: a cached copy of that
+ *   script would otherwise mix with the new page until the cache refreshed.
  * - When a game is added to games.js, add its page here too; test-sw.js fails if
  *   a registered game page is missing from PRECACHE.
  */
 'use strict';
 
-const VERSION = 'v7';
+const VERSION = 'v8';
 const CACHE = 'brain-wars-' + VERSION;
 
 // The browser's HTTP cache may hold older copies than the server. A new worker must

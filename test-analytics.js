@@ -140,7 +140,7 @@ check('the worker guide documents the live ingest and the rate limit', () => {
     assert.ok(readme.includes('https://brain-wars-answers.alex-just.workers.dev/ingest'), 'the guide names the live ingest URL');
     assert.ok(readme.includes('received_at'), 'the count uses received_at');
     assert.ok(readme.includes('wrangler deploy'), 'deploy uses Wrangler');
-    assert.ok(readme.includes('v7'), 'the guide names the current service worker version');
+    assert.ok(readme.includes('v8'), 'the guide names the current service worker version');
     assert.ok(!readme.includes('"ts":0'), 'ts 0 is outside the validation window');
 });
 
@@ -329,7 +329,7 @@ const Games = require('./games.js');
         assert.strictEqual(preflight.status, 204);
         assert.strictEqual(preflight.headers.get('Access-Control-Allow-Origin'), 'https://alex-just.github.io');
 
-        const evil = await Worker.default.fetch(stubRequest({ origin: 'http://localhost.evil.com', body: batchBody([]) }), { DB: db });
+        const evil = await Worker.default.fetch(stubRequest({ origin: 'https://localhost.evil.com', body: batchBody([]) }), { DB: db });
         assert.strictEqual(evil.headers.get('Access-Control-Allow-Origin'), null);
     });
 

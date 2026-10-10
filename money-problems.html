@@ -887,7 +887,7 @@
             }
 
             #randomInt(min, max) {
-                return Math.floor(Math.random() * (max - min + 1)) + min;
+                return Math.floor(BrainWarsGames.random() * (max - min + 1)) + min;
             }
 
             #round10(value) {
@@ -913,7 +913,7 @@
                     const price = this.#round10(this.#randomInt(item.band[0], Math.min(item.band[1], cfg.maxPrice)));
                     if (price < 100) continue;
 
-                    const afford = cfg.afford === 'mixed' ? Math.random() < 0.5 : cfg.afford === 'yes';
+                    const afford = cfg.afford === 'mixed' ? BrainWarsGames.random() < 0.5 : cfg.afford === 'yes';
                     const delta = this.#round10(this.#randomInt(
                         Math.max(30, Math.round(price * 0.1)),
                         Math.max(60, Math.round(price * 0.3))
