@@ -110,4 +110,136 @@
     global.BrainWarsAnalytics = core;
 
     if (typeof module !== 'undefined' && module.exports) module.exports = core;
+
+    /* ---------- browser bootstrap ---------- */
+
+    function signalHit(signal) {
+        if (!signal) return false;
+        if (signal.kind === 'class') {
+            return [...document.querySelectorAll(signal.selector)].some((element) => element.classList.contains(signal.value));
+        }
+        const element = document.querySelector(signal.selector);
+        if (!element) return false;
+        if (signal.kind === 'style') return element.style[signal.property] === signal.value;
+        if (signal.kind === 'text') return element.textContent.trim() === global.I18n.t(signal.key);
+        return false;
+    }
+
+    function safeStorage() {
+        try {
+            return global.localStorage;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function readQueue(storage) {
+        try {
+            const parsed = storage ? JSON.parse(storage.getItem(QUEUE_KEY) || '[]') : [];
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (error) {
+            return [];
+        }
+    }
+
+    function deviceId(storage) {
+        try {
+            const existing = storage && storage.getItem(DEVICE_KEY);
+            if (existing) return existing;
+            const created = randomId('d-');
+            if (storage) storage.setItem(DEVICE_KEY, created);
+            return created;
+        } catch (error) {
+            return randomId('d-');
+        }
+    }
+
+    function start(game) {
+        const storage = safeStorage();
+        const device = deviceId(storage);
+        const captureState = { mistakeSeen: false };
+        let hits = { mistake: false, completion: false };
+        let queue = readQueue(storage);
+        let flushState = { backoff: 0, nextTryAt: 0, permanentTries: 0 };
+        let flushing = false;
+        let lastFlushAt = 0;
+
+        const persist = () => {
+            try {
+                if (storage) storage.setItem(QUEUE_KEY, JSON.stringify(queue));
+            } catch (error) {
+                // Storage full or unavailable: the in-memory queue still works.
+            }
+        };
+
+        const evaluate = () => {
+            const next = { mistake: signalHit(game.mistake), completion: signalHit(game.completion) };
+            risingEdges(hits, next).forEach((edge) => {
+                const correct = captureEvent(captureState, edge, game.id);
+                if (correct !== null) {
+                    queue = enqueue(queue, buildEvent(game.id, correct, Date.now(), device), QUEUE_MAX);
+                    persist();
+                    scheduleFlush(true);
+                }
+            });
+            hits = next;
+        };
+
+        const post = async (batch) => {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+            try {
+                const response = await fetch(ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ events: batch }),
+                    signal: controller.signal
+                });
+                await response.json(); // An unparseable body counts as a failure.
+                return response.status;
+            } finally {
+                clearTimeout(timer);
+            }
+        };
+
+        const flush = async () => {
+            if (flushing) return;
+            flushing = true;
+            try {
+                while (queue.length && Date.now() >= flushState.nextTryAt) {
+                    const result = await flushOnce(queue, post, flushState, Date.now());
+                    queue = result.queue;
+                    flushState = result;
+                    persist();
+                    if (flushState.nextTryAt > 0) break;
+                }
+            } finally {
+                flushing = false;
+            }
+        };
+
+        function scheduleFlush(onlyIfIdle) {
+            const now = Date.now();
+            if (onlyIfIdle && now - lastFlushAt < MIN_FLUSH_GAP_MS) return;
+            lastFlushAt = now;
+            flush();
+        }
+
+        hits = { mistake: signalHit(game.mistake), completion: signalHit(game.completion) }; // baseline, no events
+        new MutationObserver(evaluate).observe(document.documentElement, {
+            subtree: true, childList: true, characterData: true,
+            attributes: true, attributeFilter: ['class', 'style']
+        });
+        global.addEventListener('online', () => scheduleFlush(false));
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) scheduleFlush(false);
+        });
+        scheduleFlush(false);
+    }
+
+    if (typeof document !== 'undefined' && ENDPOINT) {
+        const file = global.location.pathname.split('/').pop() || 'index.html';
+        const game = global.BrainWarsGames && global.BrainWarsGames.byFile(file);
+        if (game) start(game);
+    }
 })(typeof window !== 'undefined' ? window : globalThis);
