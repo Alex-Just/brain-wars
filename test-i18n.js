@@ -246,6 +246,14 @@ check('the hub renders its grid from the registry', () => {
     });
 });
 
+check('every game page loads the analytics module', () => {
+    INTEGRATED_PAGES.forEach((file) => {
+        if (!Games.byFile(file)) return;
+        const html = fs.readFileSync(path.join(__dirname, file), 'utf8');
+        assert.ok(html.includes('src="analytics.js"'), file + ' must load analytics.js');
+    });
+});
+
 check('the challenge page loads its scripts', () => {
     const html = fs.readFileSync(path.join(__dirname, 'challenge.html'), 'utf8');
     ['i18n.js', 'games.js', 'challenge.js'].forEach((script) => {
