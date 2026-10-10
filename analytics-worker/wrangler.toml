@@ -1,4 +1,4 @@
-# Daily retention cleanup. 04:00 UTC.
+# Daily retention cleanup (04:00 UTC) and weekly progress report (Sunday 18:00 UTC).
 name = "brain-wars-answers"
 main = "worker.mjs"
 compatibility_date = "2026-10-10"
@@ -9,4 +9,4 @@ database_name = "brain-wars-answers"
 database_id = "dde0c3a3-95c0-490d-800b-7ed9debd4197"
 
 [triggers]
-crons = ["0 4 * * *"]
+crons = ["0 4 * * *", "0 18 * * SUN"]

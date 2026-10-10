@@ -1,7 +1,10 @@
 /**
  * Brain Wars answers ingest: validate, rate-limit, and deduplicate events into D1.
+ * Also generates and delivers the weekly math progress report to parents.
  * Deploy from the Cloudflare dashboard; keep the pasted copy in sync with this file.
  */
+
+import { generateWeeklySummary, renderReportHtml, sendReportEmail } from './report.mjs';
 
 export const GAME_IDS = [
     'follow-the-leader', 'unfollow-the-leader', 'operations', 'telling-time',
@@ -55,8 +58,8 @@ function corsHeaders(origin) {
     if (!allowed) return {};
     return {
         'Access-Control-Allow-Origin': origin,
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
         'Vary': 'Origin'
     };
 }
@@ -76,6 +79,45 @@ export default {
         if (request.method === 'OPTIONS') {
             return new Response(null, { status: 204, headers: cors });
         }
+
+        // Preview weekly report HTML or JSON
+        if (request.method === 'GET' && url.pathname === '/report/preview') {
+            if (env && env.REPORT_TOKEN) {
+                const auth = request.headers.get('Authorization');
+                const token = url.searchParams.get('token');
+                if (auth !== `Bearer ${env.REPORT_TOKEN}` && token !== env.REPORT_TOKEN) {
+                    return json({ error: 'unauthorized' }, 401, cors);
+                }
+            }
+            const days = parseInt(url.searchParams.get('days') || '7', 10);
+            const device = url.searchParams.get('device') || (env && env.REPORT_DEVICE) || null;
+            const summary = await generateWeeklySummary(env.DB, { days, device });
+            if (url.searchParams.get('format') === 'json') {
+                return json(summary, 200, cors);
+            }
+            const html = renderReportHtml(summary);
+            return new Response(html, {
+                status: 200,
+                headers: Object.assign({ 'Content-Type': 'text/html; charset=utf-8' }, cors)
+            });
+        }
+
+        // On-demand send weekly report
+        if (request.method === 'POST' && url.pathname === '/report/send') {
+            if (env && env.REPORT_TOKEN) {
+                const auth = request.headers.get('Authorization');
+                const token = url.searchParams.get('token');
+                if (auth !== `Bearer ${env.REPORT_TOKEN}` && token !== env.REPORT_TOKEN) {
+                    return json({ error: 'unauthorized' }, 401, cors);
+                }
+            }
+            const days = parseInt(url.searchParams.get('days') || '7', 10);
+            const device = url.searchParams.get('device') || (env && env.REPORT_DEVICE) || null;
+            const summary = await generateWeeklySummary(env.DB, { days, device });
+            const result = await sendReportEmail(env, summary);
+            return json(result, result.ok ? 200 : 500, cors);
+        }
+
         if (request.method !== 'POST' || url.pathname !== '/ingest') {
             return json({ error: 'not_found' }, 405, cors);
         }
@@ -126,12 +168,28 @@ export default {
     },
 
     async scheduled(event, env) {
-        const cutoff = Date.now() - RETENTION_MS;
-        for (let round = 0; round < CLEANUP_ROUNDS; round++) {
-            const result = await env.DB.prepare(
-                'UPDATE answers SET ip = NULL WHERE id IN (SELECT id FROM answers WHERE received_at < ? AND ip IS NOT NULL LIMIT ?)'
-            ).bind(cutoff, CLEANUP_BATCH).run();
-            if (!result.meta || result.meta.changes < CLEANUP_BATCH) break;
+        const isWeeklyCron = event && (event.cron === '0 18 * * SUN' || event.cron === '0 18 * * 1' || event.cron === '0 18 * * 0' || event.cron === 'weekly' || event.type === 'weekly-report');
+
+        // Retention cleanup: runs daily at 04:00 UTC or default trigger
+        if (!event || !event.cron || event.cron === '0 4 * * *' || isWeeklyCron) {
+            const cutoff = Date.now() - RETENTION_MS;
+            for (let round = 0; round < CLEANUP_ROUNDS; round++) {
+                const result = await env.DB.prepare(
+                    'UPDATE answers SET ip = NULL WHERE id IN (SELECT id FROM answers WHERE received_at < ? AND ip IS NOT NULL LIMIT ?)'
+                ).bind(cutoff, CLEANUP_BATCH).run();
+                if (!result.meta || result.meta.changes < CLEANUP_BATCH) break;
+            }
+        }
+
+        // Weekly progress report: runs on Sunday 18:00 UTC
+        if (isWeeklyCron || (env && env.SEND_REPORT_ON_SCHEDULE === 'true')) {
+            try {
+                const summary = await generateWeeklySummary(env.DB, { device: (env && env.REPORT_DEVICE) || null });
+                const sendResult = await sendReportEmail(env, summary);
+                console.log('Weekly report delivery result:', JSON.stringify(sendResult));
+            } catch (err) {
+                console.error('Failed to send weekly report:', err);
+            }
         }
     }
 };

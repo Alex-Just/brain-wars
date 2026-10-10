@@ -14,6 +14,53 @@ The worker ignores a repeated event id. The client can send the same batch again
 - The cron at 04:00 UTC clears `ip` on rows older than 90 days. The other columns stay.
 - CORS allows `alex-just.github.io`, `localhost`, and `127.0.0.1`.
 
+## Weekly progress email
+
+Every Sunday at 18:00 UTC, the worker aggregates answer attempts from the last seven days and emails a progress report to the configured recipient.
+
+The report includes:
+- Total attempts, correct answers, and overall accuracy percentage.
+- Active practice days out of seven.
+- Top three skills that need practice, ranked by mistake count and error rate.
+- Practical practice tips for each skill.
+- Full activity breakdown across all games played.
+
+### Free email sending (Resend)
+
+Sending is free via [Resend](https://resend.com):
+- Free plan: 3000 emails per month (100 per day).
+- When sending to your registered account email, Resend allows `onboarding@resend.dev` as the sender without needing a custom domain or DNS records.
+
+Add the secrets in Wrangler:
+
+```bash
+npx wrangler secret put RESEND_API_KEY --name brain-wars-answers
+npx wrangler secret put REPORT_EMAIL --name brain-wars-answers
+```
+
+Optional settings (secrets or environment variables):
+- `REPORT_EMAIL`: recipient email address.
+- `REPORT_TOKEN`: bearer token to protect the preview and send endpoints.
+- `REPORT_DEVICE`: filter stats to one device id.
+
+### Preview and test endpoints
+
+Preview the HTML summary in the browser:
+
+```bash
+curl https://brain-wars-answers.alex-just.workers.dev/report/preview
+```
+
+Add `?format=json` for JSON data.
+
+Trigger sending the email immediately:
+
+```bash
+curl -X POST https://brain-wars-answers.alex-just.workers.dev/report/send
+```
+
+When `REPORT_TOKEN` is set, pass `-H 'Authorization: Bearer <token>'` or `?token=<token>`.
+
 ## Deploy
 
 From this directory, run:
@@ -22,13 +69,13 @@ From this directory, run:
 npx wrangler deploy
 ```
 
-`wrangler.toml` names the worker, binds the database as `DB`, and sets the daily cron. Deploy `worker.mjs`.
+`wrangler.toml` names the worker, binds the database as `DB`, and sets the crons. Deploy `worker.mjs`.
 
 When you change `analytics.js` or the precache list, bump `VERSION` in `sw.js` in the same commit and push `master`. The service worker caches `analytics.js`. The installed app loads the new file on the next visit. The current `VERSION` is `v7`.
 
 ## Read the rows
 
-Open the [brain-wars-answers console](https://dash.cloudflare.com/05e38f321dad15a6144629ca4dbb5fc7/workers/d1/databases/dde0c3a3-95c0-490d-800b-7ed9debd4197).
+Open the Cloudflare D1 console for database `brain-wars-answers`.
 
 ```sql
 SELECT datetime(ts / 1000, 'unixepoch') AS when_utc,

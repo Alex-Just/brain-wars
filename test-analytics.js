@@ -150,6 +150,7 @@ const Games = require('./games.js');
 
 (async () => {
     const Worker = await import('./analytics-worker/worker.mjs');
+    const Report = await import('./analytics-worker/report.mjs');
     const NOW = 1791700000000;
     const DAY = 24 * 60 * 60 * 1000;
 
@@ -203,19 +204,20 @@ const Games = require('./games.js');
         assert.strictEqual(Worker.validateEvents(new Array(201).fill(validEvent()), NOW), null);
     });
 
-    const stubRequest = ({ method = 'POST', path = '/ingest', origin, body = '', cf, ip }) => ({
+    const stubRequest = ({ method = 'POST', path = '/ingest', origin, body = '', cf, ip, headers = {} }) => ({
         method,
         url: 'https://worker.example' + path,
         headers: new Headers(Object.assign(
             origin ? { Origin: origin } : {},
-            ip ? { 'CF-Connecting-IP': ip } : {}
+            ip ? { 'CF-Connecting-IP': ip } : {},
+            headers
         )),
         cf,
         text: async () => body
     });
 
-    const stubDB = ({ count = 0, changes = 1 } = {}) => {
-        const log = { inserts: [], updates: [], batches: 0 };
+    const stubDB = ({ count = 0, changes = 1, totalsRow = null, gamesRows = [] } = {}) => {
+        const log = { inserts: [], updates: [], batches: [] };
         return {
             log,
             prepare(sql) {
@@ -224,7 +226,15 @@ const Games = require('./games.js');
                         return {
                             sql,
                             values,
-                            first: async () => ({ n: count }),
+                            first: async () => {
+                                if (sql.includes('COUNT(*) AS n FROM answers WHERE ip = ?')) return { n: count };
+                                if (sql.includes('COUNT(*) AS total')) return totalsRow || { total: 0, correct_count: 0, wrong_count: 0, active_days: 0, device_count: 0 };
+                                return { n: count };
+                            },
+                            all: async () => {
+                                if (sql.includes('GROUP BY game')) return { results: gamesRows };
+                                return { results: [] };
+                            },
                             run: async () => {
                                 log.updates.push({ sql, values });
                                 return { meta: { changes } };
@@ -234,7 +244,7 @@ const Games = require('./games.js');
                 };
             },
             async batch(statements) {
-                log.batches += 1;
+                log.batches.push(statements);
                 statements.forEach((statement) => log.inserts.push(statement));
                 return statements.map(() => ({ meta: { changes } }));
             }
@@ -284,7 +294,7 @@ const Games = require('./games.js');
         const response = await Worker.default.fetch(stubRequest({ body: batchBody(events) }), { DB: db });
         assert.strictEqual((await response.json()).inserted, 120);
         assert.strictEqual(db.log.inserts.length, 120);
-        assert.strictEqual(db.log.batches, 3); // 50 + 50 + 20
+        assert.strictEqual(db.log.batches.length, 3); // 50 + 50 + 20
     });
 
     await checkAsync('fetch rejects malformed requests', async () => {
@@ -330,6 +340,182 @@ const Games = require('./games.js');
         const now = Date.now();
         assert.ok(cutoff <= now - 90 * 24 * 60 * 60 * 1000 && cutoff >= now - 90 * 24 * 60 * 60 * 1000 - 5000);
         assert.strictEqual(statement.values[1], 500);
+    });
+
+    console.log('weekly email reporter');
+
+    await checkAsync('generateWeeklySummary calculates metrics and ranks top 3 skills needing practice', async () => {
+        const db = stubDB({
+            totalsRow: { total: 15, correct_count: 10, wrong_count: 5, active_days: 3, device_count: 1 },
+            gamesRows: [
+                { game: 'money-calculations', total: 6, correct_count: 3, wrong_count: 3, accuracy_pct: 50.0 },
+                { game: 'long-multiplication', total: 4, correct_count: 2, wrong_count: 2, accuracy_pct: 50.0 },
+                { game: 'time-calculations', total: 3, correct_count: 2, wrong_count: 1, accuracy_pct: 66.7 },
+                { game: 'operations', total: 2, correct_count: 2, wrong_count: 0, accuracy_pct: 100.0 }
+            ]
+        });
+
+        const summary = await Report.generateWeeklySummary(db, { now: NOW });
+        assert.strictEqual(summary.total, 15);
+        assert.strictEqual(summary.correct, 10);
+        assert.strictEqual(summary.wrong, 5);
+        assert.strictEqual(summary.accuracyPct, 66.7);
+        assert.strictEqual(summary.activeDays, 3);
+        assert.strictEqual(summary.topPractice.length, 3);
+        assert.strictEqual(summary.topPractice[0].name, 'Money Calculations');
+        assert.strictEqual(summary.topPractice[0].wrong, 3);
+        assert.ok(summary.topPractice[0].tip.includes('100 cents'));
+        assert.strictEqual(summary.topPractice[1].name, 'Long Multiplication');
+        assert.strictEqual(summary.topPractice[2].name, 'Time Calculations');
+        assert.strictEqual(summary.mastered.length, 1);
+        assert.strictEqual(summary.mastered[0].name, 'Mental Math');
+    });
+
+    await checkAsync('generateWeeklySummary handles empty periods cleanly', async () => {
+        const db = stubDB();
+        const summary = await Report.generateWeeklySummary(db, { now: NOW });
+        assert.strictEqual(summary.total, 0);
+        assert.strictEqual(summary.accuracyPct, 0);
+        assert.strictEqual(summary.topPractice.length, 0);
+        assert.strictEqual(summary.mastered.length, 0);
+    });
+
+    await checkAsync('renderReportHtml and renderReportText contain key metrics, tips and links', () => {
+        const mockSummary = {
+            period: { sinceFormatted: 'Oct 3, 2026', nowFormatted: 'Oct 10, 2026' },
+            total: 10,
+            correct: 8,
+            wrong: 2,
+            accuracyPct: 80,
+            activeDays: 2,
+            topPractice: [{
+                name: 'Money Calculations',
+                wrong: 2,
+                total: 5,
+                accuracyPct: 60,
+                skill: 'Column addition of euros and cents',
+                tip: 'Remember 100 cents make 1 euro'
+            }],
+            mastered: [{ name: 'Mental Math', total: 5 }],
+            games: [
+                { name: 'Money Calculations', total: 5, correct: 3, wrong: 2, accuracyPct: 60 },
+                { name: 'Mental Math', total: 5, correct: 5, wrong: 0, accuracyPct: 100 }
+            ]
+        };
+
+        const html = Report.renderReportHtml(mockSummary);
+        assert.ok(html.includes('Brain Wars'), 'html contains title');
+        assert.ok(html.includes('Money Calculations'), 'html contains top practice game');
+        assert.ok(html.includes('Remember 100 cents make 1 euro'), 'html contains specific tip');
+        assert.ok(html.includes('https://alex-just.github.io/brain-wars/'), 'html contains game link');
+
+        const text = Report.renderReportText(mockSummary);
+        assert.ok(text.includes('BRAIN WARS - WEEKLY MATH REPORT'));
+        assert.ok(text.includes('Money Calculations'));
+        assert.ok(text.includes('Remember 100 cents make 1 euro'));
+    });
+
+    await checkAsync('sendReportEmail sends via Resend with Bearer auth and recipient', async () => {
+        const originalFetch = globalThis.fetch;
+        let sentUrl = null;
+        let sentHeaders = null;
+        let sentBody = null;
+
+        globalThis.fetch = async (url, options) => {
+            sentUrl = url;
+            sentHeaders = options.headers;
+            sentBody = JSON.parse(options.body);
+            return {
+                ok: true,
+                status: 200,
+                text: async () => JSON.stringify({ id: 'resend-123' })
+            };
+        };
+
+        try {
+            const env = { RESEND_API_KEY: 're_test_key_123', REPORT_EMAIL: 'parent@example.com' };
+            const summary = {
+                period: { sinceFormatted: 'Oct 3, 2026', nowFormatted: 'Oct 10, 2026' },
+                total: 5, correct: 4, wrong: 1, accuracyPct: 80, activeDays: 1,
+                topPractice: [], mastered: [], games: []
+            };
+            const result = await Report.sendReportEmail(env, summary);
+            assert.strictEqual(result.ok, true);
+            assert.strictEqual(result.provider, 'resend');
+            assert.strictEqual(sentUrl, 'https://api.resend.com/emails');
+            assert.strictEqual(sentHeaders['Authorization'], 'Bearer re_test_key_123');
+            assert.deepStrictEqual(sentBody.to, ['parent@example.com']);
+            assert.ok(sentBody.subject.includes('Brain Wars Weekly'));
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+    });
+
+    await checkAsync('sendReportEmail gracefully reports missing configuration', async () => {
+        const summary = {
+            period: { sinceFormatted: 'Oct 3, 2026', nowFormatted: 'Oct 10, 2026' },
+            total: 0, correct: 0, wrong: 0, accuracyPct: 0, activeDays: 0,
+            topPractice: [], mastered: [], games: []
+        };
+        const noRecipient = await Report.sendReportEmail({}, summary);
+        assert.strictEqual(noRecipient.ok, false);
+        assert.ok(noRecipient.error.includes('No recipient configured'));
+
+        const noProvider = await Report.sendReportEmail({ REPORT_EMAIL: 'parent@example.com' }, summary);
+        assert.strictEqual(noProvider.ok, false);
+        assert.strictEqual(noProvider.provider, 'none');
+        assert.ok(noProvider.error.includes('No email provider configured'));
+    });
+
+    await checkAsync('fetch serves /report/preview as HTML or JSON with token validation', async () => {
+        const db = stubDB({
+            totalsRow: { total: 5, correct_count: 3, wrong_count: 2, active_days: 1, device_count: 1 },
+            gamesRows: [{ game: 'operations', total: 5, correct_count: 3, wrong_count: 2, accuracy_pct: 60 }]
+        });
+        const env = { DB: db, REPORT_TOKEN: 'secret123' };
+
+        // Missing token -> 401
+        const resUnauth = await Worker.default.fetch(stubRequest({ method: 'GET', path: '/report/preview' }), env);
+        assert.strictEqual(resUnauth.status, 401);
+
+        // With valid token header -> 200 HTML
+        const resHtml = await Worker.default.fetch(stubRequest({
+            method: 'GET',
+            path: '/report/preview',
+            headers: { Authorization: 'Bearer secret123' }
+        }), env);
+        assert.strictEqual(resHtml.status, 200);
+        assert.ok(resHtml.headers.get('Content-Type').includes('text/html'));
+        const html = await resHtml.text();
+        assert.ok(html.includes('Brain Wars'));
+
+        // With query param token and format=json -> 200 JSON
+        const resJson = await Worker.default.fetch(stubRequest({
+            method: 'GET',
+            path: '/report/preview?token=secret123&format=json'
+        }), env);
+        assert.strictEqual(resJson.status, 200);
+        const data = await resJson.json();
+        assert.strictEqual(data.total, 5);
+    });
+
+    await checkAsync('scheduled triggers weekly report on Sunday cron', async () => {
+        const originalFetch = globalThis.fetch;
+        let emailSent = false;
+        globalThis.fetch = async () => {
+            emailSent = true;
+            return { ok: true, status: 200, text: async () => JSON.stringify({ id: 'sent' }) };
+        };
+
+        try {
+            const db = stubDB({ changes: 1 });
+            const env = { DB: db, RESEND_API_KEY: 'test', REPORT_EMAIL: 'parent@example.com' };
+            await Worker.default.scheduled({ cron: '0 18 * * SUN' }, env, {});
+            assert.strictEqual(emailSent, true, 'weekly email sent on Sunday cron');
+            assert.strictEqual(db.log.updates.length, 1, 'IP cleanup also ran');
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
     });
 
     console.log('\nAll ' + passed + ' checks passed.');

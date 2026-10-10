@@ -53,7 +53,7 @@ The live app sends one row per answer attempt to its own Cloudflare Worker. The 
 
 Telling-time stores a wrong tap and skips the completion that follows that same tap. Every other game stores the wrong attempt and the solved attempt as two rows.
 
-Read the rows in the [D1 console](https://dash.cloudflare.com/05e38f321dad15a6144629ca4dbb5fc7/workers/d1/databases/dde0c3a3-95c0-490d-800b-7ed9debd4197). Deploy steps, limits, and queries are in [`analytics-worker/README.md`](analytics-worker/README.md).
+Read the rows in the Cloudflare D1 console for database `brain-wars-answers`. Every Sunday at 18:00 UTC, the worker aggregates the past week and emails a progress report to the parent. The report lists overall accuracy, active days, and the top three skills that need practice with arithmetic tips. Deploy steps, limits, report configuration, and queries are in [`analytics-worker/README.md`](analytics-worker/README.md).
 
 Capture runs when `ENDPOINT` in `analytics.js` is set. This repository points it at the live ingest URL.
 
