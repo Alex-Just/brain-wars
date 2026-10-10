@@ -92,3 +92,11 @@ set.ignored = true
 [[triage]]
 match.rules = ["biome:lint/suspicious/noRedundantUseStrict"]
 set.ignored = true
+
+# The shared game stylesheet keeps two deliberate patterns that biome reads as
+# mistakes: a vh fallback before each dvh (older browsers) and !important on the
+# box-shadow resets, which have to beat the hover rules.
+[[triage]]
+match.rules = ["biome:lint/suspicious/noDuplicateProperties", "biome:lint/complexity/noImportantStyles"]
+match.file_patterns = ["memory-game.css"]
+set.ignored = true

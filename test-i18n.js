@@ -155,6 +155,22 @@ check('integrated pages load i18n.js, mount the toggle, and use valid keys', () 
     });
 });
 
+check('the memory game pages name only defined keys', () => {
+    ['follow-the-leader.html', 'unfollow-the-leader.html'].forEach((file) => {
+        const source = fs.readFileSync(path.join(__dirname, file), 'utf8');
+        const keys = [...new Set([...source.matchAll(/'(ftl_[a-z0-9_]+|uftl_[a-z0-9_]+)'/g)].map((m) => m[1]))];
+        assert.ok(keys.length >= 6, `${file} must name the keys it hands to the shared module`);
+        keys.forEach((key) => {
+            LANGS.forEach((lang) => {
+                assert.ok(
+                    I18n.translations[lang][key] !== undefined,
+                    `${file}: key "${key}" missing in ${lang}`
+                );
+            });
+        });
+    });
+});
+
 check('shared scripts use valid keys', () => {
     INTEGRATED_SCRIPTS.forEach((file) => {
         const source = fs.readFileSync(path.join(__dirname, file), 'utf8');

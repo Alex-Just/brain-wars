@@ -1,0 +1,326 @@
+/*
+ * Shared styling for Follow the Leader and Unfollow the Leader: the same grid,
+ * the same animation and the same controls. Each page sets its own palette with
+ * --color-primary, --color-primary-light and --color-secondary.
+ */
+
+    /* Basic reset and centering */
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #ffffff;
+      margin: 0;
+      padding: 0; /* Remove padding */
+      min-height: 100vh;
+      min-height: 100dvh;
+      height: 100vh;
+      height: 100dvh;
+      max-height: 100vh;
+      max-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      justify-content: safe center;
+      touch-action: manipulation; /* Disable double-tap zoom */
+      -webkit-tap-highlight-color: transparent; /* Remove tap highlight on iOS */
+      overflow-x: hidden; /* Prevent horizontal overflow */
+      overflow-y: auto; /* Allow scrolling on short viewports */
+      -webkit-overflow-scrolling: touch;
+      position: fixed; /* Lock viewport */
+      width: 100%; /* Full width */
+      user-select: none; /* Prevent text selection */
+      -webkit-user-select: none; /* Safari */
+      -moz-user-select: none;    /* Firefox (older) */
+      -ms-user-select: none;     /* IE/Edge */
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+    h1 {
+      margin-bottom: 10px;
+    }
+    /* Game board container */
+    #game {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(80px, 100px));
+      grid-template-rows: repeat(3, minmax(80px, 100px));
+      gap: min(3vw, 10px);
+      margin: 20px auto;
+      width: min(90vw, 320px);
+      aspect-ratio: 1;
+    }
+    /* Style for each square */
+    .square {
+      width: 100%;
+      height: 100%;
+      background-color: transparent;
+      border: none;
+      padding: 0;
+      -webkit-appearance: none;
+      appearance: none;
+      border-radius: min(2vw, 8px);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      touch-action: none; /* Disable browser touch actions */
+      -webkit-touch-callout: none; /* Disable callout on iOS */
+      -webkit-tap-highlight-color: transparent; /* Remove tap highlight */
+      user-select: none; /* Prevent text selection */
+      -webkit-user-select: none;
+      box-shadow: none !important;
+    }
+    /* When square appears in sequence */
+    .square.sequence {
+      background-color: var(--color-secondary);
+    }
+    /* When sequence is complete */
+    .square.ready {
+      background-color: var(--color-primary);
+      pointer-events: auto; /* Enable interactions only when ready */
+    }
+    /* Hover effect when ready */
+    .square:focus-visible {
+      outline: 3px solid #3B6D78;
+      outline-offset: 3px;
+    }
+    /* Message and button styles */
+    #message {
+      font-size: clamp(16px, 4vw, 18px);
+      margin: 10px;
+      text-align: center;
+      max-width: 90vw;
+    }
+    /* Update the button container and button styles */
+    #buttonContainer {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      margin-top: 20px;
+    }
+    /* Add new CSS for tap animation */
+    @keyframes tapAnimation {
+      0% {
+        transform: scale(1);
+        opacity: 1;
+        background-color: var(--color-primary);
+      }
+      100% {
+        transform: scale(var(--scale-tap));
+        opacity: 0;
+        background-color: var(--color-primary-light);
+      }
+    }
+
+    .square.tapped {
+      animation: tapAnimation var(--animation-speed-fast) ease-out forwards;
+    }
+
+    /* Add new CSS for wrong tap animation */
+    @keyframes wrongTapAnimation {
+      0%, 50% {
+        transform: scale(1);
+        opacity: 1;
+        background-color: var(--color-primary);
+      }
+      25%, 75% {
+        transform: scale(var(--scale-error));
+        opacity: 0.7;
+        background-color: var(--color-error);
+      }
+      100% {
+        transform: scale(var(--scale-tap));
+        opacity: 0;
+        background-color: var(--color-error-light);
+      }
+    }
+
+    .square.wrong {
+      animation: wrongTapAnimation var(--animation-speed-medium) ease-out forwards;
+    }
+
+    /* Update the CSS for level display */
+    /* Back to the game list + language pill, pinned top-left */
+    .top-left-nav {
+      position: fixed;
+      top: max(15px, env(safe-area-inset-top));
+      left: max(15px, env(safe-area-inset-left));
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 1000;
+    }
+
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 44px;
+      min-height: 44px;
+      background: white;
+      border: 1px solid rgba(0,0,0,0.08);
+      border-radius: 10px;
+      color: #666;
+      font-size: 20px;
+      line-height: 1;
+      text-decoration: none;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .back-btn:active {
+      background: #f8fafc;
+      transform: scale(0.97);
+    }
+
+    #levelDisplay {
+      position: fixed;
+      top: max(15px, env(safe-area-inset-top));
+      right: max(15px, env(safe-area-inset-right));
+      /* Same height as the language pill, so both sit on the row's centre line */
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      height: 52px;
+      font-size: clamp(16px, 4vw, 20px);
+      padding: 10px 15px;
+      border-radius: 6px;
+      background: rgba(0,0,0,0.1);
+      color: #666;
+      z-index: 1000;
+    }
+
+    /* Add new CSS for level completion animation */
+    @keyframes particleBurst {
+      0% {
+        transform: translate(0, 0) scale(0);
+        opacity: 1;
+      }
+      100% {
+        transform: translate(var(--tx), var(--ty)) scale(1);
+        opacity: 0;
+      }
+    }
+
+    .particle {
+      position: fixed;
+      width: var(--particle-size);
+      height: var(--particle-size);
+      background-color: var(--color-success);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 1000;
+      animation: particleBurst var(--animation-speed-slow) ease-out forwards;
+    }
+
+    /* Media query for very small screens */
+    @media (max-width: 320px) {
+      body {
+        padding: 10px;
+      }
+      
+      #game {
+        gap: 5px;
+      }
+      
+      #message {
+        margin: 5px;
+      }
+    }
+
+    /* Safe area insets for notched phones */
+    @supports (padding: max(0px)) {
+      body {
+        padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      }
+    }
+
+    /* Add CSS custom properties for consistent values */
+    :root {
+      /* Colors */
+      --color-error: rgb(244, 67, 54);
+      --color-error-light: rgba(244, 67, 54, 0.3);
+      --color-success: #4CAF50;
+      --color-button: #007BFF;
+      --color-button-hover: #0056b3;
+      
+      /* Timing */
+      --animation-speed-fast: 0.3s;
+      --animation-speed-medium: 0.6s;
+      --animation-speed-slow: 0.8s;
+      --delay-short: 300ms;
+      --delay-medium: 600ms;
+      --delay-long: 1000ms;
+      
+      /* Game settings */
+      --initial-squares: 3;
+      --squares-increment-level: 5;
+      --initial-speed: 800;
+      --min-speed: 300;
+      --speed-decrease: 15;
+      --max-errors: 3;
+      
+      /* Sizes */
+      --border-radius: min(2vw, 8px);
+      --particle-size: min(3vw, 10px);
+      --button-height: 64px;
+      
+      /* Transforms */
+      --scale-hover: 0.95;
+      --scale-tap: 1.5;
+      --scale-error: 1.1;
+      
+      /* Layout */
+      --grid-size: min(90vw, 320px);
+      --grid-gap: min(3vw, 10px);
+      --safe-area: max(20px, env(safe-area-inset-left));
+      
+      /* Particles */
+      --particle-count: 20;
+      --particle-distance: 100;
+      --particle-distance-random: 50;
+      
+      /* Animation custom properties */
+      --tx: 0px;
+      --ty: 0px;
+    }
+
+    /* Update all hardcoded values to use custom properties */
+    .square {
+      border-radius: var(--border-radius);
+      transition: all var(--animation-speed-fast) ease;
+    }
+
+    .square.sequence {
+      background-color: var(--color-secondary);
+    }
+
+    .square.ready {
+      background-color: var(--color-primary);
+    }
+
+    /* Remove hover shadow effect */
+    .square.ready:hover {
+      /* Remove box-shadow line */
+    }
+
+    /* Ensure no shadows during animations */
+    .square.sequence,
+    .square.ready,
+    .square.tapped,
+    .square.wrong {
+      box-shadow: none !important;
+    }
+
+    .square:not(.ready) {
+      pointer-events: none; /* Disable interactions when not ready */
+    }
+
+    /* Add media query for very small screens */
+    @media (max-width: 360px) {
+      /* Removed start button rules */
+    }
+
+    @media (hover: hover) {
+      .square.ready:hover {
+        transform: scale(var(--scale-hover));
+      }
+    }
+
