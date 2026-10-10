@@ -120,6 +120,19 @@ check('a network error counts as a transient failure', async () => {
     assert.strictEqual(result.backoff, 30000);
 });
 
+check('reconcileQueue keeps events captured during the send', () => {
+    const snapshot = [{ id: 'a' }, { id: 'b' }];
+    const live = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
+    const acked = Analytics.ack(snapshot, ['a', 'b']);
+    assert.deepStrictEqual(Analytics.reconcileQueue(live, snapshot, acked), [{ id: 'c' }]);
+});
+
+check('reconcileQueue keeps the live queue when the send fails', () => {
+    const snapshot = [{ id: 'a' }];
+    const live = [{ id: 'a' }, { id: 'c' }];
+    assert.deepStrictEqual(Analytics.reconcileQueue(live, snapshot, snapshot), [{ id: 'a' }, { id: 'c' }]);
+});
+
 console.log('analytics worker');
 
 const Games = require('./games.js');

@@ -45,6 +45,12 @@
         return queue.filter((event) => !sent.has(event.id));
     }
 
+    function reconcileQueue(liveQueue, snapshot, resultQueue) {
+        const kept = new Set(resultQueue.map((event) => event.id));
+        const removed = new Set(snapshot.filter((event) => !kept.has(event.id)).map((event) => event.id));
+        return liveQueue.filter((event) => !removed.has(event.id));
+    }
+
     function risingEdges(prev, next) {
         const edges = [];
         if (!prev.mistake && next.mistake) edges.push('mistake');
@@ -103,7 +109,7 @@
     }
 
     const core = {
-        buildEvent, enqueue, takeBatch, ack, risingEdges, captureEvent,
+        buildEvent, enqueue, takeBatch, ack, reconcileQueue, risingEdges, captureEvent,
         classifyResponse, nextBackoff, flushOnce,
         ENDPOINT, QUEUE_MAX, BATCH_MAX, MIN_FLUSH_GAP_MS, MAX_PERMANENT_TRIES
     };
@@ -207,9 +213,10 @@
             flushing = true;
             try {
                 while (queue.length && Date.now() >= flushState.nextTryAt) {
-                    const result = await flushOnce(queue, post, flushState, Date.now());
-                    queue = result.queue;
-                    flushState = result;
+                    const snapshot = queue;
+                    const result = await flushOnce(snapshot, post, flushState, Date.now());
+                    queue = reconcileQueue(queue, snapshot, result.queue);
+                    flushState = { backoff: result.backoff, nextTryAt: result.nextTryAt, permanentTries: result.permanentTries };
                     persist();
                     if (flushState.nextTryAt > 0) break;
                 }
