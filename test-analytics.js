@@ -170,9 +170,10 @@ const Games = require('./games.js');
     }, overrides);
 
     await checkAsync('GAME_IDS matches the registry ids', () => {
+        const compareStrings = (a, b) => a.localeCompare(b);
         const expected = Games.all().map((game) => game.id)
-            .concat(['follow-the-leader', 'unfollow-the-leader']).sort();
-        assert.deepStrictEqual([...Worker.GAME_IDS].sort(), expected);
+            .concat(['follow-the-leader', 'unfollow-the-leader']).sort(compareStrings);
+        assert.deepStrictEqual([...Worker.GAME_IDS].sort(compareStrings), expected);
     });
 
     await checkAsync('validateEvents accepts a valid event', () => {

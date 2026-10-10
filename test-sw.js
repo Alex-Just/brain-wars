@@ -3,7 +3,6 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
-const vm = require('vm');
 const Games = require('./games.js');
 
 let passed = 0;
@@ -30,7 +29,11 @@ try {
 const swPath = path.join(__dirname, 'sw.js');
 const swSource = fs.existsSync(swPath) ? fs.readFileSync(swPath, 'utf8') : '';
 const precacheMatch = swSource.match(/const PRECACHE = (\[[\s\S]*?\]);/);
-const PRECACHE = precacheMatch ? vm.runInNewContext('(' + precacheMatch[1] + ')') : [];
+// The entries are plain single-quoted paths: read them back as data instead of
+// executing the literal.
+const PRECACHE = precacheMatch
+    ? [...precacheMatch[1].matchAll(/'([^']+)'/g)].map((match) => match[1])
+    : [];
 
 console.log('manifest');
 check('manifest.json parses', () => {

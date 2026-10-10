@@ -3,8 +3,7 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
-const vm = require('vm');
-const I18n = require('./i18n.js');
+const { I18n, createI18n } = require('./i18n.js');
 
 const LANGS = ['en', 'es', 'ru'];
 const HOURS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
@@ -38,11 +37,12 @@ check('all language dictionaries are present', () => {
 });
 
 check('all dictionaries share the same keys', () => {
-    const baseKeys = Object.keys(I18n.translations.en).sort();
+    const compareStrings = (a, b) => a.localeCompare(b);
+    const baseKeys = Object.keys(I18n.translations.en).sort(compareStrings);
     assert.ok(baseKeys.length > 0, 'en dictionary is empty');
     LANGS.forEach((lang) => {
         assert.deepStrictEqual(
-            Object.keys(I18n.translations[lang]).sort(),
+            Object.keys(I18n.translations[lang]).sort(compareStrings),
             baseKeys,
             lang + ' keys differ from en'
         );
@@ -70,21 +70,13 @@ check('t() interpolates parameters per language', () => {
 });
 
 check('Spanish is the default and a chosen language sticks to the device', () => {
-    // A tiny device: i18n.js loaded twice over the same pretend localStorage
-    const source = fs.readFileSync(path.join(__dirname, 'i18n.js'), 'utf8');
+    // A tiny device: two page loads over the same pretend localStorage
     const store = new Map();
-    const context = vm.createContext({
-        console,
-        localStorage: {
-            getItem: (key) => (store.has(key) ? store.get(key) : null),
-            setItem: (key, value) => store.set(key, String(value)),
-            removeItem: (key) => store.delete(key)
-        }
+    const load = () => createI18n({
+        getItem: (key) => (store.has(key) ? store.get(key) : null),
+        setItem: (key, value) => store.set(key, String(value)),
+        removeItem: (key) => store.delete(key)
     });
-    const load = () => {
-        vm.runInContext(source, context);
-        return context.I18n;
-    };
 
     const fresh = load();
     assert.strictEqual(fresh.getLang(), 'es', 'a fresh device starts in Spanish');
@@ -364,7 +356,7 @@ console.log('elapsed time generator');
 function mulberry32(seed) {
     // A small deterministic PRNG, so every run covers the same questions
     return function () {
-        seed = (seed + 0x6D2B79F5) | 0;
+        seed = Math.trunc(seed + 0x6D2B79F5); // integral seed; the xors below re-wrap into int32
         let value = Math.imul(seed ^ (seed >>> 15), 1 | seed);
         value = (value + Math.imul(value ^ (value >>> 7), 61 | value)) ^ value;
         return ((value ^ (value >>> 14)) >>> 0) / 4294967296;

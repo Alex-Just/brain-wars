@@ -1,7 +1,7 @@
 /**
  * Brain Wars shared i18n subsystem.
  * Pure vanilla ES6+, no dependencies. Works over HTTP(S) and file:// URLs.
- * Browser: window.I18n. Node (tests): module.exports.
+ * Browser: window.I18n. Node (tests): module.exports = { I18n, createI18n }.
  */
 (function (global) {
     'use strict';
@@ -942,68 +942,6 @@
     };
     const RU_MINUTES = { 5: 'Пять', 10: 'Десять', 20: 'Двадцать', 25: 'Двадцать пять' };
 
-    // ---- Language state ----
-    const listeners = new Set();
-
-    function isSupported(lang) {
-        return SUPPORTED_LANGS.indexOf(lang) !== -1;
-    }
-
-    // The language picked on this device wins; a fresh device always starts in Spanish
-    function detectInitialLang() {
-        try {
-            if (typeof localStorage !== 'undefined') {
-                const saved = localStorage.getItem(STORAGE_KEY);
-                if (isSupported(saved)) return saved;
-            }
-        } catch (error) { /* storage unavailable: ignore */ }
-        return DEFAULT_LANG;
-    }
-
-    let currentLang = detectInitialLang();
-
-    function getLang() {
-        return currentLang;
-    }
-
-    function setLang(lang) {
-        if (!isSupported(lang) || lang === currentLang) return;
-        currentLang = lang;
-        try {
-            if (typeof localStorage !== 'undefined') {
-                localStorage.setItem(STORAGE_KEY, lang);
-            }
-        } catch (error) { /* storage unavailable: ignore */ }
-        if (typeof document !== 'undefined') {
-            document.documentElement.lang = lang;
-        }
-        listeners.forEach((callback) => {
-            try {
-                callback(lang);
-            } catch (error) {
-                console.error('I18n listener failed:', error);
-            }
-        });
-    }
-
-    function t(key, params) {
-        const dict = translations[currentLang] || {};
-        let value = dict[key];
-        if (value === undefined) value = translations[DEFAULT_LANG][key];
-        if (value === undefined) return key;
-        if (params) {
-            value = value.replace(/\{(\w+)\}/g, (match, name) => (
-                params[name] !== undefined ? String(params[name]) : match
-            ));
-        }
-        return value;
-    }
-
-    function subscribe(callback) {
-        listeners.add(callback);
-        return () => listeners.delete(callback);
-    }
-
     // ---- Time phrases ----
     function enTokens(hour, minute) {
         const nextHour = (hour % 12) + 1;
@@ -1189,119 +1127,193 @@
         return parts.join(forms.join);
     }
 
-    // ---- DOM application ----
-    function applyTranslations(root) {
-        if (typeof document === 'undefined') return;
-        const scope = root || document;
-        scope.querySelectorAll('[data-i18n]').forEach((el) => {
-            el.textContent = t(el.getAttribute('data-i18n'));
-        });
-        scope.querySelectorAll('[data-i18n-html]').forEach((el) => {
-            el.innerHTML = t(el.getAttribute('data-i18n-html'));
-        });
-        scope.querySelectorAll('[data-i18n-aria-label]').forEach((el) => {
-            el.setAttribute('aria-label', t(el.getAttribute('data-i18n-aria-label')));
-        });
-        scope.querySelectorAll('[data-i18n-title]').forEach((el) => {
-            el.setAttribute('title', t(el.getAttribute('data-i18n-title')));
-        });
-    }
+    // ---- Device state and page wiring ----
+    // One page load = one device: the chosen language, its listeners and the
+    // storage all live per instance, so tests can stand in for several devices.
+    function createI18n(storage) {
+        function isSupported(lang) {
+            return SUPPORTED_LANGS.indexOf(lang) !== -1;
+        }
 
-    const TOGGLE_CSS = [
-        '.lang-toggle-mount { display: inline-flex; align-items: center; }',
-        '.lang-toggle-group { display: inline-flex; align-items: center; gap: 4px; background: rgba(0, 0, 0, 0.04); border-radius: 26px; padding: 4px; height: 52px; box-sizing: border-box; }',
-        '.lang-btn { width: 44px; height: 44px; padding: 0; border: none; border-radius: 22px; background: transparent; cursor: pointer; font-size: 20px; line-height: 1; display: flex; align-items: center; justify-content: center; transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease; -webkit-tap-highlight-color: transparent; }',
-        '.lang-btn:active { transform: scale(0.92); }',
-        '.lang-btn.active { background: #ffffff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18); }',
-        '.lang-btn:focus-visible { outline: 3px solid #3B6D78; outline-offset: 2px; }',
-        '@media (hover: hover) {',
-        '  .lang-btn:hover { background: rgba(255, 255, 255, 0.7); }',
-        '}'
-    ].join('\n');
+        // The language picked on this device wins; a fresh device always starts in Spanish
+        function detectInitialLang() {
+            try {
+                const saved = storage ? storage.getItem(STORAGE_KEY) : null;
+                if (isSupported(saved)) return saved;
+            } catch (error) { /* storage unavailable: ignore */ }
+            return DEFAULT_LANG;
+        }
 
-    function ensureStyles() {
-        if (typeof document === 'undefined') return;
-        if (document.getElementById('brain-wars-i18n-styles')) return;
-        const style = document.createElement('style');
-        style.id = 'brain-wars-i18n-styles';
-        style.textContent = TOGGLE_CSS;
-        document.head.appendChild(style);
-    }
+        let currentLang = detectInitialLang();
+        const listeners = new Set();
 
-    function renderLanguageToggle(container) {
-        if (!container || typeof document === 'undefined') return;
-        ensureStyles();
-        container.classList.add('lang-toggle-mount');
-        container.innerHTML = '';
+        function getLang() {
+            return currentLang;
+        }
 
-        const group = document.createElement('div');
-        group.className = 'lang-toggle-group';
-        group.setAttribute('role', 'group');
-        group.setAttribute('aria-label', t('lang_selector_aria'));
-
-        const buttons = SUPPORTED_LANGS.map((lang) => {
-            const button = document.createElement('button');
-            button.type = 'button';
-            button.className = 'lang-btn';
-            button.dataset.lang = lang;
-            button.setAttribute('aria-label', { en: 'English', es: 'Español', ru: 'Русский' }[lang]);
-            button.textContent = FLAGS[lang];
-            button.addEventListener('click', (event) => {
-                event.stopPropagation();
-                setLang(lang);
+        function setLang(lang) {
+            if (!isSupported(lang) || lang === currentLang) return;
+            currentLang = lang;
+            try {
+                if (storage) storage.setItem(STORAGE_KEY, lang);
+            } catch (error) { /* storage unavailable: ignore */ }
+            if (typeof document !== 'undefined') {
+                document.documentElement.lang = lang;
+            }
+            listeners.forEach((callback) => {
+                try {
+                    callback(lang);
+                } catch (error) {
+                    console.error('I18n listener failed:', error);
+                }
             });
-            group.appendChild(button);
-            return button;
-        });
+        }
 
-        container.appendChild(group);
+        function t(key, params) {
+            const dict = translations[currentLang] || {};
+            let value = dict[key];
+            if (value === undefined) value = translations[DEFAULT_LANG][key];
+            if (value === undefined) return key;
+            if (params) {
+                value = value.replace(/\{(\w+)\}/g, (match, name) => (
+                    params[name] !== undefined ? String(params[name]) : match
+                ));
+            }
+            return value;
+        }
 
-        const sync = () => {
-            const active = getLang();
+        function subscribe(callback) {
+            listeners.add(callback);
+            return () => listeners.delete(callback);
+        }
+
+        // ---- DOM application ----
+        function applyTranslations(root) {
+            if (typeof document === 'undefined') return;
+            const scope = root || document;
+            scope.querySelectorAll('[data-i18n]').forEach((el) => {
+                el.textContent = t(el.getAttribute('data-i18n'));
+            });
+            scope.querySelectorAll('[data-i18n-html]').forEach((el) => {
+                el.innerHTML = t(el.getAttribute('data-i18n-html'));
+            });
+            scope.querySelectorAll('[data-i18n-aria-label]').forEach((el) => {
+                el.setAttribute('aria-label', t(el.getAttribute('data-i18n-aria-label')));
+            });
+            scope.querySelectorAll('[data-i18n-title]').forEach((el) => {
+                el.setAttribute('title', t(el.getAttribute('data-i18n-title')));
+            });
+        }
+
+        const TOGGLE_CSS = [
+            '.lang-toggle-mount { display: inline-flex; align-items: center; }',
+            '.lang-toggle-group { display: inline-flex; align-items: center; gap: 4px; background: rgba(0, 0, 0, 0.04); border-radius: 26px; padding: 4px; height: 52px; box-sizing: border-box; }',
+            '.lang-btn { width: 44px; height: 44px; padding: 0; border: none; border-radius: 22px; background: transparent; cursor: pointer; font-size: 20px; line-height: 1; display: flex; align-items: center; justify-content: center; transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease; -webkit-tap-highlight-color: transparent; }',
+            '.lang-btn:active { transform: scale(0.92); }',
+            '.lang-btn.active { background: #ffffff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18); }',
+            '.lang-btn:focus-visible { outline: 3px solid #3B6D78; outline-offset: 2px; }',
+            '@media (hover: hover) {',
+            '  .lang-btn:hover { background: rgba(255, 255, 255, 0.7); }',
+            '}'
+        ].join('\n');
+
+        function ensureStyles() {
+            if (typeof document === 'undefined') return;
+            if (document.getElementById('brain-wars-i18n-styles')) return;
+            const style = document.createElement('style');
+            style.id = 'brain-wars-i18n-styles';
+            style.textContent = TOGGLE_CSS;
+            document.head.appendChild(style);
+        }
+
+        function renderLanguageToggle(container) {
+            if (!container || typeof document === 'undefined') return;
+            ensureStyles();
+            container.classList.add('lang-toggle-mount');
+            container.innerHTML = '';
+
+            const group = document.createElement('div');
+            group.className = 'lang-toggle-group';
+            group.setAttribute('role', 'group');
             group.setAttribute('aria-label', t('lang_selector_aria'));
-            buttons.forEach((button) => {
-                const isActive = button.dataset.lang === active;
-                button.classList.toggle('active', isActive);
-                button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+
+            const buttons = SUPPORTED_LANGS.map((lang) => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'lang-btn';
+                button.dataset.lang = lang;
+                button.setAttribute('aria-label', { en: 'English', es: 'Español', ru: 'Русский' }[lang]);
+                button.textContent = FLAGS[lang];
+                button.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    setLang(lang);
+                });
+                group.appendChild(button);
+                return button;
             });
+
+            container.appendChild(group);
+
+            const sync = () => {
+                const active = getLang();
+                group.setAttribute('aria-label', t('lang_selector_aria'));
+                buttons.forEach((button) => {
+                    const isActive = button.dataset.lang === active;
+                    button.classList.toggle('active', isActive);
+                    button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+                });
+            };
+            sync();
+            subscribe(sync);
+        }
+
+        function initPage() {
+            if (typeof document === 'undefined') return;
+            document.documentElement.lang = getLang();
+            applyTranslations(document);
+            document.querySelectorAll('[data-lang-toggle]').forEach((container) => {
+                renderLanguageToggle(container);
+            });
+        }
+
+        return {
+            getLang,
+            setLang,
+            t,
+            subscribe,
+            applyTranslations,
+            renderLanguageToggle,
+            initPage,
+            timePhraseTokens,
+            timePhrase,
+            durationWords,
+            translations,
+            supportedLangs: SUPPORTED_LANGS.slice()
         };
-        sync();
-        subscribe(sync);
     }
 
-    function initPage() {
-        document.documentElement.lang = getLang();
-        applyTranslations(document);
-        document.querySelectorAll('[data-lang-toggle]').forEach((container) => {
-            renderLanguageToggle(container);
-        });
+    // Storage can be missing (Node) or throw when the browser blocks it
+    function resolveDeviceStorage() {
+        try {
+            return typeof localStorage !== 'undefined' ? localStorage : null;
+        } catch (error) {
+            return null;
+        }
     }
 
-    const I18n = {
-        getLang,
-        setLang,
-        t,
-        subscribe,
-        applyTranslations,
-        renderLanguageToggle,
-        timePhraseTokens,
-        timePhrase,
-        durationWords,
-        translations,
-        supportedLangs: SUPPORTED_LANGS.slice()
-    };
+    const I18n = createI18n(resolveDeviceStorage());
 
     if (typeof module !== 'undefined' && module.exports) {
-        module.exports = I18n;
+        module.exports = { I18n, createI18n };
     }
     global.I18n = I18n;
 
     if (typeof document !== 'undefined') {
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initPage);
+            document.addEventListener('DOMContentLoaded', () => I18n.initPage());
         } else {
-            initPage();
+            I18n.initPage();
         }
-        subscribe(() => applyTranslations(document));
+        I18n.subscribe(() => I18n.applyTranslations(document));
     }
 })(typeof window !== 'undefined' ? window : globalThis);
