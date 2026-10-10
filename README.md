@@ -79,7 +79,23 @@ This repository tracks hooks in `.githooks/`. Enable them in your clone once:
 git config core.hooksPath .githooks
 ```
 
-`commit-msg` strips `Co-authored-by` trailers from commit messages. It is a guardrail, not a guarantee: `git commit --no-verify`, merge commits, and messages edited in a web UI bypass it.
+- `commit-msg` strips `Co-authored-by` trailers from commit messages.
+- `pre-push` runs the Qlty quality check on the commits being pushed and blocks the push when new issues appear.
+
+Neither hook is a guarantee. `--no-verify` skips them, merge commits skip `commit-msg`, and a clone that did not run the `git config` command has no hooks at all.
+
+## Code quality
+
+The `pre-push` hook runs [Qlty](https://qlty.sh) over the files in the commits being pushed. It compares them with the upstream branch, so existing issues never block a push. Only new issues in changed files do. The check is free, runs locally, and needs no account.
+
+```bash
+curl https://qlty.sh | sh
+git config core.hooksPath .githooks
+```
+
+`.qlty/qlty.toml` holds the configuration. It enables `biome` for JavaScript, JSON, and CSS, `markdownlint` for Markdown, and `trufflehog` for secrets. Add a linter with `qlty plugins enable <name>` and commit the change. `qlty check --all` runs the same checks over the whole repository.
+
+Qlty Cloud offers a score-based block and works without pull requests: `qlty slop-one` fails a push that lowers the score of the changed files. It needs a `TYPESAFE_API_KEY` and spends API credit per run, so it is not in the hook.
 
 ## Tests
 
@@ -117,6 +133,8 @@ brain-wars/
 ├── test-i18n.js          # Node tests for pages, text, and generators
 ├── test-sw.js            # Node tests for the service worker
 ├── test-analytics.js     # Node tests for the client and the worker
+├── .githooks/            # commit-msg and pre-push hooks, enabled per clone
+├── .qlty/                # Qlty code-quality configuration
 └── clock/, transformers-logo.svg   # Spare artwork
 ```
 
