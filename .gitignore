@@ -52,5 +52,8 @@ dist/
 .playwright-cli/
 .playwright-mcp/
 
+# ---- Local planning notes (kept on disk, not published) ----
+docs/superpowers/
+
 # ---- Logs ----
 *.log
