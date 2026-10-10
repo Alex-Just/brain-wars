@@ -1,6 +1,8 @@
 'use strict';
 
 const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
 
 let passed = 0;
 function check(name, fn) {
@@ -131,6 +133,13 @@ check('reconcileQueue keeps the live queue when the send fails', () => {
     const snapshot = [{ id: 'a' }];
     const live = [{ id: 'a' }, { id: 'c' }];
     assert.deepStrictEqual(Analytics.reconcileQueue(live, snapshot, snapshot), [{ id: 'a' }, { id: 'c' }]);
+});
+
+check('the worker guide matches the rate limit and the enablement commit', () => {
+    const readme = fs.readFileSync(path.join(__dirname, 'analytics-worker', 'README.md'), 'utf8');
+    assert.ok(!readme.includes('"ts":0'), 'ts 0 is outside the validation window');
+    assert.ok(readme.includes('received_at'), 'the count uses received_at');
+    assert.ok(readme.includes('v7'), 'enabling capture bumps the service worker to v7');
 });
 
 console.log('analytics worker');

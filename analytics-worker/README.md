@@ -9,7 +9,7 @@ are ignored, so the client may resend any batch safely.
 2. Run `schema.sql` in the D1 console.
 3. Create a Worker, paste `worker.mjs`, and bind the database as `DB` (Settings → Bindings).
 4. Add a daily Cron Trigger for the retention cleanup.
-5. Copy `https://<name>.<account>.workers.dev/ingest` into `ENDPOINT` in `../analytics.js`.
+5. Copy `https://<name>.<account>.workers.dev/ingest` into `ENDPOINT` in `../analytics.js`. In the same commit, bump `VERSION` in `../sw.js` from `v6` to `v7`. Commit `analytics.js` and `sw.js`, then push. The service worker caches `analytics.js`. Without the version bump, the first load still runs the cached file, and `ENDPOINT` stays empty.
 
 Keep the pasted copy and `worker.mjs` in sync — edit one, update the other.
 
@@ -25,8 +25,7 @@ curl -i "$URL"                                                     # 405
 curl -i -X POST "$URL" -H 'Content-Type: text/plain' -d 'garbage'  # 400
 ```
 
-Backdated timestamps must not bypass the rate limit: send events with `"ts":0` in a loop; once the
-IP passes 5000 events in 24 h, the response is `429`.
+Backdated timestamps must not bypass the rate limit. Send events with a unique id and a `ts` inside the last two years (now, or now minus one day). Once that IP has 5000 accepted events in 24 h, the response is `429`. The count uses `received_at`, not `ts`. A `ts` of 0 is older than two years, so validation rejects it and the count does not move.
 
 ## Capture matrix
 
