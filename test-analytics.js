@@ -296,6 +296,18 @@ const Games = require('./games.js');
         assert.strictEqual(evil.headers.get('Access-Control-Allow-Origin'), null);
     });
 
+    await checkAsync('scheduled clears old IPs in bounded batches', async () => {
+        const db = stubDB({ changes: 1 });
+        await Worker.default.scheduled({}, { DB: db }, {});
+        assert.strictEqual(db.log.updates.length, 1);
+        const statement = db.log.updates[0];
+        assert.ok(statement.sql.includes('UPDATE answers SET ip = NULL'));
+        const cutoff = statement.values[0];
+        const now = Date.now();
+        assert.ok(cutoff <= now - 90 * 24 * 60 * 60 * 1000 && cutoff >= now - 90 * 24 * 60 * 60 * 1000 - 5000);
+        assert.strictEqual(statement.values[1], 500);
+    });
+
     console.log('\nAll ' + passed + ' checks passed.');
 })().catch((error) => {
     console.error(error);

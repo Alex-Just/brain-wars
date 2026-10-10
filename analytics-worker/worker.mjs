@@ -123,5 +123,15 @@ export default {
             ignored: checked.valid.length - inserted,
             rejected: checked.rejected
         }, 200, cors);
+    },
+
+    async scheduled(event, env) {
+        const cutoff = Date.now() - RETENTION_MS;
+        for (let round = 0; round < CLEANUP_ROUNDS; round++) {
+            const result = await env.DB.prepare(
+                'UPDATE answers SET ip = NULL WHERE id IN (SELECT id FROM answers WHERE received_at < ? AND ip IS NOT NULL LIMIT ?)'
+            ).bind(cutoff, CLEANUP_BATCH).run();
+            if (!result.meta || result.meta.changes < CLEANUP_BATCH) break;
+        }
     }
 };
