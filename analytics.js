@@ -5,7 +5,7 @@
 (function (global) {
     'use strict';
 
-    const ENDPOINT = ''; // e.g. 'https://brain-wars-answers.<account>.workers.dev/ingest'
+    const ENDPOINT = 'https://brain-wars-answers.alex-just.workers.dev/ingest';
     const QUEUE_KEY = 'brain_wars_answers';
     const DEVICE_KEY = 'brain_wars_device';
     const QUEUE_MAX = 1000;

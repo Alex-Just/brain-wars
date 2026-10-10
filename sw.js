@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const VERSION = 'v6';
+const VERSION = 'v7';
 const CACHE = 'brain-wars-' + VERSION;
 
 // The browser's HTTP cache may hold older copies than the server. A new worker must
