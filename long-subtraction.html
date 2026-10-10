@@ -1642,43 +1642,43 @@
             // Terminology highlights
             // ---------------------------------------------------------------
 
-            #highlightTerm(term) {
-                const clearHighlight = (cls) => {
-                    document.querySelectorAll('.' + cls).forEach(c => c.classList.remove(cls));
+            // Paint every element `collect` returns, then drop the paint again.
+            #paint(cls, collect) {
+                const clear = () => {
+                    document.querySelectorAll('.' + cls).forEach((el) => el.classList.remove(cls));
                 };
+                clear();
+                collect().forEach((el) => el.classList.add(cls));
+                setTimeout(clear, 1000);
+            }
 
-                if (term === 'minuend') {
-                    clearHighlight('term-highlight-blue');
-                    for (let i = 0; i < this.#state.firstDigits.length; i++) {
-                        const cell = document.getElementById(`cell-0-${this.#state.baseCol - i + this.#state.firstDecimals}`);
-                        if (cell) cell.classList.add('term-highlight-blue');
-                    }
-                    setTimeout(() => clearHighlight('term-highlight-blue'), 1000);
-
-                } else if (term === 'subtrahend') {
-                    clearHighlight('term-highlight-amber');
-                    for (let i = 0; i < this.#state.secondDigits.length; i++) {
-                        const cell = document.getElementById(`cell-1-${this.#state.baseCol - i + this.#state.secondDecimals}`);
-                        if (cell) cell.classList.add('term-highlight-amber');
-                    }
-                    setTimeout(() => clearHighlight('term-highlight-amber'), 1000);
-
-                } else if (term === 'difference') {
-                    clearHighlight('term-highlight-green');
-                    for (let c = 0; c < this.#state.resultDigits.length; c++) {
-                        const cell = document.getElementById(`cell-${this.#state.resultRow}-${this.#state.baseCol - c + this.#state.resultDecimals}`);
-                        if (cell && cell.textContent) cell.classList.add('term-highlight-green');
-                    }
-                    setTimeout(() => clearHighlight('term-highlight-green'), 1000);
-
-                } else if (term === 'borrow') {
-                    clearHighlight('term-highlight-purple');
-                    const mark = document.querySelector('.borrow-mark');
-                    const step = this.#state.steps[Math.min(this.#state.stepIndex, this.#state.steps.length - 1)];
-                    const target = mark ? mark.parentElement : (step ? document.getElementById(`cell-0-${step.col - 1}`) : null);
-                    if (target) target.classList.add('term-highlight-purple');
-                    setTimeout(() => clearHighlight('term-highlight-purple'), 1000);
+            #digitCells(row, digits, decimals) {
+                const cells = [];
+                for (let i = 0; i < digits.length; i++) {
+                    cells.push(document.getElementById(`cell-${row}-${this.#state.baseCol - i + decimals}`));
                 }
+                return cells.filter(Boolean);
+            }
+
+            #differenceCells() {
+                const state = this.#state;
+                return this.#digitCells(state.resultRow, state.resultDigits, state.resultDecimals)
+                    .filter((cell) => cell.textContent);
+            }
+
+            #borrowCells() {
+                const mark = document.querySelector('.borrow-mark');
+                const step = this.#state.steps[Math.min(this.#state.stepIndex, this.#state.steps.length - 1)];
+                const target = mark ? mark.parentElement : (step ? document.getElementById(`cell-0-${step.col - 1}`) : null);
+                return target ? [target] : [];
+            }
+
+            #highlightTerm(term) {
+                const state = this.#state;
+                if (term === 'minuend') return this.#paint('term-highlight-blue', () => this.#digitCells(0, state.firstDigits, state.firstDecimals));
+                if (term === 'subtrahend') return this.#paint('term-highlight-amber', () => this.#digitCells(1, state.secondDigits, state.secondDecimals));
+                if (term === 'difference') return this.#paint('term-highlight-green', () => this.#differenceCells());
+                if (term === 'borrow') return this.#paint('term-highlight-purple', () => this.#borrowCells());
             }
 
             // ---------------------------------------------------------------

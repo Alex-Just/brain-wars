@@ -1681,50 +1681,45 @@
             // Terminology highlights
             // ---------------------------------------------------------------
 
-            #highlightTerm(term) {
-                const clearHighlight = (cls) => {
-                    document.querySelectorAll('.' + cls).forEach(c => c.classList.remove(cls));
+            // Paint every element `collect` returns, then drop the paint again.
+            #paint(cls, collect) {
+                const clear = () => {
+                    document.querySelectorAll('.' + cls).forEach((el) => el.classList.remove(cls));
                 };
+                clear();
+                collect().forEach((el) => el.classList.add(cls));
+                setTimeout(clear, 1000);
+            }
 
-                if (term === 'multiplicand') {
-                    clearHighlight('term-highlight-blue');
-                    for (let i = 0; i < this.#state.multiplicandDigits.length; i++) {
-                        const cell = document.getElementById(`cell-0-${this.#state.baseCol - i}`);
-                        if (cell) cell.classList.add('term-highlight-blue');
-                    }
-                    setTimeout(() => clearHighlight('term-highlight-blue'), 1000);
-
-                } else if (term === 'multiplier') {
-                    clearHighlight('term-highlight-amber');
-                    for (let j = 0; j < this.#state.multiplierDigits.length; j++) {
-                        const cell = document.getElementById(`cell-1-${this.#state.baseCol - j}`);
-                        if (cell) cell.classList.add('term-highlight-amber');
-                    }
-                    setTimeout(() => clearHighlight('term-highlight-amber'), 1000);
-
-                } else if (term === 'product') {
-                    clearHighlight('term-highlight-green');
-                    for (let c = 0; c < this.#state.productDigits.length; c++) {
-                        const cell = document.getElementById(`cell-${this.#state.resultRow}-${this.#state.baseCol - c}`);
-                        if (cell) cell.classList.add('term-highlight-green');
-                    }
-                    setTimeout(() => clearHighlight('term-highlight-green'), 1000);
-
-                } else if (term === 'partial') {
-                    clearHighlight('term-highlight-purple');
-                    const step = this.#state.steps[Math.min(this.#state.stepIndex, this.#state.steps.length - 1)];
-                    if (step) {
-                        const singleDigitMultiplier = this.#state.multiplierDigits.length === 1;
-                        const partialRow = singleDigitMultiplier
-                            ? this.#state.resultRow
-                            : (step.row < this.#state.resultRow ? step.row : this.#state.resultRow - 1);
-                        for (let c = 0; c < this.#state.numCols; c++) {
-                            const cell = document.getElementById(`cell-${partialRow}-${c}`);
-                            if (cell && cell.textContent) cell.classList.add('term-highlight-purple');
-                        }
-                    }
-                    setTimeout(() => clearHighlight('term-highlight-purple'), 1000);
+            #digitCells(row, digits) {
+                const cells = [];
+                for (let i = 0; i < digits.length; i++) {
+                    cells.push(document.getElementById(`cell-${row}-${this.#state.baseCol - i}`));
                 }
+                return cells.filter(Boolean);
+            }
+
+            #partialCells() {
+                const step = this.#state.steps[Math.min(this.#state.stepIndex, this.#state.steps.length - 1)];
+                if (!step) return [];
+                const singleDigitMultiplier = this.#state.multiplierDigits.length === 1;
+                const partialRow = singleDigitMultiplier
+                    ? this.#state.resultRow
+                    : (step.row < this.#state.resultRow ? step.row : this.#state.resultRow - 1);
+                const cells = [];
+                for (let c = 0; c < this.#state.numCols; c++) {
+                    const cell = document.getElementById(`cell-${partialRow}-${c}`);
+                    if (cell && cell.textContent) cells.push(cell);
+                }
+                return cells;
+            }
+
+            #highlightTerm(term) {
+                const state = this.#state;
+                if (term === 'multiplicand') return this.#paint('term-highlight-blue', () => this.#digitCells(0, state.multiplicandDigits));
+                if (term === 'multiplier') return this.#paint('term-highlight-amber', () => this.#digitCells(1, state.multiplierDigits));
+                if (term === 'product') return this.#paint('term-highlight-green', () => this.#digitCells(state.resultRow, state.productDigits));
+                if (term === 'partial') return this.#paint('term-highlight-purple', () => this.#partialCells());
             }
 
             // ---------------------------------------------------------------

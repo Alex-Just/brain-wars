@@ -1315,48 +1315,56 @@
                 }
             }
 
-            #highlightTerm(term) {
-                const clearHighlight = (cls) => {
-                    document.querySelectorAll('.' + cls).forEach(c => c.classList.remove(cls));
+            // Paint every element `collect` returns, then drop the paint again.
+            #paint(cls, collect) {
+                const clear = () => {
+                    document.querySelectorAll('.' + cls).forEach((el) => el.classList.remove(cls));
                 };
+                clear();
+                collect().forEach((el) => el.classList.add(cls));
+                setTimeout(clear, 1000);
+            }
 
-                if (term === 'dividend') {
-                    clearHighlight('term-highlight-blue');
-                    const sDividend = this.#state.dividendDigits;
-                    for (let i = 0; i < sDividend.length; i++) {
-                        const cell = document.getElementById(`cell-0-${this.#dividendColOfDigit(i)}`);
-                        if (cell) cell.classList.add('term-highlight-blue');
-                    }
-                    setTimeout(() => clearHighlight('term-highlight-blue'), 1000);
-
-                } else if (term === 'divisor') {
-                    clearHighlight('term-highlight-amber');
-                    const sDivisor = String(this.#state.divisor);
-                    for (let i = 0; i < sDivisor.length; i++) {
-                        const cell = document.getElementById(`cell-0-${this.#state.divisorCol + i}`);
-                        if (cell) cell.classList.add('term-highlight-amber');
-                    }
-                    setTimeout(() => clearHighlight('term-highlight-amber'), 1000);
-
-                } else if (term === 'quotient') {
-                    clearHighlight('term-highlight-green');
-                    for (let i = 0; i < this.#state.quotientLen; i++) {
-                        const cell = document.getElementById(`cell-1-${this.#quotientColOfStep(i)}`);
-                        if (cell) cell.classList.add('term-highlight-green');
-                    }
-                    setTimeout(() => clearHighlight('term-highlight-green'), 1000);
-
-                } else if (term === 'incomplete') {
-                    clearHighlight('term-highlight-purple');
-                    if (this.#state.currentStepIndex < this.#state.steps.length) {
-                        const range = this.#getPartialRange(this.#state.currentStepIndex);
-                        for (let c = range.startCol; c <= range.endCol; c++) {
-                            const cell = document.getElementById(`cell-${range.row}-${c}`);
-                            if (cell) cell.classList.add('term-highlight-purple');
-                        }
-                        setTimeout(() => clearHighlight('term-highlight-purple'), 1000);
-                    }
+            #dividendCells() {
+                const cells = [];
+                for (let i = 0; i < this.#state.dividendDigits.length; i++) {
+                    cells.push(document.getElementById(`cell-0-${this.#dividendColOfDigit(i)}`));
                 }
+                return cells.filter(Boolean);
+            }
+
+            #divisorCells() {
+                const digits = String(this.#state.divisor);
+                const cells = [];
+                for (let i = 0; i < digits.length; i++) {
+                    cells.push(document.getElementById(`cell-0-${this.#state.divisorCol + i}`));
+                }
+                return cells.filter(Boolean);
+            }
+
+            #quotientCells() {
+                const cells = [];
+                for (let i = 0; i < this.#state.quotientLen; i++) {
+                    cells.push(document.getElementById(`cell-1-${this.#quotientColOfStep(i)}`));
+                }
+                return cells.filter(Boolean);
+            }
+
+            #incompleteCells() {
+                if (this.#state.currentStepIndex >= this.#state.steps.length) return [];
+                const range = this.#getPartialRange(this.#state.currentStepIndex);
+                const cells = [];
+                for (let c = range.startCol; c <= range.endCol; c++) {
+                    cells.push(document.getElementById(`cell-${range.row}-${c}`));
+                }
+                return cells.filter(Boolean);
+            }
+
+            #highlightTerm(term) {
+                if (term === 'dividend') return this.#paint('term-highlight-blue', () => this.#dividendCells());
+                if (term === 'divisor') return this.#paint('term-highlight-amber', () => this.#divisorCells());
+                if (term === 'quotient') return this.#paint('term-highlight-green', () => this.#quotientCells());
+                if (term === 'incomplete') return this.#paint('term-highlight-purple', () => this.#incompleteCells());
             }
 
             #startNewRound() {
