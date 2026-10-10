@@ -71,6 +71,16 @@ Open <http://localhost:8000>.
 
 `index.html` also opens from disk for play. The service worker needs `http://` or `https://`.
 
+## Git hooks
+
+This repository tracks hooks in `.githooks/`. Enable them in your clone once:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+`commit-msg` strips `Co-authored-by` trailers from commit messages. It is a guardrail, not a guarantee: `git commit --no-verify`, merge commits, and messages edited in a web UI bypass it.
+
 ## Tests
 
 ```bash

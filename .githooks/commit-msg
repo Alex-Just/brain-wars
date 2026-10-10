@@ -1,0 +1,27 @@
+#!/bin/sh
+#
+# commit-msg hook: strip "Co-authored-by" trailers from the commit message.
+#
+# Enable it in a clone with:
+#   git config core.hooksPath .githooks
+#
+# This is a guardrail, not a guarantee: `git commit --no-verify`, merge
+# commits, and messages edited in a web UI bypass it.
+#
+
+msg_file="$1"
+
+# Nothing to do if git did not hand us a message file.
+[ -n "$msg_file" ] && [ -f "$msg_file" ] || exit 0
+
+# Drop any line that is a Co-authored-by trailer (case-insensitive,
+# tolerant of leading whitespace).
+tmp="$(mktemp)" || exit 0
+grep -v -i -E '^[[:space:]]*co-authored-by[[:space:]]*:' "$msg_file" > "$tmp" || true
+
+if ! cmp -s "$msg_file" "$tmp"; then
+  cat "$tmp" > "$msg_file"
+fi
+
+rm -f "$tmp"
+exit 0
