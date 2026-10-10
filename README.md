@@ -5,7 +5,7 @@
 <h1 align="center">Brain Wars</h1>
 
 <p align="center">
-  <em>Playful math practice for kids: a challenge mode plus ten games, three languages, and offline play.</em>
+  <em>Math practice for children: ten games, a challenge mode, three languages, and offline play.</em>
 </p>
 
 <p align="center">
@@ -15,50 +15,51 @@
   <img src="https://img.shields.io/badge/dependencies-none-brightgreen?style=flat-square" alt="No dependencies">
 </p>
 
-Brain Wars is a collection of small, playful math games for primary-school children. The whole app is plain HTML, CSS and JavaScript — no frameworks, no build step, no accounts, no third-party trackers. A service worker caches every page on the first visit, so it installs like an app and keeps working offline, and the interface comes in **English, Spanish and Russian**.
+Brain Wars is a set of small math games for primary-school children. The app is plain HTML, CSS, and JavaScript. It has no `package.json` and no accounts. A service worker stores the pages on the first visit, so the app installs on a home screen and works offline. The languages are English, Spanish, and Russian. A new device starts in Spanish.
 
 **Play it now → <https://alex-just.github.io/brain-wars/>**
 
 ## Games
 
-| Game | What it is |
+| Game | What it does |
 | --- | --- |
-| **Challenge** | A mixed run: pick 1–50 games and a difficulty (1–20). Every game type is dealt once before any repeats, and mistakes bring that game back later. A progress bar tracks the run, and the results screen awards up to three stars. |
-| **Follow the Leader** | Watch a sequence of squares light up, then repeat it. The sequence grows and speeds up as you climb. |
-| **Unfollow the Leader** | Follow the Leader in pink, played backwards: the last square shown is the first one to tap. |
-| **Mental Math** | Choose the missing operator (+, −, ×, ÷) that makes the equation true. |
+| **Challenge** | A mixed run of 1–50 games at one difficulty from 1 to 20. Each game type appears once before any repeat. A mistake sends that game to the end of the queue. The results screen awards up to three stars. |
+| **Follow the Leader** | Watch squares light up, then tap them in the same order. The sequence grows and speeds up. |
+| **Unfollow the Leader** | The same game in reverse: tap the last square first. |
+| **Mental Math** | Choose the missing operator (`+`, `−`, `×`, `÷`). |
 | **What Time Is It?** | Read an analog clock and pick the matching time. |
-| **Long Division** | Divide step by step in the Russian bracket layout — quotient digit, product, remainder, bring down. |
-| **Long Multiplication** | Multiply in columns, digit by digit, including carries and partial products. |
-| **Long Addition** | Add in columns, including carries. |
-| **Long Subtraction** | Subtract in columns, including borrowing. |
-| **Money Problems** | Euro word problems: add up purchases and work out the change. |
-| **Elapsed Time** | Find the end time, the start time, or how long something took; type hours and minutes like a digital clock. Story problems join in from level 7. |
-| **Time Calculations** | Add and subtract hours and minutes in columns: carry 60 minutes into an hour, borrow an hour as 60 minutes, guided step by step. |
-| **Money Calculations** | Add and subtract euros and cents in columns: carry 100 cents into a euro, borrow a euro as 100 cents, guided step by step. |
+| **Long Division** | Divide in the Russian bracket layout: quotient digit, product, remainder, bring down. |
+| **Long Multiplication** | Multiply in columns, with carries and partial products. |
+| **Long Addition** | Add in columns, with carries. |
+| **Long Subtraction** | Subtract in columns, with borrowing. |
+| **Money Problems** | Euro word problems: add the purchases and find the change. |
+| **Elapsed Time** | Find the end time, the start time, or the duration. Type hours and minutes. Story problems start at level 7. |
+| **Time Calculations** | Add and subtract hours and minutes in columns. Sixty minutes make one hour. |
+| **Money Calculations** | Add and subtract euros and cents in columns. One hundred cents make one euro. |
 
-**Currently hidden:** *Follow the Leader* and *Unfollow the Leader* — their pages stay in the repository (reachable by direct URL) but they are not offered on the hub or in Challenge mode.
+Follow the Leader and Unfollow the Leader stay in the repository. The hub and Challenge mode omit them. Open those pages by URL.
 
 ## Features
 
-- **Offline-first PWA.** The service worker precaches every page, script and icon, so the app installs to a home screen and plays with no connection; offline navigations fall back to the hub.
-- **Three languages, one code path.** EN / ES / RU dictionaries with identical key sets (the tests enforce it), a flag toggle on every page and locale-aware number formatting. A fresh device starts in Spanish, and any language you pick stays on the device — in the games and in Challenge mode alike.
-- **Levels that fit the child.** Eight games offer a menu of 20 levels; the other two ramp difficulty automatically; Challenge mode pins one difficulty across the whole run.
-- **Custom equations.** All four column-arithmetic games accept numbers you type in — whole numbers or decimals, results up to eight digits.
-- **Kid-friendly and accessible.** Large touch targets, safe-area padding for notched phones, `prefers-reduced-motion` support, ARIA labels and live regions.
-- **Tested without a framework.** Plain Node.js scripts validate the translations, page wiring, game registry, challenge queue, question generators and service worker precache.
+- **Offline app.** The service worker precaches the pages, scripts, and icons. The app installs on a home screen. An unknown page opened offline falls back to the hub.
+- **Three languages.** English, Spanish, and Russian share one set of keys. Every page has a language toggle. The choice stays on the device, including in Challenge mode.
+- **Levels.** Eight games offer 20 levels. Mental Math and What Time Is It? raise the difficulty during play. Challenge mode uses one difficulty for the whole run.
+- **Typed numbers.** The four column games accept numbers you type, including decimals. A result can have up to eight digits.
+- **Large targets.** The layout respects the phone safe area and `prefers-reduced-motion`. Controls have ARIA labels.
 
-## Analytics (self-hosted)
+## Analytics
 
-The live app records one event per answer attempt in the author's own Cloudflare database: the
-game, the result, the time, a random device id, and the request's IP address and country (set by
-Cloudflare's edge). IP addresses are cleared after 90 days. Nothing is sent when no endpoint is
-configured — the repository ships disabled. No cookies, no third parties, no accounts. To run your
-own, see [`analytics-worker/README.md`](analytics-worker/README.md).
+The live app sends one row per answer attempt to its own Cloudflare Worker. The row stores the game, the result (`1` right or `0` wrong), the device time, a random device id, and the request IP and country. The worker clears the IP after 90 days. The other columns stay. The app sets no cookies and creates no accounts.
+
+Telling-time stores a wrong tap and skips the completion that follows that same tap. Every other game stores the wrong attempt and the solved attempt as two rows.
+
+Read the rows in the [D1 console](https://dash.cloudflare.com/05e38f321dad15a6144629ca4dbb5fc7/workers/d1/databases/dde0c3a3-95c0-490d-800b-7ed9debd4197). Deploy steps, limits, and queries are in [`analytics-worker/README.md`](analytics-worker/README.md).
+
+Capture runs when `ENDPOINT` in `analytics.js` is set. This repository points it at the live ingest URL.
 
 ## Getting started
 
-There is nothing to build and nothing to install — not even a `package.json`:
+Clone the repository and start a static server:
 
 ```bash
 git clone https://github.com/Alex-Just/brain-wars.git
@@ -66,47 +67,47 @@ cd brain-wars
 python3 -m http.server 8000
 ```
 
-Then open <http://localhost:8000>.
+Open <http://localhost:8000>.
 
-Opening `index.html` straight from disk also works for playing; service workers need a secure context, so use a local server (or any HTTPS host) to try installation and offline mode.
+`index.html` also opens from disk for play. The service worker needs `http://` or `https://`.
 
 ## Tests
 
 ```bash
-node test-i18n.js   # translations, pages, registry, challenge queue, question generators
-node test-sw.js     # manifest, page wiring, service worker precache
-node test-analytics.js # analytics client core and worker
+node test-i18n.js      # translations, pages, registry, challenge queue, question generators
+node test-sw.js        # manifest, page wiring, service worker precache
+node test-analytics.js # analytics client and worker
 ```
 
-Both scripts use only Node's standard library, so no `npm install` is needed.
+These scripts use Node's standard library only.
 
 ## Project structure
 
 ```text
 brain-wars/
 ├── index.html            # Hub: renders the game grid from games.js
-├── challenge.html        # Challenge setup and results screen
-├── challenge.js          # Challenge run model + engine injected into game pages
-├── games.js              # The single game registry: pages, level modes, signals, icons
-├── analytics.js          # capture, queue, and flush (disabled until ENDPOINT is set)
-├── i18n.js               # EN / ES / RU dictionaries, language toggle, number formatting
-├── elapsed-time.js       # Elapsed-time question generator (shared with the tests)
-├── time-calculations.js  # Time add/subtract problems and steps (shared with the tests)
-├── money-calculations.js # Money add/subtract problems and steps (shared with the tests)
-├── *.html                # One self-contained page per game (markup, styles and logic
-│                         #   together): follow-the-leader, unfollow-the-leader, operations,
-│                         #   telling-time-es, long-division, long-multiplication,
-│                         #   long-addition, long-subtraction, money-problems, elapsed-time,
-│                         #   time-calculations, money-calculations
-├── pwa.js                # Registers the service worker on secure contexts
-├── sw.js                 # Offline-first service worker (precache + fetch strategies)
-├── manifest.json         # PWA metadata and icons
-├── icons/                # App and home-screen icons
-├── test-i18n.js          # Node tests described above
-├── test-sw.js            # Node tests described above
-├── test-analytics.js     # Node tests for the client core and the worker
-├── analytics-worker/     # Cloudflare worker, schema, and deploy notes
-└── clock/, transformers-logo.svg   # Unused early artwork
+├── challenge.html        # Challenge setup and results
+├── challenge.js          # Challenge run model and the engine on game pages
+├── games.js              # Game registry: pages, levels, signals, icons
+├── analytics.js          # Captures attempts, queues them, and sends them
+├── i18n.js               # EN / ES / RU text, language toggle, number format
+├── elapsed-time.js       # Elapsed-time questions, shared with the tests
+├── time-calculations.js  # Time add and subtract problems, shared with the tests
+├── money-calculations.js # Money add and subtract problems, shared with the tests
+├── *.html                # One page per game: follow-the-leader, unfollow-the-leader,
+│                         #   operations, telling-time-es, long-division,
+│                         #   long-multiplication, long-addition, long-subtraction,
+│                         #   money-problems, elapsed-time, time-calculations,
+│                         #   money-calculations
+├── pwa.js                # Registers the service worker on http and https
+├── sw.js                 # Precache and fetch rules. VERSION is v7
+├── manifest.json         # PWA name and icons
+├── icons/                # App icons
+├── analytics-worker/     # Worker, D1 schema, and Wrangler config
+├── test-i18n.js          # Node tests for pages, text, and generators
+├── test-sw.js            # Node tests for the service worker
+├── test-analytics.js     # Node tests for the client and the worker
+└── clock/, transformers-logo.svg   # Spare artwork
 ```
 
 ## How it works
@@ -119,29 +120,29 @@ flowchart LR
     Game --> Engine["challenge.js engine<br/>(signals → next step)"]
 ```
 
-**One registry.** `games.js` is the single list of games. The hub renders its tiles from it, Challenge mode deals its queue from it, and both test files verify pages and precache against it. Each entry declares how a game takes a level (`picker` — the page has its own level menu; `startup` — the page reads the challenge level while starting a round) and how to spot a finished round or a mistake through simple DOM signals (`class`, `style` or localized `text` on a selector).
+**Registry.** `games.js` is the list of games. The hub draws its tiles from that list. Challenge mode builds its queue from the same list. `picker` means the page has a level menu. `startup` means the page reads the challenge level when a round starts. Each game names the DOM signal for a finished round and the signal for a mistake.
 
-**Challenge mode.** `challenge.js` plays two roles: the run model used by `challenge.html` (queue and progress saved in `localStorage`, so an interrupted run can continue), and an engine injected into any game opened with `?challenge=1`. The engine draws the top progress bar, pins the level, polls the game's completion and mistake signals four times a second, and moves the player to the next step. Every step replaces the current history entry, so the back button always exits to the hub instead of replaying an earlier round. Games solved with mistakes come back later in the queue and mark the run with a ⚠; the results screen awards 1–3 stars based on retries.
+**Challenge.** `challenge.js` saves the run for `challenge.html`. The same file runs inside a game opened with `?challenge=1`. It draws the progress bar, pins the level, and reads the game signals four times a second. Each step replaces the history entry, so Back returns to the hub. A solved game that had mistakes returns later in the queue and marks the run with ⚠. The results screen awards 1–3 stars.
 
-**Translations.** `i18n.js` holds three dictionaries with identical key sets, a `data-i18n` attribute pass, `I18n.t()` interpolation, a per-language decimal separator, and a language toggle that every page mounts. A fresh device starts in Spanish; the chosen language is remembered in `localStorage` and the challenge steps keep it too.
+**Languages.** `i18n.js` holds three dictionaries with the same keys. A new device starts in Spanish. The chosen language stays in `localStorage`.
 
-**Offline.** `sw.js` precaches the whole app on install and cleans old caches on activate. Navigations use network-first (fresh when online; cached page, then hub fallback, when offline), while everything else is stale-while-revalidate. Precache and runtime fetches bypass or revalidate the browser's HTTP cache, a new worker takes over as soon as its fresh precache is ready, and the open page reloads once onto it — so installed copies update on the next launch. Bump `VERSION` when the precache list changes; content edits to listed files refresh by themselves.
+**Offline.** `sw.js` precaches the app on install and deletes old caches on activate. A page load uses the network, then the cache, then the hub. Other files come from the cache and refresh in the background. A new worker takes over when its precache is ready, and the open page reloads once. Bump `VERSION` when you change the precache list.
 
-## Deploying
+## Deploy
 
-The app is plain static files, so GitHub Pages publishes the repository root from `master` to <https://alex-just.github.io/brain-wars/>. Any static host (Netlify, Cloudflare Pages, S3, a Raspberry Pi…) works the same way — there is no build command.
+GitHub Pages publishes the repository root from `master` to <https://alex-just.github.io/brain-wars/>. Any static host works the same way. There is no build command.
 
-## Adding a game
+The answers worker deploys separately. See [`analytics-worker/README.md`](analytics-worker/README.md).
 
-The registry, the tests and the service worker exist to keep new pages consistent. To add a game:
+## Add a game
 
-1. Create `<game>.html` as a self-contained page, copying the shared head wiring (manifest, theme colour, icons, `pwa.js`), the `i18n.js` + `games.js` + `challenge.js` scripts, a back arrow and the language toggle.
-2. Register it in `games.js`: `id`, `file`, `titleKey`, level mode (`picker` or `startup`), completion and mistake signals, and a hub icon.
-3. Add the new keys to all three dictionaries in `i18n.js` — the tests fail if the key sets differ.
+1. Create `<game>.html`. Copy the shared head (manifest, icons, `pwa.js`), the back arrow, and the language toggle. Load the scripts in this order: `i18n.js`, `games.js`, `analytics.js`, the game script, `challenge.js`.
+2. Add the game to `games.js`: `id`, `file`, `titleKey`, level mode (`picker` or `startup`), completion signal, mistake signal, and hub icon.
+3. Add the new keys to all three dictionaries in `i18n.js`.
 4. Add the page to `PRECACHE` in `sw.js` and bump `VERSION`.
-5. Update the expected page count in `test-sw.js` and add the page to `INTEGRATED_PAGES` in `test-i18n.js`.
-6. Run `node test-i18n.js && node test-sw.js`, then play a round.
+5. Add the page to `INTEGRATED_PAGES` in `test-i18n.js` and update the page count in `test-sw.js`.
+6. Run `node test-i18n.js && node test-sw.js && node test-analytics.js`, then play one round.
 
 ---
 
-Feedback, bugs and ideas are welcome in the [issues](https://github.com/Alex-Just/brain-wars/issues).
+Report bugs and ideas in the [issues](https://github.com/Alex-Just/brain-wars/issues).

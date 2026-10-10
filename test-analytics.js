@@ -135,11 +135,13 @@ check('reconcileQueue keeps the live queue when the send fails', () => {
     assert.deepStrictEqual(Analytics.reconcileQueue(live, snapshot, snapshot), [{ id: 'a' }, { id: 'c' }]);
 });
 
-check('the worker guide matches the rate limit and the enablement commit', () => {
+check('the worker guide documents the live ingest and the rate limit', () => {
     const readme = fs.readFileSync(path.join(__dirname, 'analytics-worker', 'README.md'), 'utf8');
-    assert.ok(!readme.includes('"ts":0'), 'ts 0 is outside the validation window');
+    assert.ok(readme.includes('https://brain-wars-answers.alex-just.workers.dev/ingest'), 'the guide names the live ingest URL');
     assert.ok(readme.includes('received_at'), 'the count uses received_at');
-    assert.ok(readme.includes('v7'), 'enabling capture bumps the service worker to v7');
+    assert.ok(readme.includes('wrangler deploy'), 'deploy uses Wrangler');
+    assert.ok(readme.includes('v7'), 'the guide names the current service worker version');
+    assert.ok(!readme.includes('"ts":0'), 'ts 0 is outside the validation window');
 });
 
 console.log('analytics worker');

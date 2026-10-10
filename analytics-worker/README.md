@@ -1,61 +1,78 @@
 # Answers analytics worker
 
-Ingest endpoint for Brain Wars answer events. One record per answer attempt; duplicate event ids
-are ignored, so the client may resend any batch safely.
+This worker stores one row per answer attempt in the D1 database `brain-wars-answers`.
+
+The live ingest URL is `https://brain-wars-answers.alex-just.workers.dev/ingest`.
+
+The worker ignores a repeated event id. The client can send the same batch again.
+
+## Limits
+
+- A request can hold 200 events and 65536 bytes.
+- One IP can add 5000 events in 24 hours. The count uses `received_at`.
+- `ts` must fall within the last two years or the next two days. The worker still counts an accepted old `ts` by arrival time.
+- The cron at 04:00 UTC clears `ip` on rows older than 90 days. The other columns stay.
+- CORS allows `alex-just.github.io`, `localhost`, and `127.0.0.1`.
 
 ## Deploy
 
-1. Create a D1 database named `brain-wars-answers`.
-2. Run `schema.sql` in the D1 console.
-3. Create a Worker, paste `worker.mjs`, and bind the database as `DB` (Settings → Bindings).
-4. Add a daily Cron Trigger for the retention cleanup.
-5. Copy `https://<name>.<account>.workers.dev/ingest` into `ENDPOINT` in `../analytics.js`. In the same commit, bump `VERSION` in `../sw.js` from `v6` to `v7`. Commit `analytics.js` and `sw.js`, then push. The service worker caches `analytics.js`. Without the version bump, the first load still runs the cached file, and `ENDPOINT` stays empty.
-
-Keep the pasted copy and `worker.mjs` in sync — edit one, update the other.
-
-## Manual checks
+From this directory, run:
 
 ```bash
-URL=https://<name>.<account>.workers.dev/ingest
-EVENT='{"events":[{"id":"e-manual-0001","game":"time-calculations","correct":true,"ts":'$(date +%s000)',"device":"dev-test"}]}'
-
-curl -i -X POST "$URL" -H 'Content-Type: text/plain' -d "$EVENT"   # 200, inserted:1
-curl -i -X POST "$URL" -H 'Content-Type: text/plain' -d "$EVENT"   # 200, inserted:0 (idempotent)
-curl -i "$URL"                                                     # 405
-curl -i -X POST "$URL" -H 'Content-Type: text/plain' -d 'garbage'  # 400
+npx wrangler deploy
 ```
 
-Backdated timestamps must not bypass the rate limit. Send events with a unique id and a `ts` inside the last two years (now, or now minus one day). Once that IP has 5000 accepted events in 24 h, the response is `429`. The count uses `received_at`, not `ts`. A `ts` of 0 is older than two years, so validation rejects it and the count does not move.
+`wrangler.toml` names the worker, binds the database as `DB`, and sets the daily cron. Deploy `worker.mjs`.
 
-## Capture matrix
+When you change `analytics.js` or the precache list, bump `VERSION` in `sw.js` in the same commit and push `master`. The service worker caches `analytics.js`. The installed app loads the new file on the next visit. The current `VERSION` is `v7`.
 
-Run once before enabling `ENDPOINT`, with the browser console open (zero errors expected):
+## Read the rows
 
-| Game | Wrong attempt | Solved problem | Expected rows |
-| --- | --- | --- | --- |
-| operations | tap a wrong operator | solve one | one `false`, one `true` |
-| telling-time | tap a wrong time | solve one | one `false`, one `true` (never a `true` after a wrong tap) |
-| follow-the-leader | miss a square | finish one | one `false`, one `true` |
-| unfollow-the-leader | miss a square | finish one | one `false`, one `true` |
-| long-division | type a wrong digit | solve one | one `false`, one `true` |
-| long-multiplication | type a wrong digit | solve one | one `false`, one `true` |
-| long-addition | type a wrong digit | solve one | one `false`, one `true` |
-| long-subtraction | type a wrong digit | solve one | one `false`, one `true` |
-| money-problems | answer a step wrong | solve one | one `false`, one `true` |
-| elapsed-time | answer wrong | solve one | one `false`, one `true` |
-| time-calculations | answer a step wrong | solve one | one `false`, one `true` |
-| money-calculations | answer a step wrong | solve one | one `false`, one `true` |
-
-Then: play offline (DevTools) → no console errors; go online → rows appear with `ip`, `country`,
-`device`.
-
-## Identifying your kid's rows
+Open the [brain-wars-answers console](https://dash.cloudflare.com/05e38f321dad15a6144629ca4dbb5fc7/workers/d1/databases/dde0c3a3-95c0-490d-800b-7ed9debd4197).
 
 ```sql
-SELECT * FROM answers WHERE country = 'ES' ORDER BY ts DESC;          -- coarse
-SELECT * FROM answers WHERE device IN ('…', '…') ORDER BY ts DESC;    -- confirmed devices
+SELECT datetime(ts / 1000, 'unixepoch') AS when_utc,
+       game,
+       correct,
+       device,
+       country
+FROM answers
+WHERE country = 'ES'
+ORDER BY ts DESC
+LIMIT 50;
 ```
 
-After a few days, list recent rows from Spain and copy the `device` values into your notes. An
-installed iOS PWA and Safari on the same phone keep separate storage, so one phone can produce two
-ids. IP addresses are cleared after 90 days by the daily cron; results are kept.
+`correct` is `1` for a right attempt and `0` for a wrong attempt. `ts` is the device clock, in milliseconds.
+
+When you know the device, query that id:
+
+```sql
+SELECT datetime(ts / 1000, 'unixepoch') AS when_utc, game, correct
+FROM answers
+WHERE device IN ('paste-id-here')
+ORDER BY ts DESC;
+```
+
+The installed app and Safari on one phone keep separate storage. One phone can produce two device ids.
+
+From this directory, the same query runs in the terminal:
+
+```bash
+npx wrangler d1 execute brain-wars-answers --remote --command "SELECT datetime(ts / 1000, 'unixepoch') AS when_utc, game, correct, device, country FROM answers ORDER BY ts DESC LIMIT 50"
+```
+
+## Check the endpoint
+
+```bash
+URL=https://brain-wars-answers.alex-just.workers.dev/ingest
+EVENT='{"events":[{"id":"e-manual-0001","game":"time-calculations","correct":true,"ts":'$(date +%s000)',"device":"dev-test"}]}'
+
+curl -i -X POST "$URL" -H 'Content-Type: text/plain' -d "$EVENT"
+curl -i -X POST "$URL" -H 'Content-Type: text/plain' -d "$EVENT"
+curl -i "$URL"
+curl -i -X POST "$URL" -H 'Content-Type: text/plain' -d 'garbage'
+```
+
+The first POST returns `inserted: 1`. The second POST returns `inserted: 0`. GET returns 405. A body that is not JSON returns 400.
+
+Use a new event id and a `ts` inside the last two years. A timestamp of zero is older than two years. The worker rejects that event, and the `received_at` count stays the same.
