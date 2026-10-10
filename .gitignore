@@ -1,2 +1,55 @@
-.idea
+# ---- macOS ----
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# ---- Editors / IDEs ----
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# ---- Node / JavaScript tooling ----
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm/
+.yarn/
+.pnp.*
+coverage/
+*.tsbuildinfo
+
+# ---- Cloudflare Workers / Wrangler ----
 .wrangler/
+.dev.vars
+.dev.vars.*
+worker-configuration.d.ts
+dist/
+
+# ---- Environment / secrets ----
+.env
+.env.local
+.env.*.local
+
+# ---- Playwright CLI scratch output ----
+.playwright-cli/
+
+# ---- Logs ----
+*.log
