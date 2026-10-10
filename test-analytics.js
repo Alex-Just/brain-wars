@@ -120,4 +120,67 @@ check('a network error counts as a transient failure', async () => {
     assert.strictEqual(result.backoff, 30000);
 });
 
-console.log('\nAll ' + passed + ' checks passed.');
+console.log('analytics worker');
+
+const Games = require('./games.js');
+
+(async () => {
+    const Worker = await import('./analytics-worker/worker.mjs');
+    const NOW = 1791700000000;
+    const DAY = 24 * 60 * 60 * 1000;
+
+    async function checkAsync(name, fn) {
+        try {
+            await fn();
+            passed++;
+            console.log('  ok - ' + name);
+        } catch (error) {
+            console.error('  FAIL - ' + name);
+            throw error;
+        }
+    }
+
+    const validEvent = (overrides) => Object.assign({
+        id: 'e-0123456789', game: 'time-calculations', correct: true, ts: NOW, device: 'dev-1'
+    }, overrides);
+
+    await checkAsync('GAME_IDS matches the registry ids', () => {
+        const expected = Games.all().map((game) => game.id)
+            .concat(['follow-the-leader', 'unfollow-the-leader']).sort();
+        assert.deepStrictEqual([...Worker.GAME_IDS].sort(), expected);
+    });
+
+    await checkAsync('validateEvents accepts a valid event', () => {
+        const result = Worker.validateEvents([validEvent()], NOW);
+        assert.strictEqual(result.valid.length, 1);
+        assert.strictEqual(result.rejected, 0);
+        assert.deepStrictEqual(result.valid[0], {
+            id: 'e-0123456789', game: 'time-calculations', correct: 1, ts: NOW, device: 'dev-1'
+        });
+    });
+
+    await checkAsync('validateEvents rejects bad fields and counts them', () => {
+        const result = Worker.validateEvents([
+            validEvent(),
+            validEvent({ id: 'short' }),
+            validEvent({ game: 'not-a-game' }),
+            validEvent({ correct: 'yes' }),
+            validEvent({ ts: NOW + 3 * DAY }),
+            validEvent({ ts: NOW - 3 * 365 * DAY }),
+            validEvent({ device: '' }),
+            null
+        ], NOW);
+        assert.strictEqual(result.valid.length, 1);
+        assert.strictEqual(result.rejected, 7);
+    });
+
+    await checkAsync('validateEvents rejects malformed batches', () => {
+        assert.strictEqual(Worker.validateEvents('nope', NOW), null);
+        assert.strictEqual(Worker.validateEvents(new Array(201).fill(validEvent()), NOW), null);
+    });
+
+    console.log('\nAll ' + passed + ' checks passed.');
+})().catch((error) => {
+    console.error(error);
+    process.exit(1);
+});
