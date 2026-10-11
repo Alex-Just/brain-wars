@@ -1,0 +1,6 @@
+{
+  "name": "brain-wars",
+  "private": true,
+  "type": "commonjs",
+  "description": "Static multiplication-practice games for GitHub Pages. Classic <script> files and CommonJS Node tests; no build step. The type field declares the module system explicitly so tools like Node and SonarJS do not have to guess."
+}
