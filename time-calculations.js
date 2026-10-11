@@ -157,24 +157,26 @@
         if (op === 'add') {
             const sum = a.minutes + b.minutes;
             if (sum >= 60) {
-                steps.push(step('minutesSum', String(sum)));
-                steps.push(step('carry', '1'));
-                steps.push(minutesStep(sum - 60));
-                steps.push(step('hours', String(a.hours + b.hours + 1)));
+                steps.push(
+                    step('minutesSum', String(sum)),
+                    step('carry', '1'),
+                    minutesStep(sum - 60),
+                    step('hours', String(a.hours + b.hours + 1))
+                );
             } else {
-                steps.push(minutesStep(sum));
-                steps.push(step('hours', String(a.hours + b.hours)));
+                steps.push(minutesStep(sum), step('hours', String(a.hours + b.hours)));
             }
             return steps;
         }
 
         if (a.minutes < b.minutes) {
-            steps.push(step('borrow', String(a.minutes + 60)));
-            steps.push(minutesStep(a.minutes + 60 - b.minutes));
-            steps.push(step('hours', String(a.hours - 1 - b.hours)));
+            steps.push(
+                step('borrow', String(a.minutes + 60)),
+                minutesStep(a.minutes + 60 - b.minutes),
+                step('hours', String(a.hours - 1 - b.hours))
+            );
         } else {
-            steps.push(minutesStep(a.minutes - b.minutes));
-            steps.push(step('hours', String(a.hours - b.hours)));
+            steps.push(minutesStep(a.minutes - b.minutes), step('hours', String(a.hours - b.hours)));
         }
         return steps;
     }

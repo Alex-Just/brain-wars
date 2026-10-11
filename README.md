@@ -85,6 +85,8 @@ git config core.hooksPath .githooks
 
 Neither hook is a guarantee. `--no-verify` skips them, merge commits skip `commit-msg`, and a clone that did not run the `git config` command has no hooks at all.
 
+The GitHub Actions workflow `.github/workflows/commit-message.yml` rejects any push or pull request whose commit messages contain a `Co-authored-by` trailer. That covers GitHub web edits and clones that skip the local hook.
+
 ## Code quality
 
 The `pre-push` hook runs [Qlty](https://qlty.sh) over the files in the commits being pushed. It compares them with the upstream branch, so existing issues never block a push. Only new issues in changed files do. The check is free, runs locally, and needs no account.

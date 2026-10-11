@@ -1,0 +1,44 @@
+name: Commit message
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  no-co-authored-by:
+    name: No Co-authored-by trailers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Reject Co-authored-by trailers
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.sha }}
+        run: |
+          set -eu
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            range="${BASE_SHA}..${HEAD_SHA}"
+          elif [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
+            range="$AFTER_SHA"
+          else
+            range="${BEFORE_SHA}..${AFTER_SHA}"
+          fi
+
+          matches="$(git log --format='%H%n%B%n---' "$range" | grep -n -i -E '^[[:space:]]*co-authored-by[[:space:]]*:' || true)"
+          if [ -n "$matches" ]; then
+            echo "Commit messages must not contain Co-authored-by trailers:"
+            echo "$matches"
+            exit 1
+          fi
+          echo "No Co-authored-by trailers in $range"

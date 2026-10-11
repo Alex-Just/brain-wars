@@ -7,7 +7,9 @@ const { I18n, createI18n } = require('./i18n.js');
 
 const LANGS = ['en', 'es', 'ru'];
 const HOURS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
-const MINUTES = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
+// Spoken phrases must work for every clock minute, not only the 5-minute teaching grid.
+const MINUTES = Array.from({ length: 60 }, (_, minute) => minute);
+const FIVE_MINUTE_GRID = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
 
 // Pages wired for i18n and the shared checks.
 const INTEGRATED_PAGES = ['index.html', 'long-division.html', 'long-multiplication.html', 'long-addition.html', 'long-subtraction.html', 'operations.html', 'follow-the-leader.html', 'unfollow-the-leader.html', 'telling-time-es.html', 'money-problems.html', 'elapsed-time.html', 'time-calculations.html', 'money-calculations.html', 'challenge.html'];
@@ -113,6 +115,24 @@ check('Spanish time phrases match expected forms', () => {
     assert.strictEqual(I18n.timePhrase('es', 1, 0), 'Es la una en punto');
     assert.strictEqual(I18n.timePhrase('es', 3, 30), 'Son las tres y media');
     assert.strictEqual(I18n.timePhrase('es', 3, 45), 'Son las cuatro menos cuarto');
+});
+
+check('off-grid minutes still produce real words in every language', () => {
+    assert.strictEqual(I18n.timePhrase('en', 6, 7), "It's seven past six");
+    assert.strictEqual(I18n.timePhrase('en', 6, 53), "It's seven to seven");
+    assert.strictEqual(I18n.timePhrase('es', 6, 7), 'Son las seis y siete');
+    assert.strictEqual(I18n.timePhrase('es', 6, 53), 'Son las siete menos siete');
+    assert.strictEqual(I18n.timePhrase('ru', 6, 7), 'Семь минут седьмого');
+    assert.strictEqual(I18n.timePhrase('ru', 6, 53), 'Без семи семь');
+});
+
+check('the five-minute teaching grid still matches the known forms', () => {
+    FIVE_MINUTE_GRID.forEach((minute) => {
+        LANGS.forEach((lang) => {
+            const phrase = I18n.timePhrase(lang, 4, minute);
+            assert.ok(phrase && !phrase.includes('undefined'), `${lang} 4:${minute} -> ${phrase}`);
+        });
+    });
 });
 
 check('every hour/minute combination is generated in en, es, ru', () => {

@@ -144,24 +144,26 @@
         if (op === 'add') {
             const sum = a.cents + b.cents;
             if (sum >= 100) {
-                steps.push(step('centsSum', String(sum)));
-                steps.push(step('carry', '1'));
-                steps.push(centsStep(sum - 100));
-                steps.push(step('euros', String(a.euros + b.euros + 1)));
+                steps.push(
+                    step('centsSum', String(sum)),
+                    step('carry', '1'),
+                    centsStep(sum - 100),
+                    step('euros', String(a.euros + b.euros + 1))
+                );
             } else {
-                steps.push(centsStep(sum));
-                steps.push(step('euros', String(a.euros + b.euros)));
+                steps.push(centsStep(sum), step('euros', String(a.euros + b.euros)));
             }
             return steps;
         }
 
         if (a.cents < b.cents) {
-            steps.push(step('borrow', String(a.cents + 100)));
-            steps.push(centsStep(a.cents + 100 - b.cents));
-            steps.push(step('euros', String(a.euros - 1 - b.euros)));
+            steps.push(
+                step('borrow', String(a.cents + 100)),
+                centsStep(a.cents + 100 - b.cents),
+                step('euros', String(a.euros - 1 - b.euros))
+            );
         } else {
-            steps.push(centsStep(a.cents - b.cents));
-            steps.push(step('euros', String(a.euros - b.euros)));
+            steps.push(centsStep(a.cents - b.cents), step('euros', String(a.euros - b.euros)));
         }
         return steps;
     }

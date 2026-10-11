@@ -923,13 +923,28 @@
         1: 'one', 2: 'two', 3: 'three', 4: 'four', 5: 'five', 6: 'six',
         7: 'seven', 8: 'eight', 9: 'nine', 10: 'ten', 11: 'eleven', 12: 'twelve'
     };
-    const EN_MINUTES = { 5: 'five', 10: 'ten', 20: 'twenty', 25: 'twenty-five' };
+    // Past/to minute words for 1–29. Fixed forms (quarter, half) are handled separately.
+    const EN_MINUTES = {
+        1: 'one', 2: 'two', 3: 'three', 4: 'four', 5: 'five', 6: 'six', 7: 'seven',
+        8: 'eight', 9: 'nine', 10: 'ten', 11: 'eleven', 12: 'twelve', 13: 'thirteen',
+        14: 'fourteen', 15: 'fifteen', 16: 'sixteen', 17: 'seventeen', 18: 'eighteen',
+        19: 'nineteen', 20: 'twenty', 21: 'twenty-one', 22: 'twenty-two', 23: 'twenty-three',
+        24: 'twenty-four', 25: 'twenty-five', 26: 'twenty-six', 27: 'twenty-seven',
+        28: 'twenty-eight', 29: 'twenty-nine'
+    };
 
     const ES_HOURS = {
         1: 'una', 2: 'dos', 3: 'tres', 4: 'cuatro', 5: 'cinco', 6: 'seis',
         7: 'siete', 8: 'ocho', 9: 'nueve', 10: 'diez', 11: 'once', 12: 'doce'
     };
-    const ES_MINUTES = { 5: 'cinco', 10: 'diez', 20: 'veinte', 25: 'veinticinco' };
+    const ES_MINUTES = {
+        1: 'uno', 2: 'dos', 3: 'tres', 4: 'cuatro', 5: 'cinco', 6: 'seis', 7: 'siete',
+        8: 'ocho', 9: 'nueve', 10: 'diez', 11: 'once', 12: 'doce', 13: 'trece',
+        14: 'catorce', 15: 'quince', 16: 'dieciséis', 17: 'diecisiete', 18: 'dieciocho',
+        19: 'diecinueve', 20: 'veinte', 21: 'veintiuno', 22: 'veintidós', 23: 'veintitrés',
+        24: 'veinticuatro', 25: 'veinticinco', 26: 'veintiséis', 27: 'veintisiete',
+        28: 'veintiocho', 29: 'veintinueve'
+    };
 
     const RU_HOURS_NOM = {
         1: 'час', 2: 'два', 3: 'три', 4: 'четыре', 5: 'пять', 6: 'шесть',
@@ -940,7 +955,34 @@
         6: 'шестого', 7: 'седьмого', 8: 'восьмого', 9: 'девятого', 10: 'десятого',
         11: 'одиннадцатого', 12: 'двенадцатого'
     };
-    const RU_MINUTES = { 5: 'Пять', 10: 'Десять', 20: 'Двадцать', 25: 'Двадцать пять' };
+    // Nominative count used in "N минут седьмого".
+    const RU_MINUTES = {
+        1: 'Одна', 2: 'Две', 3: 'Три', 4: 'Четыре', 5: 'Пять', 6: 'Шесть', 7: 'Семь',
+        8: 'Восемь', 9: 'Девять', 10: 'Десять', 11: 'Одиннадцать', 12: 'Двенадцать',
+        13: 'Тринадцать', 14: 'Четырнадцать', 15: 'Пятнадцать', 16: 'Шестнадцать',
+        17: 'Семнадцать', 18: 'Восемнадцать', 19: 'Девятнадцать', 20: 'Двадцать',
+        21: 'Двадцать одна', 22: 'Двадцать две', 23: 'Двадцать три', 24: 'Двадцать четыре',
+        25: 'Двадцать пять', 26: 'Двадцать шесть', 27: 'Двадцать семь', 28: 'Двадцать восемь',
+        29: 'Двадцать девять'
+    };
+    // Genitive count used in "Без N семь".
+    const RU_MINUTES_GEN = {
+        1: 'одной', 2: 'двух', 3: 'трёх', 4: 'четырёх', 5: 'пяти', 6: 'шести', 7: 'семи',
+        8: 'восьми', 9: 'девяти', 10: 'десяти', 11: 'одиннадцати', 12: 'двенадцати',
+        13: 'тринадцати', 14: 'четырнадцати', 15: 'пятнадцати', 16: 'шестнадцати',
+        17: 'семнадцати', 18: 'восемнадцати', 19: 'девятнадцати', 20: 'двадцати',
+        21: 'двадцати одной', 22: 'двадцати двух', 23: 'двадцати трёх', 24: 'двадцати четырёх',
+        25: 'двадцати пяти', 26: 'двадцати шести', 27: 'двадцати семи', 28: 'двадцати восьми',
+        29: 'двадцати девяти'
+    };
+
+    function ruMinuteUnit(minute) {
+        const last = minute % 10;
+        const lastTwo = minute % 100;
+        if (last === 1 && lastTwo !== 11) return 'минута';
+        if (last >= 2 && last <= 4 && (lastTwo < 12 || lastTwo > 14)) return 'минуты';
+        return 'минут';
+    }
 
     // ---- Time phrases ----
     function enTokens(hour, minute) {
@@ -1058,18 +1100,19 @@
         }
         if (minute < 30) {
             return [
-                { text: RU_MINUTES[minute] + ' минут', type: 'minute' },
+                { text: `${RU_MINUTES[minute]} ${ruMinuteUnit(minute)}`, type: 'minute' },
                 { text: RU_HOURS_GEN[nextHour], type: 'hour' }
             ];
         }
-
-        let minuteText;
-        if (minute === 45) minuteText = 'Без четверти';
-        else if (minute === 55) minuteText = 'Без пяти минут';
-        else if (minute === 35) minuteText = 'Без двадцати пяти';
-        else if (minute === 40) minuteText = 'Без двадцати';
-        else minuteText = 'Без десяти';
-
+        if (minute === 45) {
+            return [
+                { text: 'Без четверти', type: 'minute' },
+                { text: RU_HOURS_NOM[nextHour], type: 'hour' }
+            ];
+        }
+        const remaining = 60 - minute;
+        let minuteText = `Без ${RU_MINUTES_GEN[remaining]}`;
+        if (remaining === 5) minuteText += ' минут';
         return [
             { text: minuteText, type: 'minute' },
             { text: RU_HOURS_NOM[nextHour], type: 'hour' }

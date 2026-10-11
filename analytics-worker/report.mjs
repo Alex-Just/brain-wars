@@ -367,18 +367,19 @@ export function renderReportText(summary) {
     if (topPractice.length > 0) {
         lines.push('FOCUS AREAS FOR PRACTICE:');
         topPractice.forEach((item, index) => {
-            lines.push(`${index + 1}. ${item.name}`);
-            lines.push(`   Mistakes: ${item.wrong} (${item.accuracyPct}% accuracy)`);
-            lines.push(`   Core skill: ${item.skill}`);
-            if (item.tip) lines.push(`   Tip: ${item.tip}`);
-            lines.push('');
+            const block = [
+                `${index + 1}. ${item.name}`,
+                `   Mistakes: ${item.wrong} (${item.accuracyPct}% accuracy)`,
+                `   Core skill: ${item.skill}`
+            ];
+            if (item.tip) block.push(`   Tip: ${item.tip}`);
+            block.push('');
+            lines.push(...block);
         });
     } else if (total > 0) {
-        lines.push('🌟 100% accuracy across all games this week.');
-        lines.push('');
+        lines.push('🌟 100% accuracy across all games this week.', '');
     } else {
-        lines.push('No practice recorded this week.');
-        lines.push('');
+        lines.push('No practice recorded this week.', '');
     }
 
     if (mastered.length > 0) {
