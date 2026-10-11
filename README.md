@@ -169,7 +169,7 @@ flowchart LR
 
 GitHub Pages publishes the repository root from `master` to <https://alex-just.github.io/brain-wars/>. Any static host works the same way. There is no build command.
 
-The answers worker deploys separately. See [`analytics-worker/README.md`](analytics-worker/README.md).
+The answers worker auto-deploys from GitHub Actions on push to `master` when `analytics-worker/` changes. See [`analytics-worker/README.md`](analytics-worker/README.md).
 
 ## Add a game
 

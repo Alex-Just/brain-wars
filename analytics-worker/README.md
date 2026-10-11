@@ -68,7 +68,16 @@ When `REPORT_TOKEN` is set, pass `-H 'Authorization: Bearer <token>'` or `?token
 
 ## Deploy
 
-From this directory, run:
+A push to `master` that touches `analytics-worker/`, `test-analytics.js`, or the deploy workflow runs [`.github/workflows/deploy-analytics-worker.yml`](../.github/workflows/deploy-analytics-worker.yml). The job runs the analytics tests, deploys with Wrangler, then smoke-checks the live preview.
+
+Set these repository secrets (Settings → Secrets and variables → Actions):
+
+| Secret | Value |
+| --- | --- |
+| `CLOUDFLARE_API_TOKEN` | A scoped API token with **Account → Workers Scripts → Edit** and **Account → D1 → Edit** on this account. Create one at [Cloudflare API Tokens](https://dash.cloudflare.com/profile/api-tokens) (Workers Edit template, then add D1 Edit). Do not use the Global API Key. |
+| `CLOUDFLARE_ACCOUNT_ID` | `05e38f321dad15a6144629ca4dbb5fc7` |
+
+You can also deploy by hand from this directory, or with **Actions → Deploy analytics worker → Run workflow**:
 
 ```bash
 npx wrangler deploy

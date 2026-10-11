@@ -2,6 +2,7 @@
 name = "brain-wars-answers"
 main = "worker.mjs"
 compatibility_date = "2026-10-10"
+account_id = "05e38f321dad15a6144629ca4dbb5fc7"
 
 [[d1_databases]]
 binding = "DB"

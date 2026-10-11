@@ -1,0 +1,57 @@
+# Deploy the answers worker when its source or this workflow changes.
+# Needs repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
+name: Deploy analytics worker
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'analytics-worker/**'
+      - 'test-analytics.js'
+      - '.github/workflows/deploy-analytics-worker.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-analytics-worker
+  cancel-in-progress: false
+
+jobs:
+  test-and-deploy:
+    name: Test and deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Run analytics tests
+        run: node test-analytics.js
+
+      - name: Deploy worker
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: analytics-worker
+          wranglerVersion: '4.149.0'
+          command: deploy
+
+      - name: Smoke-check the live preview
+        env:
+          PREVIEW_URL: https://brain-wars-answers.alex-just.workers.dev/report/preview
+        run: |
+          set -eu
+          html="$(curl -fsS "$PREVIEW_URL")"
+          printf '%s' "$html" | grep -q '/report/preview?days=1'
+          printf '%s' "$html" | grep -q '/report/preview?days=3'
+          printf '%s' "$html" | grep -q '/report/preview?days=7'
+          printf '%s' "$html" | grep -q '/report/preview?days=30'
+          printf '%s' "$html" | grep -q 'past 3 days'
+          echo "Preview smoke check passed for $PREVIEW_URL"
