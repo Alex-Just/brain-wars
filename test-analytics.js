@@ -152,13 +152,14 @@ console.log('analytics worker');
 
 const Games = require('./games.js');
 
-// The async block below has no promise chain; a rejected run exits like a failed test.
+// A rejected run exits like a failed test: the promise chain below ends in .catch,
+// and any stray rejection is caught by the handler.
 process.on('unhandledRejection', (error) => {
     console.error(error);
     process.exit(1);
 });
 
-(async () => {
+async function runAsyncTests() {
     const Worker = await import('./analytics-worker/worker.mjs');
     const Report = await import('./analytics-worker/report.mjs');
     const NOW = 1791700000000;
@@ -548,4 +549,9 @@ process.on('unhandledRejection', (error) => {
     });
 
     console.log('\nAll ' + passed + ' checks passed.');
-})();
+}
+
+runAsyncTests().catch((error) => {
+    console.error(error);
+    process.exit(1);
+});

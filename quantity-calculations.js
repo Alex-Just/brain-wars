@@ -56,6 +56,21 @@
         { ops: ['add', 'sub'], mode: 'any', cap: 89, step: 1 }
     ];
 
+    function randomInt(rng, min, max) {
+        return min + Math.floor(rng() * (max - min + 1));
+    }
+
+    function pick(rng, list) {
+        return list[Math.floor(rng() * list.length)];
+    }
+
+    // One step of the plan. `answer` is what the column shows; `accepted` lists
+    // every typed form that counts as right. The small units may be typed with
+    // or without a leading zero ("5" or "05"); everything else is typed as it reads.
+    function step(kind, answer, accepted) {
+        return { kind, answer, accepted: accepted || [answer] };
+    }
+
     /**
      * Build one calculations engine.
      * unit — the small column ('cents' or 'minutes'); major — the large column
@@ -66,14 +81,6 @@
         function clampLevel(level) {
             const value = Math.trunc(Number(level)) || 1;
             return Math.min(Math.max(value, 1), LEVELS.length);
-        }
-
-        function randomInt(rng, min, max) {
-            return min + Math.floor(rng() * (max - min + 1));
-        }
-
-        function pick(rng, list) {
-            return list[Math.floor(rng() * list.length)];
         }
 
         // The small-unit values of both operands, honouring the level's idea.
@@ -143,13 +150,6 @@
                 },
                 steps: buildSteps(problem)
             };
-        }
-
-        // One step of the plan. `answer` is what the column shows; `accepted` lists
-        // every typed form that counts as right. The small units may be typed with
-        // or without a leading zero ("5" or "05"); everything else is typed as it reads.
-        function step(kind, answer, accepted) {
-            return { kind, answer, accepted: accepted || [answer] };
         }
 
         function quantityStep(value) {
