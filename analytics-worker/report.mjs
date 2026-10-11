@@ -72,6 +72,22 @@ export const SKILL_INFO = {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+// The weekly email window. The browser preview opens narrower (three days); the
+// worker picks each surface's default and passes it in.
+export const DEFAULT_REPORT_DAYS = 7;
+
+// "1 day" / "3 days" / "30 days".
+function daysLabel(days) {
+    return `${days} day${days === 1 ? '' : 's'}`;
+}
+
+// The window a summary covers. A caller that omits it reads as the weekly default,
+// so the wording is never "undefined days".
+function periodDays(period) {
+    const days = period?.days;
+    return Number.isInteger(days) && days > 0 ? days : DEFAULT_REPORT_DAYS;
+}
+
 function formatDate(ms) {
     const d = new Date(ms);
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -83,7 +99,7 @@ function formatDate(ms) {
  */
 export async function generateWeeklySummary(db, options = {}) {
     const now = typeof options.now === 'number' ? options.now : Date.now();
-    const days = typeof options.days === 'number' ? options.days : 7;
+    const days = typeof options.days === 'number' ? options.days : DEFAULT_REPORT_DAYS;
     const since = now - days * DAY_MS;
     const device = options.device || null;
 
@@ -169,11 +185,36 @@ export async function generateWeeklySummary(db, options = {}) {
     };
 }
 
+// The range tabs for the browser preview. Plain links: a GET keeps the page simple
+// and works before any script runs.
+function renderRangeNav(nav) {
+    const tabs = nav.map((tab) => {
+        const current = tab.active ? ' aria-current="page"' : '';
+        const skin = tab.active
+            ? ' background-color: #0f172a; border-color: #0f172a; color: #ffffff;'
+            : ' background-color: #ffffff; border-color: #cbd5e1; color: #334155;';
+        return `<a href="${escapeHtml(tab.href)}"${current} style="display: inline-block; padding: 6px 16px; margin: 0 3px; border: 1px solid; border-radius: 999px; font-size: 13px; font-weight: 600; text-decoration: none;${skin}">${escapeHtml(daysLabel(tab.days))}</a>`;
+    }).join('');
+    return `
+                <div style="max-width: 560px; margin: 0 auto 14px auto; text-align: center;">
+                    ${tabs}
+                </div>`;
+}
+
 /**
  * Builds responsive, high-contrast, minimal modern HTML email.
  */
-export function renderReportHtml(summary) {
+export function renderReportHtml(summary, options = {}) {
     const { period, total, correct, accuracyPct, activeDays, topPractice, mastered, games } = summary;
+    const range = daysLabel(periodDays(period));
+    // The range tabs turn the same report into the interactive preview. The email
+    // passes no nav, so it keeps its weekly wording and carries no links.
+    const preview = Array.isArray(options.nav) && options.nav.length > 0;
+    const navHtml = preview ? renderRangeNav(options.nav) : '';
+    const pageTitle = preview ? 'Brain Wars Progress Report' : 'Brain Wars Weekly Report';
+    const heading = preview ? 'Math Progress' : 'Weekly Math Progress';
+    const masteredHeading = preview ? 'Mastered' : 'Mastered This Week';
+    const perfectHeading = preview ? '🌟 100% Accuracy' : '🌟 100% Accuracy This Week';
 
     let practiceSection = '';
     if (topPractice.length > 0) {
@@ -207,7 +248,7 @@ export function renderReportHtml(summary) {
         practiceSection = `
         <div style="margin-bottom: 24px; padding: 14px 16px; background-color: #f0fdf4; border-radius: 6px; border: 1px solid #dcfce7;">
             <div style="font-size: 14px; font-weight: 600; color: #166534;">
-                🌟 100% Accuracy This Week
+                ${perfectHeading}
             </div>
             <div style="font-size: 13px; color: #15803d; margin-top: 2px;">
                 All ${total} attempts were solved correctly without mistakes.
@@ -230,7 +271,7 @@ export function renderReportHtml(summary) {
         masteredSection = `
         <div style="margin-bottom: 24px;">
             <div style="font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">
-                Mastered This Week
+                ${masteredHeading}
             </div>
             <div style="font-size: 13px; color: #166534; line-height: 1.6;">
                 ${mastered.map((item) => `✓ ${escapeHtml(item.name)} (${item.total} solved)`).join(' &nbsp;•&nbsp; ')}
@@ -275,12 +316,12 @@ export function renderReportHtml(summary) {
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Brain Wars Weekly Report</title>
+    <title>${pageTitle}</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0f172a; line-height: 1.5; -webkit-font-smoothing: antialiased;">
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 32px 16px;">
         <tr>
-            <td align="center">
+            <td align="center">${navHtml}
                 <table role="presentation" width="100%" style="max-width: 560px; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden;" cellspacing="0" cellpadding="0">
                     <!-- Brand & Date Header (Solid background & high contrast for all email clients) -->
                     <tr>
@@ -289,7 +330,7 @@ export function renderReportHtml(summary) {
                                 🧠 Brain Wars
                             </div>
                             <div style="font-size: 13px; color: #64748b; margin-top: 4px;">
-                                Weekly Math Progress • ${period.sinceFormatted} – ${period.nowFormatted}
+                                ${heading} • ${period.sinceFormatted} – ${period.nowFormatted}
                             </div>
                         </td>
                     </tr>
@@ -307,12 +348,12 @@ export function renderReportHtml(summary) {
                                     <td width="33%" style="text-align: left; border-left: 1px solid #e2e8f0; padding-left: 20px;">
                                         <div style="font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Accuracy</div>
                                         <div style="font-size: 22px; font-weight: 700; color: #0f172a; margin-top: 2px;">${accuracyPct}%</div>
-                                        <div style="font-size: 12px; color: #64748b; margin-top: 1px;">past 7 days</div>
+                                        <div style="font-size: 12px; color: #64748b; margin-top: 1px;">past ${range}</div>
                                     </td>
                                     <td width="34%" style="text-align: left; border-left: 1px solid #e2e8f0; padding-left: 20px;">
                                         <div style="font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Active Days</div>
                                         <div style="font-size: 22px; font-weight: 700; color: #0f172a; margin-top: 2px;">${activeDays}</div>
-                                        <div style="font-size: 12px; color: #64748b; margin-top: 1px;">of 7 days</div>
+                                        <div style="font-size: 12px; color: #64748b; margin-top: 1px;">of ${range}</div>
                                     </td>
                                 </tr>
                             </table>
@@ -364,7 +405,7 @@ export function renderReportText(summary) {
         `Total Solved: ${total} questions`,
         `Correct: ${correct} (${accuracyPct}% accuracy)`,
         `Mistakes: ${wrong}`,
-        `Active Days: ${activeDays} / 7`,
+        `Active Days: ${activeDays} / ${periodDays(period)}`,
         '----------------------------------------',
         ''
     ];

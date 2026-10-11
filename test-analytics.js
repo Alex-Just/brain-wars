@@ -385,6 +385,7 @@ async function runAsyncTests() {
         assert.strictEqual(summary.total, 15);
         assert.strictEqual(summary.correct, 10);
         assert.strictEqual(summary.wrong, 5);
+        assert.strictEqual(summary.period.days, 7, 'the generator keeps its weekly default');
         // One decimal place; compare via the same integer rounding the reporter uses.
         assert.strictEqual(
             summary.accuracyPct,
@@ -443,6 +444,38 @@ async function runAsyncTests() {
         assert.ok(text.includes('BRAIN WARS - WEEKLY MATH REPORT'));
         assert.ok(text.includes('Money Calculations'));
         assert.ok(text.includes('Remember 100 cents make 1 euro'));
+    });
+
+    await checkAsync('the preview shows range tabs and the email keeps its weekly wording', () => {
+        const base = {
+            total: 0, correct: 0, wrong: 0, accuracyPct: 0, activeDays: 0,
+            topPractice: [], mastered: [], games: []
+        };
+        const nav = [
+            { days: 1, href: '/report/preview?days=1', active: false },
+            { days: 3, href: '/report/preview?days=3', active: true },
+            { days: 7, href: '/report/preview?days=7', active: false },
+            { days: 30, href: '/report/preview?days=30', active: false }
+        ];
+        const previewHtml = Report.renderReportHtml({
+            ...base,
+            period: { days: 3, sinceFormatted: 'Oct 8, 2026', nowFormatted: 'Oct 10, 2026' }
+        }, { nav });
+
+        assert.ok(previewHtml.includes('/report/preview?days=30'), 'preview links to every range');
+        assert.ok(previewHtml.includes('aria-current="page"'), 'the active tab is marked');
+        assert.ok(previewHtml.includes('past 3 days'), 'the range wording follows the window');
+        assert.ok(previewHtml.includes('of 3 days'), 'active days follows the window');
+        assert.ok(previewHtml.includes('Math Progress'), 'the preview drops the weekly heading');
+        assert.ok(!previewHtml.includes('Weekly Math Progress'), 'no weekly wording beside a range control');
+
+        const emailHtml = Report.renderReportHtml({
+            ...base,
+            period: { days: 7, sinceFormatted: 'Oct 3, 2026', nowFormatted: 'Oct 10, 2026' }
+        });
+        assert.ok(emailHtml.includes('Weekly Math Progress'), 'the email keeps its weekly heading');
+        assert.ok(emailHtml.includes('past 7 days'), 'the email keeps its seven-day wording');
+        assert.ok(!emailHtml.includes('/report/preview?days='), 'the email carries no tabs');
     });
 
     await checkAsync('sendReportEmail sends via Resend with Bearer auth and recipient', async () => {
@@ -518,6 +551,9 @@ async function runAsyncTests() {
         assert.ok(resHtml.headers.get('Content-Type').includes('text/html'));
         const html = await resHtml.text();
         assert.ok(html.includes('Brain Wars'));
+        assert.ok(html.includes('past 3 days'), 'the preview defaults to three days');
+        assert.ok(html.includes('past 7 days') === false, 'three days is not the weekly window');
+        assert.ok(html.includes('/report/preview?days=30'), 'the preview offers the range tabs');
 
         // With query param token and format=json -> 200 JSON
         const resJson = await Worker.default.fetch(stubRequest({
@@ -527,6 +563,17 @@ async function runAsyncTests() {
         assert.strictEqual(resJson.status, 200);
         const data = await resJson.json();
         assert.strictEqual(data.total, 5);
+        assert.strictEqual(data.period.days, 3, 'the preview reports its three-day window');
+
+        // An explicit range wins, and the device filter survives in the tab links
+        const resRange = await Worker.default.fetch(stubRequest({
+            method: 'GET',
+            path: '/report/preview?token=secret123&days=30&device=dev-9'
+        }), env);
+        const rangeHtml = await resRange.text();
+        assert.ok(rangeHtml.includes('past 30 days'), 'an explicit range is honored');
+        assert.ok(rangeHtml.includes('token=secret123'), 'tabs keep the token so a click stays authorized');
+        assert.ok(rangeHtml.includes('device=dev-9'), 'tabs keep the device filter');
     });
 
     await checkAsync('scheduled triggers weekly report on Sunday cron', async () => {

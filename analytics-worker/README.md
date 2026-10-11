@@ -54,6 +54,8 @@ Preview the HTML summary in the browser:
 curl https://brain-wars-answers.alex-just.workers.dev/report/preview
 ```
 
+The preview opens on the last three days and shows tabs for 1, 3, 7 and 30 days. Pass `?days=N` to open a range directly. The tabs keep the `token` and `device` query values, so a click stays authorized and filtered. The weekly email keeps its seven-day window.
+
 Add `?format=json` for JSON data.
 
 Trigger sending the email immediately:

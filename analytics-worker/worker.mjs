@@ -4,7 +4,7 @@
  * Deploy from the Cloudflare dashboard; keep the pasted copy in sync with this file.
  */
 
-import { generateWeeklySummary, renderReportHtml, sendReportEmail } from './report.mjs';
+import { DEFAULT_REPORT_DAYS, generateWeeklySummary, renderReportHtml, sendReportEmail } from './report.mjs';
 
 export const GAME_IDS = [
     'follow-the-leader', 'unfollow-the-leader', 'operations', 'telling-time',
@@ -25,6 +25,12 @@ const TS_PAST_MS = 2 * 365 * 24 * 60 * 60 * 1000;
 const TS_FUTURE_MS = 2 * 24 * 60 * 60 * 1000;
 const ALLOWED_HOSTS = new Set(['alex-just.github.io']);
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1']);
+
+// The ranges the browser preview offers, and the window each surface opens on. The
+// preview opens on the last three days; the weekly email keeps its seven.
+const REPORT_RANGES = [1, 3, 7, 30];
+const PREVIEW_DEFAULT_DAYS = 3;
+const EMAIL_DEFAULT_DAYS = DEFAULT_REPORT_DAYS;
 
 // Returns { valid, rejected } for a well-formed batch, or null for a malformed request.
 export function validateEvents(events, now) {
@@ -81,14 +87,34 @@ function checkReportToken(request, url, env, cors) {
     return json({ error: 'unauthorized' }, 401, cors);
 }
 
+// A positive whole number of days, or the fallback when the query value is missing or bad.
+function resolveDays(raw, fallback) {
+    const days = Number.parseInt(raw, 10);
+    return Number.isInteger(days) && days > 0 ? days : fallback;
+}
+
+// The range tabs for the preview page. They keep the token and the device filter, so a
+// click never loses access to the report.
+function previewNav(url, activeDays) {
+    return REPORT_RANGES.map((days) => {
+        const params = new URLSearchParams();
+        const token = url.searchParams.get('token');
+        const device = url.searchParams.get('device');
+        if (token) params.set('token', token);
+        if (device) params.set('device', device);
+        params.set('days', String(days));
+        return { days, href: `/report/preview?${params.toString()}`, active: days === activeDays };
+    });
+}
+
 async function handlePreview(url, env, cors) {
-    const days = Number.parseInt(url.searchParams.get('days') || '7', 10);
+    const days = resolveDays(url.searchParams.get('days'), PREVIEW_DEFAULT_DAYS);
     const device = url.searchParams.get('device') || env?.REPORT_DEVICE || null;
     const summary = await generateWeeklySummary(env.DB, { days, device });
     if (url.searchParams.get('format') === 'json') {
         return json(summary, 200, cors);
     }
-    const html = renderReportHtml(summary);
+    const html = renderReportHtml(summary, { nav: previewNav(url, days) });
     return new Response(html, {
         status: 200,
         headers: { 'Content-Type': 'text/html; charset=utf-8', ...cors }
@@ -96,7 +122,7 @@ async function handlePreview(url, env, cors) {
 }
 
 async function handleSend(url, env, cors) {
-    const days = Number.parseInt(url.searchParams.get('days') || '7', 10);
+    const days = resolveDays(url.searchParams.get('days'), EMAIL_DEFAULT_DAYS);
     const device = url.searchParams.get('device') || env?.REPORT_DEVICE || null;
     const summary = await generateWeeklySummary(env.DB, { days, device });
     const result = await sendReportEmail(env, summary);
