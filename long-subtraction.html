@@ -334,8 +334,8 @@
                 }
 
                 submitCustomProblem() {
-                    const minuend = this.parseOperand(this.elements.customFactor1.value);
-                    const subtrahend = this.parseOperand(this.elements.customFactor2.value);
+                    const minuend = this.parseNumberInput(this.elements.customFactor1.value);
+                    const subtrahend = this.parseNumberInput(this.elements.customFactor2.value);
                     if (!minuend || !subtrahend) {
                         this.showCustomError('ls_custom_err_subtrahend');
                         return;

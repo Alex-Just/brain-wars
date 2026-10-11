@@ -152,6 +152,12 @@ console.log('analytics worker');
 
 const Games = require('./games.js');
 
+// The async block below has no promise chain; a rejected run exits like a failed test.
+process.on('unhandledRejection', (error) => {
+    console.error(error);
+    process.exit(1);
+});
+
 (async () => {
     const Worker = await import('./analytics-worker/worker.mjs');
     const Report = await import('./analytics-worker/report.mjs');
@@ -169,9 +175,10 @@ const Games = require('./games.js');
         }
     }
 
-    const validEvent = (overrides) => Object.assign({
-        id: 'e-0123456789', game: 'time-calculations', correct: true, ts: NOW, device: 'dev-1'
-    }, overrides);
+    const validEvent = (overrides) => ({
+        id: 'e-0123456789', game: 'time-calculations', correct: true, ts: NOW, device: 'dev-1',
+        ...overrides
+    });
 
     await checkAsync('GAME_IDS matches the registry ids', () => {
         const compareStrings = (a, b) => a.localeCompare(b);
@@ -541,7 +548,4 @@ const Games = require('./games.js');
     });
 
     console.log('\nAll ' + passed + ' checks passed.');
-})().catch((error) => {
-    console.error(error);
-    process.exit(1);
-});
+})();

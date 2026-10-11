@@ -316,7 +316,7 @@
             color: var(--color-text-secondary);
         }
 
-        /* Subtraction: minus between the amounts; addition: plus on the second line */
+        /* Subtraction puts the minus between the amounts, addition puts the plus on the second line */
         .op-sign.is-sub {
             grid-row: first / line;
         }
@@ -712,10 +712,10 @@
                     cell.removeAttribute('aria-hidden');
                 });
 
-                const kinds = problem.steps.map((step) => step.kind);
-                const usesScratch = kinds.includes('minutesSum') || kinds.includes('borrow');
+                const kinds = new Set(problem.steps.map((step) => step.kind));
+                const usesScratch = kinds.has('minutesSum') || kinds.has('borrow');
                 this.#elements.scratchCell.classList.toggle('is-unused', !usesScratch);
-                this.#elements.carryCell.classList.toggle('is-unused', !kinds.includes('carry'));
+                this.#elements.carryCell.classList.toggle('is-unused', !kinds.has('carry'));
 
                 this.#promptCurrentStep();
             }

@@ -57,9 +57,9 @@
       padding: 0;
       -webkit-appearance: none;
       appearance: none;
-      border-radius: min(2vw, 8px);
+      border-radius: var(--border-radius);
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all var(--animation-speed-fast) ease;
       touch-action: none; /* Disable browser touch actions */
       -webkit-touch-callout: none; /* Disable callout on iOS */
       -webkit-tap-highlight-color: transparent; /* Remove tap highlight */
@@ -182,8 +182,8 @@
       font-size: clamp(16px, 4vw, 20px);
       padding: 10px 15px;
       border-radius: 6px;
-      background: rgba(0,0,0,0.1);
-      color: #666;
+      background: #e6e6e6;
+      color: #555;
       z-index: 1000;
     }
 
@@ -280,20 +280,6 @@
       /* Animation custom properties */
       --tx: 0px;
       --ty: 0px;
-    }
-
-    /* Update all hardcoded values to use custom properties */
-    .square {
-      border-radius: var(--border-radius);
-      transition: all var(--animation-speed-fast) ease;
-    }
-
-    .square.sequence {
-      background-color: var(--color-secondary);
-    }
-
-    .square.ready {
-      background-color: var(--color-primary);
     }
 
     /* Remove hover shadow effect */

@@ -123,7 +123,7 @@
 		);
 	}
 
-	function setCellValue(r, c, char, additionalClasses = [], state) {
+	function setCellValue(r, c, char, state, additionalClasses = []) {
 		state.gridMatrix[r][c].char = String(char);
 		const cell = document.getElementById(`cell-${r}-${c}`);
 		if (cell) {
@@ -531,7 +531,8 @@
 		randomNumberString(integerDigits, decimals, big) {
 			let digits = "";
 			for (let i = 0; i < integerDigits; i++) {
-				digits += String(this.randomInt(big ? 4 : i === 0 ? 1 : 0, 9));
+				const leadingMin = i === 0 ? 1 : 0;
+				digits += String(this.randomInt(big ? 4 : leadingMin, 9));
 			}
 			for (let i = 0; i < decimals; i++) {
 				const lastFractionDigit = i === decimals - 1;
@@ -937,8 +938,8 @@
 				r,
 				c,
 				char,
-				additionalClasses,
 				this.state,
+				additionalClasses,
 			);
 		}
 
@@ -996,11 +997,9 @@
 				this.state.steps[
 					Math.min(this.state.stepIndex, this.state.steps.length - 1)
 				];
-			const target = badge
-				? badge.parentElement
-				: step
-					? document.getElementById(`cell-0-${step.col - 1}`)
-					: null;
+			let target = null;
+			if (badge) target = badge.parentElement;
+			else if (step) target = document.getElementById(`cell-0-${step.col - 1}`);
 			return target ? [target] : [];
 		}
 
@@ -1092,7 +1091,7 @@
 			BrainWarsColumnGame.showCustomError(key, this.elements);
 		}
 
-		parseAddend(raw) {
+		parseNumberInput(raw) {
 			// Accept generous input here: the result and column budgets below
 			// decide what can be shown, and they report their own "too big" message.
 			const match = String(raw)
@@ -1106,8 +1105,8 @@
 		}
 
 		submitCustomProblem() {
-			const first = this.parseAddend(this.elements.customFactor1.value);
-			const second = this.parseAddend(this.elements.customFactor2.value);
+			const first = this.parseNumberInput(this.elements.customFactor1.value);
+			const second = this.parseNumberInput(this.elements.customFactor2.value);
 			if (!first || !second) {
 				this.showCustomError("la_custom_err_addend");
 				return;
@@ -1216,31 +1215,17 @@
 				this.state.steps[
 					Math.min(this.state.stepIndex, this.state.steps.length - 1)
 				];
-			const target = mark
-				? mark.parentElement
-				: step
-					? document.getElementById(`cell-0-${step.col - 1}`)
-					: null;
+			let target = null;
+			if (mark) target = mark.parentElement;
+			else if (step) target = document.getElementById(`cell-0-${step.col - 1}`);
 			return target ? [target] : [];
-		}
-
-		parseOperand(raw) {
-			// Accept generous input here: the result and column budgets below
-			// decide what can be shown, and they report their own "too big" message.
-			const match = String(raw)
-				.trim()
-				.replace(/\s+/g, "")
-				.match(/^(\d{1,12})(?:[.,](\d{1,2}))?$/);
-			if (!match || Number(match[1]) < 1) return null;
-			let fraction = match[2] || "";
-			while (fraction.endsWith("0")) fraction = fraction.slice(0, -1);
-			return { digits: match[1] + fraction, decimals: fraction.length };
 		}
 
 		randomDigits(length, big) {
 			let digits = "";
 			for (let i = 0; i < length; i++) {
-				const min = big ? 4 : i === 0 ? 1 : 0;
+				const leadingMin = i === 0 ? 1 : 0;
+				const min = big ? 4 : leadingMin;
 				digits += String(this.randomInt(min, 9));
 			}
 			return digits;
@@ -1264,30 +1249,15 @@
 				];
 			if (!step) return [];
 			const singleDigitMultiplier = this.state.multiplierDigits.length === 1;
-			const partialRow = singleDigitMultiplier
-				? this.state.resultRow
-				: step.row < this.state.resultRow
-					? step.row
-					: this.state.resultRow - 1;
+			let partialRow = this.state.resultRow - 1;
+			if (singleDigitMultiplier) partialRow = this.state.resultRow;
+			else if (step.row < this.state.resultRow) partialRow = step.row;
 			const cells = [];
 			for (let c = 0; c < this.state.numCols; c++) {
 				const cell = document.getElementById(`cell-${partialRow}-${c}`);
 				if (cell?.textContent) cells.push(cell);
 			}
 			return cells;
-		}
-
-		parseFactor(raw) {
-			// Accept generous input here: the product and column budgets below
-			// decide what can be shown, and they report their own "too big" message.
-			const match = String(raw)
-				.trim()
-				.replace(/\s+/g, "")
-				.match(/^(\d{1,12})(?:[.,](\d{1,2}))?$/);
-			if (!match || Number(match[1]) < 1) return null;
-			let fraction = match[2] || "";
-			while (fraction.endsWith("0")) fraction = fraction.slice(0, -1);
-			return { digits: match[1] + fraction, decimals: fraction.length };
 		}
 	}
 

@@ -1304,7 +1304,7 @@
                 }
 
                 const divisorMatch = rawDivisor.match(/^\d{1,2}$/);
-                const divisor = divisorMatch ? Number(rawDivisor) : NaN;
+                const divisor = divisorMatch ? Number(rawDivisor) : Number.NaN;
                 if (!divisorMatch || divisor < 2 || divisor > 99) {
                     this.#showCustomError('ld_custom_err_divisor');
                     return;
@@ -1441,10 +1441,6 @@
 
             #toggleLevelMenu(open) {
                 BrainWarsColumnGame.toggleLevelMenu(open, this.#ctx());
-            }
-
-            #positionLevelMenu() {
-                BrainWarsColumnGame.positionLevelMenu(this.#elements);
             }
 
             #selectLevel(level) {
@@ -1853,8 +1849,6 @@
                 const prodRow = 1 + (stepIndex * 2);
                 const remRow = prodRow + 1;
 
-                const endColOfInc = this.#getPartialRange(stepIndex).endCol;
-
                 const sProd = String(step.prod);
 
                 if (this.#state.subStepType === 'Q_DIGIT') {
@@ -1966,7 +1960,6 @@
             #handleCorrectInput() {
                 const stepIndex = this.#state.currentStepIndex;
                 const step = this.#state.steps[stepIndex];
-                const d = this.#state.divisor;
 
                 const quotientRow = 1;
                 const quotientCol = this.#quotientColOfStep(stepIndex);
@@ -1974,7 +1967,6 @@
                 const prodRow = 1 + (stepIndex * 2);
                 const remRow = prodRow + 1;
 
-                const endColOfInc = this.#getPartialRange(stepIndex).endCol;
                 const sProd = String(step.prod);
 
                 if (this.#state.subStepType === 'Q_DIGIT') {

@@ -62,7 +62,8 @@
     function pickCents(rng, op, config) {
         const step = config.step;
         const last = Math.floor(99 / step);
-        const mode = config.mode === 'regroup' ? (op === 'add' ? 'carry' : 'borrow') : config.mode;
+        const regroupMode = op === 'add' ? 'carry' : 'borrow';
+        const mode = config.mode === 'regroup' ? regroupMode : config.mode;
 
         if (op === 'add') {
             if (mode === 'carry' || mode === 'exact') {

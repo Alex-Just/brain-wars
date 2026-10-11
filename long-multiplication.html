@@ -594,8 +594,8 @@
                 }
 
                 submitCustomProblem() {
-                    const factor1 = this.parseFactor(this.elements.customFactor1.value);
-                    const factor2 = this.parseFactor(this.elements.customFactor2.value);
+                    const factor1 = this.parseNumberInput(this.elements.customFactor1.value);
+                    const factor2 = this.parseNumberInput(this.elements.customFactor2.value);
                     if (!factor1 || !factor2) {
                         this.showCustomError('lm_custom_err_factor');
                         return;

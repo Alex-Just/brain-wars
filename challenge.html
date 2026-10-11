@@ -360,7 +360,9 @@
             });
 
             function showSummary(run) {
-                const stars = run.retries === 0 ? 3 : run.retries <= 2 ? 2 : 1;
+                let stars = 1;
+                if (run.retries === 0) stars = 3;
+                else if (run.retries <= 2) stars = 2;
                 const starsEl = document.getElementById('stars');
                 starsEl.textContent = '★'.repeat(stars) + '☆'.repeat(3 - stars);
                 starsEl.setAttribute('aria-label', I18n.t('ch_stars_aria', { n: stars }));

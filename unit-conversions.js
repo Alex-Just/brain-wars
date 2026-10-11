@@ -110,11 +110,17 @@
 
     // A mantissa and its decimal places as a canonical string: (25, 1) -> "2.5",
     // (5, 1) -> "0.5", (125, 2) -> "1.25", (7, 0) -> "7".
+    function stripTrailingZeros(text) {
+        let end = text.length;
+        while (end > 0 && text[end - 1] === '0') end--;
+        return text.slice(0, end);
+    }
+
     function decimalFromMantissa(mantissa, places) {
         if (places <= 0) return String(mantissa);
         const digits = String(mantissa).padStart(places + 1, '0');
         const whole = digits.slice(0, digits.length - places);
-        const fraction = digits.slice(digits.length - places).replace(/0+$/, '');
+        const fraction = stripTrailingZeros(digits.slice(digits.length - places));
         return fraction ? `${whole}.${fraction}` : whole;
     }
 
@@ -163,7 +169,7 @@
         if (!/^\d+(\.\d*)?$/.test(cleaned)) return null;
         const [whole, fraction] = cleaned.split('.');
         const head = whole.replace(/^0+(?=\d)/, '');
-        const tail = (fraction || '').replace(/0+$/, '');
+        const tail = stripTrailingZeros(fraction || '');
         return tail ? `${head}.${tail}` : head;
     }
 

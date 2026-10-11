@@ -23,8 +23,8 @@ const CLEANUP_BATCH = 500;
 const CLEANUP_ROUNDS = 20;
 const TS_PAST_MS = 2 * 365 * 24 * 60 * 60 * 1000;
 const TS_FUTURE_MS = 2 * 24 * 60 * 60 * 1000;
-const ALLOWED_HOSTS = ['alex-just.github.io'];
-const LOCAL_HOSTS = ['localhost', '127.0.0.1'];
+const ALLOWED_HOSTS = new Set(['alex-just.github.io']);
+const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1']);
 
 // Returns { valid, rejected } for a well-formed batch, or null for a malformed request.
 export function validateEvents(events, now) {
@@ -55,7 +55,7 @@ function corsHeaders(origin) {
     } catch {
         return {};
     }
-    const allowed = ALLOWED_HOSTS.includes(url.hostname) || LOCAL_HOSTS.includes(url.hostname);
+    const allowed = ALLOWED_HOSTS.has(url.hostname) || LOCAL_HOSTS.has(url.hostname);
     if (!allowed) return {};
     return {
         'Access-Control-Allow-Origin': origin,
@@ -68,7 +68,7 @@ function corsHeaders(origin) {
 function json(body, status, headers) {
     return new Response(JSON.stringify(body), {
         status,
-        headers: Object.assign({ 'Content-Type': 'application/json' }, headers)
+        headers: { 'Content-Type': 'application/json', ...headers }
     });
 }
 
@@ -82,7 +82,7 @@ function checkReportToken(request, url, env, cors) {
 }
 
 async function handlePreview(url, env, cors) {
-    const days = parseInt(url.searchParams.get('days') || '7', 10);
+    const days = Number.parseInt(url.searchParams.get('days') || '7', 10);
     const device = url.searchParams.get('device') || env?.REPORT_DEVICE || null;
     const summary = await generateWeeklySummary(env.DB, { days, device });
     if (url.searchParams.get('format') === 'json') {
@@ -91,12 +91,12 @@ async function handlePreview(url, env, cors) {
     const html = renderReportHtml(summary);
     return new Response(html, {
         status: 200,
-        headers: Object.assign({ 'Content-Type': 'text/html; charset=utf-8' }, cors)
+        headers: { 'Content-Type': 'text/html; charset=utf-8', ...cors }
     });
 }
 
 async function handleSend(url, env, cors) {
-    const days = parseInt(url.searchParams.get('days') || '7', 10);
+    const days = Number.parseInt(url.searchParams.get('days') || '7', 10);
     const device = url.searchParams.get('device') || env?.REPORT_DEVICE || null;
     const summary = await generateWeeklySummary(env.DB, { days, device });
     const result = await sendReportEmail(env, summary);

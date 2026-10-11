@@ -872,9 +872,8 @@
                 this.#elements.answerDuration.hidden = !isDuration;
                 this.#elements.durHours.hidden = !withHours;
                 this.#elements.durHoursUnit.hidden = !withHours;
-                this.#elements.formatLine.textContent = isDuration
-                    ? I18n.t(question.format === 'hoursMinutes' ? 'et_format_hours_minutes' : 'et_format_minutes')
-                    : '';
+                const formatKey = question.format === 'hoursMinutes' ? 'et_format_hours_minutes' : 'et_format_minutes';
+                this.#elements.formatLine.textContent = isDuration ? I18n.t(formatKey) : '';
             }
 
             #renderClock(minutes) {

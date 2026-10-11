@@ -18,7 +18,7 @@
 
     // telling-time raises its completion signal after a wrong tap too, so a round
     // whose one attempt was already recorded wrong must not emit a correct event.
-    const SUPPRESS_AFTER_MISTAKE = ['telling-time'];
+    const SUPPRESS_AFTER_MISTAKE = new Set(['telling-time']);
 
     /* ---------- pure core ---------- */
 
@@ -70,7 +70,7 @@
             return false;
         }
         if (edge === 'completion') {
-            const suppress = state.mistakeSeen && SUPPRESS_AFTER_MISTAKE.includes(gameId);
+            const suppress = state.mistakeSeen && SUPPRESS_AFTER_MISTAKE.has(gameId);
             state.mistakeSeen = false;
             return suppress ? null : true;
         }

@@ -1013,9 +1013,12 @@
                     const lowExtra = last ? 0 : Math.ceil((remaining - restCapacity) / value);
                     const highExtra = Math.min(extraMax, Math.floor(remaining / value));
                     if (lowExtra > highExtra) return -1;
-                    const extra = last
-                        ? (remaining % value === 0 ? remaining / value : -1)
-                        : this.#randomInt(Math.max(0, lowExtra), highExtra);
+                    let extra;
+                    if (last) {
+                        extra = remaining % value === 0 ? remaining / value : -1;
+                    } else {
+                        extra = this.#randomInt(Math.max(0, lowExtra), highExtra);
+                    }
                     if (extra < 0 || extra > extraMax) return -1;
                     remaining -= extra * value;
                     return ranges[i].min + extra;
@@ -1375,8 +1378,8 @@
                 const prefix = step === 'a' ? 'a' : 'c';
                 const expected = step === 'a' ? problem.total : Math.abs(problem.delta);
 
-                const euros = parseInt(this.#state.answers[`${prefix}-eur`] || '0', 10);
-                const cents = parseInt(this.#state.answers[`${prefix}-cts`] || '0', 10);
+                const euros = Number.parseInt(this.#state.answers[`${prefix}-eur`] || '0', 10);
+                const cents = Number.parseInt(this.#state.answers[`${prefix}-cts`] || '0', 10);
                 const typed = euros * 100 + cents;
 
                 if (typed === expected) {
