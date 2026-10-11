@@ -362,7 +362,11 @@ const Games = require('./games.js');
         assert.strictEqual(summary.total, 15);
         assert.strictEqual(summary.correct, 10);
         assert.strictEqual(summary.wrong, 5);
-        assert.strictEqual(summary.accuracyPct, 66.7);
+        // One decimal place; compare via the same integer rounding the reporter uses.
+        assert.strictEqual(
+            summary.accuracyPct,
+            Math.round((summary.correct * 1000) / summary.total) / 10
+        );
         assert.strictEqual(summary.activeDays, 3);
         assert.strictEqual(summary.topPractice.length, 3);
         assert.strictEqual(summary.topPractice[0].name, 'Money Calculations');

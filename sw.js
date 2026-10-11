@@ -127,7 +127,8 @@ async function staleWhileRevalidate(request) {
     if (cached) {
         fetch(request, REVALIDATE)
             .then((response) => {
-                if (response?.ok) cache.put(request, response.clone());
+                if (response?.ok) return cache.put(request, response.clone());
+                return undefined;
             })
             .catch(() => {});
         return cached;

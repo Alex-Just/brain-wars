@@ -234,7 +234,7 @@
             const now = Date.now();
             if (onlyIfIdle && now - lastFlushAt < MIN_FLUSH_GAP_MS) return;
             lastFlushAt = now;
-            flush();
+            void flush();
         }
 
         hits = { mistake: signalHit(game.mistake), completion: signalHit(game.completion) }; // baseline, no events
