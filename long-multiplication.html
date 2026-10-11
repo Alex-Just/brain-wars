@@ -157,711 +157,452 @@
 
     <!-- Game Engine -->
     <script>
-        class LongMultiplicationGame {
-            #state;
-            #elements;
-            #config;
-
-            constructor() {
-                this.#initConfig();
-                this.#initElements();
-                this.#initState();
-                this.#bindEvents();
-                this.#subscribeToLanguageChanges();
-                this.#startNewRound();
-            }
-
-            // The context the shared column-game functions work on: this page's
-            // elements, state and config, plus the methods only this game has.
-            #ctx() {
-                return {
-                    elements: this.#elements,
-                    state: this.#state,
-                    config: this.#config,
-                    hooks: {
-                        initConfig: () => this.#initConfig(),
-                        initState: () => this.#initState(),
-                        beginRound: (problem, isCustom) => this.#beginRound(problem, isCustom),
-                        createProblem: (level) => this.#createProblem(level),
-                        promptCurrentStep: () => this.#promptCurrentStep(),
-                        renderCommas: () => this.#renderCommas(),
-                        renderCompletionEquation: () => this.#renderCompletionEquation(),
-                        handleCorrectInput: () => this.#handleCorrectInput(),
-                        handleWrongInput: () => this.#handleWrongInput(),
-                        highlightTerm: (term) => this.#highlightTerm(term),
-                        toggleCustomModal: (open) => this.#toggleCustomModal(open),
-                        submitCustomProblem: () => this.#submitCustomProblem(),
-                    }
-                };
-            }
-
-            #initConfig() {
-                this.#config = {
-                    maxLevel: 20,
-                    maxProductDigits: 8,
-                    // The notebook grid never uses more than this many columns: with
-                    // more the cells and digits get too small to read on a phone.
-                    maxGridColumns: 12
-                };
-            }
-
-            #initElements() {
-                this.#elements = BrainWarsColumnGame.initElements();
-            }
-
-            #initState() {
-                this.#state = {
-                    level: 1,
-                    isCustomRound: false,
-                    hadErrorThisRound: false,
-                    multiplicandDigits: '24',
-                    multiplicandDecimals: 0,
-                    multiplierDigits: '3',
-                    multiplierDecimals: 0,
-                    productDigits: '72',
-                    productDecimals: 0,
-                    steps: [],
-                    stepIndex: 0,
-                    partialRows: [],
-                    partialLengths: [],
-                    currentInput: '',
-                    expectedAnswer: '',
-                    gridMatrix: [],
-                    numRows: 0,
-                    numCols: 0,
-                    baseCol: 0,
-                    resultRow: 0,
-                    activeTargetCells: []
-                };
-            }
-
-            #bindEvents() {
-                BrainWarsColumnGame.bindEvents(this.#ctx());
-            }
-
-            #subscribeToLanguageChanges() {
-                BrainWarsColumnGame.subscribeToLanguageChanges(this.#ctx());
-            }
-
-            #handleLanguageChange() {
-                BrainWarsColumnGame.handleLanguageChange(this.#ctx());
-            }
-
-            // ---------------------------------------------------------------
-            // Problem generation
-            // ---------------------------------------------------------------
-
-            #randomInt(min, max) {
-                return BrainWarsColumnGame.randomInt(min, max);
-            }
-
-            #randomDigits(length, big) {
-                let digits = '';
-                for (let i = 0; i < length; i++) {
-                    const min = big ? 4 : (i === 0 ? 1 : 0);
-                    digits += String(this.#randomInt(min, 9));
+        document.addEventListener('DOMContentLoaded', () => {
+            class LongMultiplicationGame extends BrainWarsColumnGame.ColumnGame {
+                constructor() {
+                    super({
+                        operator: '×',
+                        keys: { wrongHint: 'lm_wrong_hint' }
+                    });
                 }
-                return digits;
-            }
 
-            #hasCarry(multiplicand, multiplier) {
-                for (let j = 0; j < multiplier.length; j++) {
-                    const b = Number(multiplier[multiplier.length - 1 - j]);
-                    for (let i = 0; i < multiplicand.length; i++) {
-                        const a = Number(multiplicand[multiplicand.length - 1 - i]);
-                        if (a * b >= 10) return true;
-                    }
-                }
-                return false;
-            }
-
-            // Difficulty grows with digit counts, then with decimals on one
-            // factor (levels 11-15) and on both factors (levels 16-20).
-            #getLevelConfig(level) {
-                const table = [
-                    { mMin: 2, mMax: 2, nMin: 1, nMax: 1, noCarry: true },
-                    { mMin: 2, mMax: 2, nMin: 1, nMax: 1 },
-                    { mMin: 3, mMax: 3, nMin: 1, nMax: 1 },
-                    { mMin: 2, mMax: 2, nMin: 2, nMax: 2 },
-                    { mMin: 3, mMax: 3, nMin: 2, nMax: 2 },
-                    { mMin: 3, mMax: 3, nMin: 2, nMax: 2, bigDigits: true },
-                    { mMin: 4, mMax: 4, nMin: 2, nMax: 2 },
-                    { mMin: 3, mMax: 3, nMin: 3, nMax: 3 },
-                    { mMin: 4, mMax: 4, nMin: 3, nMax: 3 },
-                    { mMin: 4, mMax: 4, nMin: 3, nMax: 3, bigDigits: true },
-                    { mMin: 3, mMax: 3, nMin: 2, nMax: 2, k1: 1 },
-                    { mMin: 3, mMax: 3, nMin: 2, nMax: 2, k2: 1 },
-                    { mMin: 4, mMax: 4, nMin: 2, nMax: 2, k1: 1 },
-                    { mMin: 3, mMax: 3, nMin: 3, nMax: 3, k1: 1 },
-                    { mMin: 4, mMax: 4, nMin: 3, nMax: 3, k1: 1 },
-                    { mMin: 3, mMax: 3, nMin: 2, nMax: 2, k1: 1, k2: 1 },
-                    { mMin: 4, mMax: 4, nMin: 2, nMax: 2, k1: 1, k2: 1 },
-                    { mMin: 3, mMax: 3, nMin: 3, nMax: 3, k1: 1, k2: 1 },
-                    { mMin: 4, mMax: 4, nMin: 3, nMax: 3, k1: 1, k2: 1 },
-                    { mMin: 4, mMax: 4, nMin: 3, nMax: 3, k1: 2, k2: 1 }
-                ];
-                const index = Math.min(Math.max(level, 1), table.length) - 1;
-                return table[index];
-            }
-
-            #createProblem(level) {
-                const cfg = this.#getLevelConfig(level);
-
-                for (let attempt = 0; attempt < 600; attempt++) {
-                    let m = this.#randomInt(cfg.mMin, cfg.mMax);
-                    let n = this.#randomInt(cfg.nMin, cfg.nMax);
-                    if (n > m) {
-                        const swap = m;
-                        m = n;
-                        n = swap;
-                    }
-
-                    const k1 = cfg.k1 || 0;
-                    const k2 = cfg.k2 || 0;
-                    const multiplicand = this.#randomDigits(m, cfg.bigDigits);
-                    const multiplier = this.#randomDigits(n, cfg.bigDigits);
-
-                    const product = String(Number(multiplicand) * Number(multiplier));
-                    if (product.length > this.#config.maxProductDigits) continue;
-                    // Keep the notebook grid inside the column budget, otherwise the
-                    // cells get too small to read on a phone.
-                    if (this.#geometry(multiplicand, k1, multiplier, k2).numCols > this.#config.maxGridColumns) continue;
-                    if (cfg.noCarry && this.#hasCarry(multiplicand, multiplier)) continue;
-                    if (n >= 2 && multiplier[multiplier.length - 1] === '0') continue;
-                    if (k1 > 0 && multiplicand[multiplicand.length - 1] === '0') continue;
-                    if (k2 > 0 && multiplier[multiplier.length - 1] === '0') continue;
-
-                    return {
-                        multiplicandDigits: multiplicand,
-                        multiplicandDecimals: k1,
-                        multiplierDigits: multiplier,
-                        multiplierDecimals: k2
+                initConfig() {
+                    this.config = {
+                        maxLevel: 20,
+                        maxProductDigits: 8,
+                        // The notebook grid never uses more than this many columns: with
+                        // more the cells and digits get too small to read on a phone.
+                        maxGridColumns: 12
                     };
                 }
 
-                return { multiplicandDigits: '24', multiplicandDecimals: 0, multiplierDigits: '3', multiplierDecimals: 0 };
-            }
-
-            // ---------------------------------------------------------------
-            // Round setup
-            // ---------------------------------------------------------------
-
-            #startNewRound() {
-                BrainWarsColumnGame.startNewRound(this.#ctx());
-            }
-
-            #beginRound(problem, isCustomRound) {
-                this.#elements.completionOverlay.classList.remove('show');
-                this.#state.isCustomRound = !!isCustomRound;
-                this.#state.hadErrorThisRound = false;
-                this.#state.currentInput = '';
-                this.#state.multiplicandDigits = problem.multiplicandDigits;
-                this.#state.multiplicandDecimals = problem.multiplicandDecimals;
-                this.#state.multiplierDigits = problem.multiplierDigits;
-                this.#state.multiplierDecimals = problem.multiplierDecimals;
-
-                this.#renderLevelBadge();
-                this.#computeGeometry();
-                this.#computePlan();
-                this.#buildGrid();
-                this.#renderCommas();
-
-                this.#state.stepIndex = 0;
-                this.#promptCurrentStep();
-            }
-
-            // Sign gutter + the widest row (a shifted partial product or the product
-            // itself). Every number is right-aligned on baseCol and the factor decimals
-            // live inside the digit block, so no trailing columns are reserved.
-            #geometry(multiplicandDigits, multiplicandDecimals, multiplierDigits, multiplierDecimals) {
-                const m = multiplicandDigits.length;
-                const n = multiplierDigits.length;
-                const productDigits = String(Number(multiplicandDigits) * Number(multiplierDigits));
-                const leftUnits = Math.max(m, n + m - 1, productDigits.length);
-
-                // Column 0 is the single sign/carry gutter: every number is right
-                // aligned on baseCol, so the content needs baseCol + 1 columns.
-                return {
-                    productDigits,
-                    productDecimals: multiplicandDecimals + multiplierDecimals,
-                    baseCol: leftUnits,
-                    numCols: leftUnits + 1
-                };
-            }
-
-            #computeGeometry() {
-                const s = this.#state;
-                const n = s.multiplierDigits.length;
-                const geometry = this.#geometry(
-                    s.multiplicandDigits, s.multiplicandDecimals,
-                    s.multiplierDigits, s.multiplierDecimals
-                );
-
-                s.productDigits = geometry.productDigits;
-                s.productDecimals = geometry.productDecimals;
-                s.baseCol = geometry.baseCol;
-                s.numCols = geometry.numCols;
-
-                if (n === 1) {
-                    // A single-digit multiplier: the partial product IS the
-                    // product, so there is no separate addition phase.
-                    s.numRows = 3;
-                    s.resultRow = 2;
-                } else {
-                    // Operands, one row per multiplier digit, then the result. The line
-                    // above the result is the bottom border of the last partial row.
-                    s.numRows = 3 + n;
-                    s.resultRow = 2 + n;
-                }
-            }
-
-            #computePlan() {
-                const s = this.#state;
-                const ad = Array.from(s.multiplicandDigits).map(Number);
-                const bd = Array.from(s.multiplierDigits).map(Number);
-                const m = ad.length;
-                const n = bd.length;
-                const steps = [];
-                const partialDigits = [];
-                const partialLengths = [];
-
-                // Partial products, one row per multiplier digit (right to left)
-                for (let j = 0; j < n; j++) {
-                    const b = bd[n - 1 - j];
-                    const row = 2 + j;
-                    const digits = [];
-                    let carry = 0;
-
-                    for (let i = 0; i < m; i++) {
-                        const a = ad[m - 1 - i];
-                        const carryBefore = carry;
-                        const value = a * b + carryBefore;
-                        const writeDigit = value % 10;
-                        carry = Math.floor(value / 10);
-                        digits.push(writeDigit);
-                        steps.push({
-                            type: 'MUL',
-                            a,
-                            b,
-                            carryBefore,
-                            expected: value,
-                            writeDigit,
-                            row,
-                            col: s.baseCol - j - i,
-                            badge: carry > 0 ? { row: row - 1, col: s.baseCol - j - i - 1 } : null,
-                            carryAfter: carry
-                        });
-                    }
-
-                    if (carry > 0) {
-                        digits.push(carry);
-                        steps.push({
-                            type: 'CARRY',
-                            expected: carry,
-                            writeDigit: carry,
-                            row,
-                            col: s.baseCol - j - m,
-                            badge: null,
-                            carryAfter: 0
-                        });
-                    }
-
-                    partialDigits.push(digits);
-                    partialLengths.push(digits.length);
+                initState() {
+                    this.state = {
+                        level: 1,
+                        isCustomRound: false,
+                        hadErrorThisRound: false,
+                        multiplicandDigits: '24',
+                        multiplicandDecimals: 0,
+                        multiplierDigits: '3',
+                        multiplierDecimals: 0,
+                        productDigits: '72',
+                        productDecimals: 0,
+                        steps: [],
+                        stepIndex: 0,
+                        partialRows: [],
+                        partialLengths: [],
+                        currentInput: '',
+                        expectedAnswer: '',
+                        gridMatrix: [],
+                        numRows: 0,
+                        numCols: 0,
+                        baseCol: 0,
+                        resultRow: 0,
+                        activeTargetCells: []
+                    };
                 }
 
-                // Column addition of the partial products (only when the
-                // multiplier has more than one digit)
-                if (n > 1) {
-                    const L = s.productDigits.length;
-                    let carry = 0;
+                getLevelConfig(level) {
+                    const table = [
+                        { mMin: 2, mMax: 2, nMin: 1, nMax: 1, noCarry: true },
+                        { mMin: 2, mMax: 2, nMin: 1, nMax: 1 },
+                        { mMin: 3, mMax: 3, nMin: 1, nMax: 1 },
+                        { mMin: 2, mMax: 2, nMin: 2, nMax: 2 },
+                        { mMin: 3, mMax: 3, nMin: 2, nMax: 2 },
+                        { mMin: 3, mMax: 3, nMin: 2, nMax: 2, bigDigits: true },
+                        { mMin: 4, mMax: 4, nMin: 2, nMax: 2 },
+                        { mMin: 3, mMax: 3, nMin: 3, nMax: 3 },
+                        { mMin: 4, mMax: 4, nMin: 3, nMax: 3 },
+                        { mMin: 4, mMax: 4, nMin: 3, nMax: 3, bigDigits: true },
+                        { mMin: 3, mMax: 3, nMin: 2, nMax: 2, k1: 1 },
+                        { mMin: 3, mMax: 3, nMin: 2, nMax: 2, k2: 1 },
+                        { mMin: 4, mMax: 4, nMin: 2, nMax: 2, k1: 1 },
+                        { mMin: 3, mMax: 3, nMin: 3, nMax: 3, k1: 1 },
+                        { mMin: 4, mMax: 4, nMin: 3, nMax: 3, k1: 1 },
+                        { mMin: 3, mMax: 3, nMin: 2, nMax: 2, k1: 1, k2: 1 },
+                        { mMin: 4, mMax: 4, nMin: 2, nMax: 2, k1: 1, k2: 1 },
+                        { mMin: 3, mMax: 3, nMin: 3, nMax: 3, k1: 1, k2: 1 },
+                        { mMin: 4, mMax: 4, nMin: 3, nMax: 3, k1: 1, k2: 1 },
+                        { mMin: 4, mMax: 4, nMin: 3, nMax: 3, k1: 2, k2: 1 }
+                    ];
+                    const index = Math.min(Math.max(level, 1), table.length) - 1;
+                    return table[index];
+                }
 
-                    for (let c = 0; c < L; c++) {
-                        const addends = [];
-                        for (let j = 0; j < n; j++) {
-                            const index = c - j;
-                            if (index >= 0 && index < partialLengths[j]) {
-                                addends.push(partialDigits[j][index]);
-                            }
+                createProblem(level) {
+                    const cfg = this.getLevelConfig(level);
+
+                    for (let attempt = 0; attempt < 600; attempt++) {
+                        let m = this.randomInt(cfg.mMin, cfg.mMax);
+                        let n = this.randomInt(cfg.nMin, cfg.nMax);
+                        if (n > m) {
+                            const swap = m;
+                            m = n;
+                            n = swap;
                         }
-                        const carryBefore = carry;
-                        const value = addends.reduce((sum, digit) => sum + digit, 0) + carryBefore;
-                        const writeDigit = value % 10;
-                        carry = Math.floor(value / 10);
-                        steps.push({
-                            type: 'ADD',
-                            addends,
-                            carryBefore,
-                            expected: value,
-                            writeDigit,
-                            row: s.resultRow,
-                            col: s.baseCol - c,
-                            badge: carry > 0 ? { row: s.resultRow - 1, col: s.baseCol - c - 1 } : null,
-                            carryAfter: carry
-                        });
+
+                        const k1 = cfg.k1 || 0;
+                        const k2 = cfg.k2 || 0;
+                        const multiplicand = this.randomDigits(m, cfg.bigDigits);
+                        const multiplier = this.randomDigits(n, cfg.bigDigits);
+
+                        const product = String(Number(multiplicand) * Number(multiplier));
+                        if (product.length > this.config.maxProductDigits) continue;
+                        // Keep the notebook grid inside the column budget, otherwise the
+                        // cells get too small to read on a phone.
+                        if (this.geometry(multiplicand, k1, multiplier, k2).numCols > this.config.maxGridColumns) continue;
+                        if (cfg.noCarry && this.hasCarry(multiplicand, multiplier)) continue;
+                        if (n >= 2 && multiplier[multiplier.length - 1] === '0') continue;
+                        if (k1 > 0 && multiplicand[multiplicand.length - 1] === '0') continue;
+                        if (k2 > 0 && multiplier[multiplier.length - 1] === '0') continue;
+
+                        return {
+                            multiplicandDigits: multiplicand,
+                            multiplicandDecimals: k1,
+                            multiplierDigits: multiplier,
+                            multiplierDecimals: k2
+                        };
                     }
+
+                    return { multiplicandDigits: '24', multiplicandDecimals: 0, multiplierDigits: '3', multiplierDecimals: 0 };
                 }
 
-                s.steps = steps;
-                s.partialLengths = partialLengths;
-            }
+                beginRound(problem, isCustomRound) {
+                    this.elements.completionOverlay.classList.remove('show');
+                    this.state.isCustomRound = !!isCustomRound;
+                    this.state.hadErrorThisRound = false;
+                    this.state.currentInput = '';
+                    this.state.multiplicandDigits = problem.multiplicandDigits;
+                    this.state.multiplicandDecimals = problem.multiplicandDecimals;
+                    this.state.multiplierDigits = problem.multiplierDigits;
+                    this.state.multiplierDecimals = problem.multiplierDecimals;
 
-            // ---------------------------------------------------------------
-            // Grid
-            // ---------------------------------------------------------------
+                    this.renderLevelBadge();
+                    this.computeGeometry();
+                    this.computePlan();
+                    this.buildGrid();
+                    this.renderCommas();
 
-            #buildGrid() {
-                const s = this.#state;
-                const m = s.multiplicandDigits.length;
-                const n = s.multiplierDigits.length;
-                const k1 = s.multiplicandDecimals;
-                const k2 = s.multiplierDecimals;
-                const L = s.productDigits.length;
-
-                const matrix = [];
-                for (let r = 0; r < s.numRows; r++) {
-                    const row = [];
-                    for (let c = 0; c < s.numCols; c++) {
-                        row.push({ char: '', classes: [] });
-                    }
-                    matrix.push(row);
+                    this.state.stepIndex = 0;
+                    this.promptCurrentStep();
                 }
 
-                // Factors
-                for (let i = 0; i < m; i++) {
-                    matrix[0][s.baseCol - i].char = s.multiplicandDigits[m - 1 - i];
-                }
-                for (let j = 0; j < n; j++) {
-                    matrix[1][s.baseCol - j].char = s.multiplierDigits[n - 1 - j];
-                }
-                matrix[1][s.baseCol - Math.max(m, n)].char = '×';
-                matrix[1][s.baseCol - Math.max(m, n)].classes.push('operator-sign');
+                geometry(multiplicandDigits, multiplicandDecimals, multiplierDigits, multiplierDecimals) {
+                    const m = multiplicandDigits.length;
+                    const n = multiplierDigits.length;
+                    const productDigits = String(Number(multiplicandDigits) * Number(multiplierDigits));
+                    const leftUnits = Math.max(m, n + m - 1, productDigits.length);
 
-                // Line under the factors, clamped to the grid
-                const factorRight = Math.min(s.baseCol + Math.max(k1, k2), s.numCols - 1);
-                for (let c = s.baseCol - Math.max(m, n) + 1; c <= factorRight; c++) {
-                    matrix[1][c].classes.push('subtraction-line');
-                }
-
-                // Line above the result (spans the partial products and the result)
-                if (n > 1) {
-                    let leftExtent = s.baseCol - (L - 1);
-                    for (let j = 0; j < n; j++) {
-                        leftExtent = Math.min(leftExtent, s.baseCol - j - (s.partialLengths[j] - 1));
-                    }
-                    const lineRow = s.resultRow - 1;
-                    for (let c = leftExtent; c <= Math.min(s.baseCol + s.productDecimals, s.numCols - 1); c++) {
-                        matrix[lineRow][c].classes.push('subtraction-line');
-                    }
+                    // Column 0 is the single sign/carry gutter: every number is right
+                    // aligned on baseCol, so the content needs baseCol + 1 columns.
+                    return {
+                        productDigits,
+                        productDecimals: multiplicandDecimals + multiplierDecimals,
+                        baseCol: leftUnits,
+                        numCols: leftUnits + 1
+                    };
                 }
 
-                s.gridMatrix = matrix;
-                this.#renderGridDOM();
-            }
+                computeGeometry() {
+                    const s = this.state;
+                    const n = s.multiplierDigits.length;
+                    const geometry = this.geometry(
+                        s.multiplicandDigits, s.multiplicandDecimals,
+                        s.multiplierDigits, s.multiplierDecimals
+                    );
 
-            #renderGridDOM() {
-                BrainWarsColumnGame.renderGridDOM(this.#ctx());
-            }
+                    s.productDigits = geometry.productDigits;
+                    s.productDecimals = geometry.productDecimals;
+                    s.baseCol = geometry.baseCol;
+                    s.numCols = geometry.numCols;
 
-            // The notebook grid is the main content, so cells grow to fill the free
-            // width. They only shrink (down to a readable floor) when a long problem
-            // needs more columns than fit on screen.
-            #applyCellSize() {
-                BrainWarsColumnGame.applyCellSize(this.#elements, this.#state);
-            }
-
-            #renderCommas() {
-                const layer = this.#elements.commaLayer;
-                layer.innerHTML = '';
-                if (!this.#state.productDecimals && !this.#state.multiplicandDecimals && !this.#state.multiplierDecimals) return;
-
-                const grid = this.#elements.mathGrid;
-                const gridRect = grid.getBoundingClientRect();
-                const separator = I18n.t('decimal_separator');
-
-                const place = (row, decimals) => {
-                    if (!decimals) return;
-                    const cell = document.getElementById(`cell-${row}-${this.#state.baseCol - decimals + 1}`);
-                    if (!cell) return;
-                    const rect = cell.getBoundingClientRect();
-                    const span = document.createElement('span');
-                    span.className = 'comma-overlay';
-                    span.textContent = separator;
-                    span.style.left = (rect.left - gridRect.left) + 'px';
-                    span.style.top = (rect.top - gridRect.top) + 'px';
-                    span.style.height = rect.height + 'px';
-                    layer.appendChild(span);
-                };
-
-                place(0, this.#state.multiplicandDecimals);
-                place(1, this.#state.multiplierDecimals);
-                place(this.#state.resultRow, this.#state.productDecimals);
-            }
-
-            // ---------------------------------------------------------------
-            // Prompting and input
-            // ---------------------------------------------------------------
-
-            #promptCurrentStep() {
-                const step = this.#state.steps[this.#state.stepIndex];
-                if (!step) return;
-
-                this.#state.currentInput = '';
-                this.#state.expectedAnswer = String(step.expected);
-                this.#elements.instructionHint.classList.remove('is-error');
-                this.#syncActiveCell();
-
-                if (step.type === 'MUL') {
-                    this.#elements.instructionHint.textContent = step.carryBefore > 0
-                        ? I18n.t('lm_mul_hint_carry', { a: step.a, b: step.b, carry: step.carryBefore })
-                        : I18n.t('lm_mul_hint', { a: step.a, b: step.b });
-                } else if (step.type === 'CARRY') {
-                    this.#elements.instructionHint.textContent = I18n.t('lm_carry_hint', { carry: step.expected });
-                } else {
-                    const terms = step.addends.join(' + ');
-                    const expression = step.carryBefore > 0 ? `${terms} + ${step.carryBefore}` : terms;
-                    this.#elements.instructionHint.textContent = I18n.t('lm_add_hint', { expr: expression });
-                }
-            }
-
-            #syncActiveCell() {
-                BrainWarsColumnGame.syncActiveCell(this.#ctx());
-            }
-
-            #scrollCellIntoView(cell) {
-                BrainWarsColumnGame.scrollCellIntoView(cell, this.#elements);
-            }
-
-            #handleKeyPress(key) {
-                BrainWarsColumnGame.handleKeyPress(key, this.#ctx());
-            }
-
-            #renderTypingPreview() {
-                BrainWarsColumnGame.renderTypingPreview(this.#state);
-            }
-
-            #submitCurrentInput() {
-                BrainWarsColumnGame.submitCurrentInput(this.#ctx());
-            }
-
-            #handleCorrectInput() {
-                const step = this.#state.steps[this.#state.stepIndex];
-
-                this.#setCellValue(step.row, step.col, String(step.writeDigit), ['correct-flash']);
-                this.#clearCarryBadges();
-                if (step.badge) {
-                    this.#setCarryBadge(step.badge.row, step.badge.col, step.carryAfter);
-                }
-
-                this.#state.stepIndex++;
-                if (this.#state.stepIndex < this.#state.steps.length) {
-                    this.#promptCurrentStep();
-                } else {
-                    this.#finishRound();
-                }
-            }
-
-            #handleWrongInput() {
-                this.#state.hadErrorThisRound = true;
-
-                this.#state.activeTargetCells.forEach(({ r, c }) => {
-                    const cell = document.getElementById(`cell-${r}-${c}`);
-                    if (!cell) return;
-                    cell.classList.add('error-shake');
-                    setTimeout(() => cell.classList.remove('error-shake'), 600);
-                });
-
-                this.#elements.instructionHint.classList.add('is-error');
-                this.#elements.instructionHint.textContent = I18n.t('lm_wrong_hint');
-
-                setTimeout(() => {
-                    this.#elements.instructionHint.classList.remove('is-error');
-                }, 1200);
-
-                this.#state.currentInput = '';
-                this.#renderTypingPreview();
-            }
-
-            #setCellValue(r, c, char, additionalClasses = []) {
-                BrainWarsColumnGame.setCellValue(r, c, char, additionalClasses, this.#state);
-            }
-
-            #setCarryBadge(r, c, value) {
-                const cell = document.getElementById(`cell-${r}-${c}`);
-                if (!cell) return;
-                const badge = document.createElement('span');
-                badge.className = 'carry-badge';
-                badge.textContent = '+' + value;
-                cell.appendChild(badge);
-            }
-
-            #clearCarryBadges() {
-                document.querySelectorAll('.carry-badge').forEach(badge => badge.remove());
-            }
-
-            // ---------------------------------------------------------------
-            // Terminology highlights
-            // ---------------------------------------------------------------
-
-            // Paint every element `collect` returns, then drop the paint again.
-            #paint(cls, collect) {
-                BrainWarsColumnGame.paint(cls, collect);
-            }
-
-            #digitCells(row, digits) {
-                const cells = [];
-                for (let i = 0; i < digits.length; i++) {
-                    cells.push(document.getElementById(`cell-${row}-${this.#state.baseCol - i}`));
-                }
-                return cells.filter(Boolean);
-            }
-
-            #partialCells() {
-                const step = this.#state.steps[Math.min(this.#state.stepIndex, this.#state.steps.length - 1)];
-                if (!step) return [];
-                const singleDigitMultiplier = this.#state.multiplierDigits.length === 1;
-                const partialRow = singleDigitMultiplier
-                    ? this.#state.resultRow
-                    : (step.row < this.#state.resultRow ? step.row : this.#state.resultRow - 1);
-                const cells = [];
-                for (let c = 0; c < this.#state.numCols; c++) {
-                    const cell = document.getElementById(`cell-${partialRow}-${c}`);
-                    if (cell && cell.textContent) cells.push(cell);
-                }
-                return cells;
-            }
-
-            #highlightTerm(term) {
-                const state = this.#state;
-                if (term === 'multiplicand') return this.#paint('term-highlight-blue', () => this.#digitCells(0, state.multiplicandDigits));
-                if (term === 'multiplier') return this.#paint('term-highlight-amber', () => this.#digitCells(1, state.multiplierDigits));
-                if (term === 'product') return this.#paint('term-highlight-green', () => this.#digitCells(state.resultRow, state.productDigits));
-                if (term === 'partial') return this.#paint('term-highlight-purple', () => this.#partialCells());
-            }
-
-            // ---------------------------------------------------------------
-            // Round completion
-            // ---------------------------------------------------------------
-
-            #formatNumberText(digits, decimals) {
-                return BrainWarsColumnGame.formatNumberText(digits, decimals);
-            }
-
-            #renderCompletionEquation() {
-                this.#elements.completionEquation.textContent =
-                    `${this.#formatNumberText(this.#state.multiplicandDigits, this.#state.multiplicandDecimals)}` +
-                    ` × ${this.#formatNumberText(this.#state.multiplierDigits, this.#state.multiplierDecimals)}` +
-                    ` = ${this.#formatNumberText(this.#state.productDigits, this.#state.productDecimals)}`;
-            }
-
-            #finishRound() {
-                this.#state.activeTargetCells = [];
-                this.#clearCarryBadges();
-
-                // Custom equations don't affect the level progression
-                if (!this.#state.isCustomRound) {
-                    if (this.#state.hadErrorThisRound) {
-                        this.#state.level = Math.max(1, this.#state.level - 1);
+                    if (n === 1) {
+                        // A single-digit multiplier: the partial product IS the
+                        // product, so there is no separate addition phase.
+                        s.numRows = 3;
+                        s.resultRow = 2;
                     } else {
-                        this.#state.level = Math.min(this.#config.maxLevel, this.#state.level + 1);
+                        // Operands, one row per multiplier digit, then the result. The line
+                        // above the result is the bottom border of the last partial row.
+                        s.numRows = 3 + n;
+                        s.resultRow = 2 + n;
                     }
                 }
 
-                this.#renderCompletionEquation();
+                computePlan() {
+                    const s = this.state;
+                    const ad = Array.from(s.multiplicandDigits).map(Number);
+                    const bd = Array.from(s.multiplierDigits).map(Number);
+                    const m = ad.length;
+                    const n = bd.length;
+                    const steps = [];
+                    const partialDigits = [];
+                    const partialLengths = [];
 
-                setTimeout(() => {
-                    this.#elements.completionOverlay.classList.add('show');
-                }, 400);
-            }
+                    // Partial products, one row per multiplier digit (right to left)
+                    for (let j = 0; j < n; j++) {
+                        const b = bd[n - 1 - j];
+                        const row = 2 + j;
+                        const digits = [];
+                        let carry = 0;
 
-            // ---------------------------------------------------------------
-            // Level picker
-            // ---------------------------------------------------------------
+                        for (let i = 0; i < m; i++) {
+                            const a = ad[m - 1 - i];
+                            const carryBefore = carry;
+                            const value = a * b + carryBefore;
+                            const writeDigit = value % 10;
+                            carry = Math.floor(value / 10);
+                            digits.push(writeDigit);
+                            steps.push({
+                                type: 'MUL',
+                                a,
+                                b,
+                                carryBefore,
+                                expected: value,
+                                writeDigit,
+                                row,
+                                col: s.baseCol - j - i,
+                                badge: carry > 0 ? { row: row - 1, col: s.baseCol - j - i - 1 } : null,
+                                carryAfter: carry
+                            });
+                        }
 
-            #renderLevelBadge() {
-                BrainWarsColumnGame.renderLevelBadge(this.#elements, this.#state);
-            }
+                        if (carry > 0) {
+                            digits.push(carry);
+                            steps.push({
+                                type: 'CARRY',
+                                expected: carry,
+                                writeDigit: carry,
+                                row,
+                                col: s.baseCol - j - m,
+                                badge: null,
+                                carryAfter: 0
+                            });
+                        }
 
-            #renderLevelMenu() {
-                BrainWarsColumnGame.renderLevelMenu(this.#elements, this.#state, this.#config);
-            }
+                        partialDigits.push(digits);
+                        partialLengths.push(digits.length);
+                    }
 
-            #toggleLevelMenu(open) {
-                BrainWarsColumnGame.toggleLevelMenu(open, this.#ctx());
-            }
+                    // Column addition of the partial products (only when the
+                    // multiplier has more than one digit)
+                    if (n > 1) {
+                        const L = s.productDigits.length;
+                        let carry = 0;
 
-            #positionLevelMenu() {
-                BrainWarsColumnGame.positionLevelMenu(this.#elements);
-            }
+                        for (let c = 0; c < L; c++) {
+                            const addends = [];
+                            for (let j = 0; j < n; j++) {
+                                const index = c - j;
+                                if (index >= 0 && index < partialLengths[j]) {
+                                    addends.push(partialDigits[j][index]);
+                                }
+                            }
+                            const carryBefore = carry;
+                            const value = addends.reduce((sum, digit) => sum + digit, 0) + carryBefore;
+                            const writeDigit = value % 10;
+                            carry = Math.floor(value / 10);
+                            steps.push({
+                                type: 'ADD',
+                                addends,
+                                carryBefore,
+                                expected: value,
+                                writeDigit,
+                                row: s.resultRow,
+                                col: s.baseCol - c,
+                                badge: carry > 0 ? { row: s.resultRow - 1, col: s.baseCol - c - 1 } : null,
+                                carryAfter: carry
+                            });
+                        }
+                    }
 
-            #selectLevel(level) {
-                BrainWarsColumnGame.selectLevel(level, this.#ctx());
-            }
-
-            // ---------------------------------------------------------------
-            // Modals
-            // ---------------------------------------------------------------
-
-
-            #toggleCustomModal(open) {
-                this.#elements.customModal.classList.toggle('open', open);
-                this.#elements.customError.textContent = '';
-                if (open) {
-                    this.#elements.customFactor1.value =
-                        this.#formatNumberText(this.#state.multiplicandDigits, this.#state.multiplicandDecimals);
-                    this.#elements.customFactor2.value =
-                        this.#formatNumberText(this.#state.multiplierDigits, this.#state.multiplierDecimals);
-                    this.#elements.customFactor1.focus();
-                    this.#elements.customFactor1.select();
+                    s.steps = steps;
+                    s.partialLengths = partialLengths;
                 }
-            }
 
-            #showCustomError(key) {
-                BrainWarsColumnGame.showCustomError(key, this.#elements);
-            }
+                buildGrid() {
+                    const s = this.state;
+                    const m = s.multiplicandDigits.length;
+                    const n = s.multiplierDigits.length;
+                    const k1 = s.multiplicandDecimals;
+                    const k2 = s.multiplierDecimals;
+                    const L = s.productDigits.length;
 
-            #parseFactor(raw) {
-                // Accept generous input here: the product and column budgets below
-                // decide what can be shown, and they report their own "too big" message.
-                const match = String(raw).trim().replace(/\s+/g, '').match(/^(\d{1,12})(?:[.,](\d{1,2}))?$/);
-                if (!match || Number(match[1]) < 1) return null;
-                let fraction = match[2] || '';
-                while (fraction.endsWith('0')) fraction = fraction.slice(0, -1);
-                return { digits: match[1] + fraction, decimals: fraction.length };
-            }
+                    const matrix = [];
+                    for (let r = 0; r < s.numRows; r++) {
+                        const row = [];
+                        for (let c = 0; c < s.numCols; c++) {
+                            row.push({ char: '', classes: [] });
+                        }
+                        matrix.push(row);
+                    }
 
-            #submitCustomProblem() {
-                const factor1 = this.#parseFactor(this.#elements.customFactor1.value);
-                const factor2 = this.#parseFactor(this.#elements.customFactor2.value);
-                if (!factor1 || !factor2) {
-                    this.#showCustomError('lm_custom_err_factor');
-                    return;
+                    // Factors
+                    for (let i = 0; i < m; i++) {
+                        matrix[0][s.baseCol - i].char = s.multiplicandDigits[m - 1 - i];
+                    }
+                    for (let j = 0; j < n; j++) {
+                        matrix[1][s.baseCol - j].char = s.multiplierDigits[n - 1 - j];
+                    }
+                    matrix[1][s.baseCol - Math.max(m, n)].char = '×';
+                    matrix[1][s.baseCol - Math.max(m, n)].classes.push('operator-sign');
+
+                    // Line under the factors, clamped to the grid
+                    const factorRight = Math.min(s.baseCol + Math.max(k1, k2), s.numCols - 1);
+                    for (let c = s.baseCol - Math.max(m, n) + 1; c <= factorRight; c++) {
+                        matrix[1][c].classes.push('subtraction-line');
+                    }
+
+                    // Line above the result (spans the partial products and the result)
+                    if (n > 1) {
+                        let leftExtent = s.baseCol - (L - 1);
+                        for (let j = 0; j < n; j++) {
+                            leftExtent = Math.min(leftExtent, s.baseCol - j - (s.partialLengths[j] - 1));
+                        }
+                        const lineRow = s.resultRow - 1;
+                        for (let c = leftExtent; c <= Math.min(s.baseCol + s.productDecimals, s.numCols - 1); c++) {
+                            matrix[lineRow][c].classes.push('subtraction-line');
+                        }
+                    }
+
+                    s.gridMatrix = matrix;
+                    this.renderGridDOM();
                 }
 
-                const product = String(Number(factor1.digits) * Number(factor2.digits));
-                if (product.length > this.#config.maxProductDigits || factor1.decimals + factor2.decimals > 4) {
-                    this.#showCustomError('lm_custom_err_too_big');
-                    return;
+                renderCommas() {
+                    const layer = this.elements.commaLayer;
+                    layer.innerHTML = '';
+                    if (!this.state.productDecimals && !this.state.multiplicandDecimals && !this.state.multiplierDecimals) return;
+
+                    const grid = this.elements.mathGrid;
+                    const gridRect = grid.getBoundingClientRect();
+                    const separator = I18n.t('decimal_separator');
+
+                    const place = (row, decimals) => {
+                        if (!decimals) return;
+                        const cell = document.getElementById(`cell-${row}-${this.state.baseCol - decimals + 1}`);
+                        if (!cell) return;
+                        const rect = cell.getBoundingClientRect();
+                        const span = document.createElement('span');
+                        span.className = 'comma-overlay';
+                        span.textContent = separator;
+                        span.style.left = (rect.left - gridRect.left) + 'px';
+                        span.style.top = (rect.top - gridRect.top) + 'px';
+                        span.style.height = rect.height + 'px';
+                        layer.appendChild(span);
+                    };
+
+                    place(0, this.state.multiplicandDecimals);
+                    place(1, this.state.multiplierDecimals);
+                    place(this.state.resultRow, this.state.productDecimals);
                 }
 
-                // Same column budget as the generated levels: a longer example would
-                // shrink the grid cells until the digits are unreadable.
-                if (this.#geometry(factor1.digits, factor1.decimals, factor2.digits, factor2.decimals).numCols > this.#config.maxGridColumns) {
-                    this.#showCustomError('lm_custom_err_too_big');
-                    return;
+                promptCurrentStep() {
+                    const step = this.state.steps[this.state.stepIndex];
+                    if (!step) return;
+
+                    this.state.currentInput = '';
+                    this.state.expectedAnswer = String(step.expected);
+                    this.elements.instructionHint.classList.remove('is-error');
+                    this.syncActiveCell();
+
+                    if (step.type === 'MUL') {
+                        this.elements.instructionHint.textContent = step.carryBefore > 0
+                            ? I18n.t('lm_mul_hint_carry', { a: step.a, b: step.b, carry: step.carryBefore })
+                            : I18n.t('lm_mul_hint', { a: step.a, b: step.b });
+                    } else if (step.type === 'CARRY') {
+                        this.elements.instructionHint.textContent = I18n.t('lm_carry_hint', { carry: step.expected });
+                    } else {
+                        const terms = step.addends.join(' + ');
+                        const expression = step.carryBefore > 0 ? `${terms} + ${step.carryBefore}` : terms;
+                        this.elements.instructionHint.textContent = I18n.t('lm_add_hint', { expr: expression });
+                    }
                 }
 
-                this.#toggleCustomModal(false);
-                this.#beginRound({
-                    multiplicandDigits: factor1.digits,
-                    multiplicandDecimals: factor1.decimals,
-                    multiplierDigits: factor2.digits,
-                    multiplierDecimals: factor2.decimals
-                }, true);
+                handleCorrectInput() {
+                    const step = this.state.steps[this.state.stepIndex];
+
+                    this.setCellValue(step.row, step.col, String(step.writeDigit), ['correct-flash']);
+                    this.clearCarryBadges();
+                    if (step.badge) {
+                        this.setCarryBadge(step.badge.row, step.badge.col, step.carryAfter);
+                    }
+
+                    this.state.stepIndex++;
+                    if (this.state.stepIndex < this.state.steps.length) {
+                        this.promptCurrentStep();
+                    } else {
+                        this.finishRound();
+                    }
+                }
+
+                digitCells(row, digits) {
+                    const cells = [];
+                    for (let i = 0; i < digits.length; i++) {
+                        cells.push(document.getElementById(`cell-${row}-${this.state.baseCol - i}`));
+                    }
+                    return cells.filter(Boolean);
+                }
+
+                highlightTerm(term) {
+                    const state = this.state;
+                    if (term === 'multiplicand') return this.paint('term-highlight-blue', () => this.digitCells(0, state.multiplicandDigits));
+                    if (term === 'multiplier') return this.paint('term-highlight-amber', () => this.digitCells(1, state.multiplierDigits));
+                    if (term === 'product') return this.paint('term-highlight-green', () => this.digitCells(state.resultRow, state.productDigits));
+                    if (term === 'partial') return this.paint('term-highlight-purple', () => this.partialCells());
+                }
+
+                renderCompletionEquation() {
+                    this.elements.completionEquation.textContent =
+                        `${this.formatNumberText(this.state.multiplicandDigits, this.state.multiplicandDecimals)}` +
+                        ` × ${this.formatNumberText(this.state.multiplierDigits, this.state.multiplierDecimals)}` +
+                        ` = ${this.formatNumberText(this.state.productDigits, this.state.productDecimals)}`;
+                }
+
+                toggleCustomModal(open) {
+                    this.elements.customModal.classList.toggle('open', open);
+                    this.elements.customError.textContent = '';
+                    if (open) {
+                        this.elements.customFactor1.value =
+                            this.formatNumberText(this.state.multiplicandDigits, this.state.multiplicandDecimals);
+                        this.elements.customFactor2.value =
+                            this.formatNumberText(this.state.multiplierDigits, this.state.multiplierDecimals);
+                        this.elements.customFactor1.focus();
+                        this.elements.customFactor1.select();
+                    }
+                }
+
+                submitCustomProblem() {
+                    const factor1 = this.parseFactor(this.elements.customFactor1.value);
+                    const factor2 = this.parseFactor(this.elements.customFactor2.value);
+                    if (!factor1 || !factor2) {
+                        this.showCustomError('lm_custom_err_factor');
+                        return;
+                    }
+
+                    const product = String(Number(factor1.digits) * Number(factor2.digits));
+                    if (product.length > this.config.maxProductDigits || factor1.decimals + factor2.decimals > 4) {
+                        this.showCustomError('lm_custom_err_too_big');
+                        return;
+                    }
+
+                    // Same column budget as the generated levels: a longer example would
+                    // shrink the grid cells until the digits are unreadable.
+                    if (this.geometry(factor1.digits, factor1.decimals, factor2.digits, factor2.decimals).numCols > this.config.maxGridColumns) {
+                        this.showCustomError('lm_custom_err_too_big');
+                        return;
+                    }
+
+                    this.toggleCustomModal(false);
+                    this.beginRound({
+                        multiplicandDigits: factor1.digits,
+                        multiplicandDecimals: factor1.decimals,
+                        multiplierDigits: factor2.digits,
+                        multiplierDecimals: factor2.decimals
+                    }, true);
+                }
+
             }
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
             new LongMultiplicationGame();
         });
     </script>

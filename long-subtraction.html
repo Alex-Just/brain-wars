@@ -157,660 +157,207 @@
 
     <!-- Game Engine -->
     <script>
-        class LongSubtractionGame {
-            #state;
-            #elements;
-            #config;
-
-            constructor() {
-                this.#initConfig();
-                this.#initElements();
-                this.#initState();
-                this.#bindEvents();
-                this.#subscribeToLanguageChanges();
-                this.#startNewRound();
-            }
-
-            // The context the shared column-game functions work on: this page's
-            // elements, state and config, plus the methods only this game has.
-            #ctx() {
-                return {
-                    elements: this.#elements,
-                    state: this.#state,
-                    config: this.#config,
-                    hooks: {
-                        initConfig: () => this.#initConfig(),
-                        initState: () => this.#initState(),
-                        beginRound: (problem, isCustom) => this.#beginRound(problem, isCustom),
-                        createProblem: (level) => this.#createProblem(level),
-                        promptCurrentStep: () => this.#promptCurrentStep(),
-                        renderCommas: () => this.#renderCommas(),
-                        renderCompletionEquation: () => this.#renderCompletionEquation(),
-                        handleCorrectInput: () => this.#handleCorrectInput(),
-                        handleWrongInput: () => this.#handleWrongInput(),
-                        highlightTerm: (term) => this.#highlightTerm(term),
-                        toggleCustomModal: (open) => this.#toggleCustomModal(open),
-                        submitCustomProblem: () => this.#submitCustomProblem(),
-                    }
-                };
-            }
-
-            #initConfig() {
-                this.#config = {
-                    maxLevel: 20,
-                    maxResultDigits: 8,
-                    // The notebook grid never uses more than this many columns: with
-                    // more the cells and digits get too small to read on a phone.
-                    maxGridColumns: 12
-                };
-            }
-
-            #initElements() {
-                this.#elements = BrainWarsColumnGame.initElements();
-            }
-
-            #initState() {
-                this.#state = {
-                    level: 1,
-                    isCustomRound: false,
-                    hadErrorThisRound: false,
-                    firstDigits: '12',
-                    firstDecimals: 0,
-                    secondDigits: '5',
-                    secondDecimals: 0,
-                    resultDigits: '7',
-                    resultDecimals: 0,
-                    steps: [],
-                    stepIndex: 0,
-                    currentInput: '',
-                    expectedAnswer: '',
-                    gridMatrix: [],
-                    numRows: 0,
-                    numCols: 0,
-                    baseCol: 0,
-                    resultRow: 0,
-                    activeTargetCells: []
-                };
-            }
-
-            #bindEvents() {
-                BrainWarsColumnGame.bindEvents(this.#ctx());
-            }
-
-            #subscribeToLanguageChanges() {
-                BrainWarsColumnGame.subscribeToLanguageChanges(this.#ctx());
-            }
-
-            #handleLanguageChange() {
-                BrainWarsColumnGame.handleLanguageChange(this.#ctx());
-            }
-
-            // ---------------------------------------------------------------
-            // Problem generation
-            // ---------------------------------------------------------------
-
-            #randomInt(min, max) {
-                return BrainWarsColumnGame.randomInt(min, max);
-            }
-
-            #randomNumberString(integerDigits, decimals, big) {
-                let digits = '';
-                for (let i = 0; i < integerDigits; i++) {
-                    digits += String(this.#randomInt(big ? 4 : (i === 0 ? 1 : 0), 9));
-                }
-                for (let i = 0; i < decimals; i++) {
-                    const lastFractionDigit = i === decimals - 1;
-                    digits += String(this.#randomInt(lastFractionDigit ? 1 : 0, 9));
-                }
-                return digits;
-            }
-
-            #scaledDigits(digits, decimals, scale) {
-                return digits + '0'.repeat(scale - decimals);
-            }
-
-            #hasBorrow(firstDigits, firstDecimals, secondDigits, secondDecimals) {
-                const scale = Math.max(firstDecimals, secondDecimals);
-                const a = this.#scaledDigits(firstDigits, firstDecimals, scale);
-                const b = this.#scaledDigits(secondDigits, secondDecimals, scale);
-                const length = Math.max(a.length, b.length);
-                let borrow = 0;
-                let any = false;
-
-                for (let i = 0; i < length; i++) {
-                    const aDigit = i < a.length ? Number(a[a.length - 1 - i]) : 0;
-                    const bDigit = i < b.length ? Number(b[b.length - 1 - i]) : 0;
-                    if (aDigit - borrow < bDigit) {
-                        borrow = 1;
-                        any = true;
-                    } else {
-                        borrow = 0;
-                    }
-                }
-                return any;
-            }
-
-            #hasInnerZero(digits, decimals) {
-                const integerDigits = digits.slice(0, digits.length - decimals);
-                return integerDigits.slice(1).includes('0');
-            }
-
-            // Difficulty grows with digit counts, then with decimals.
-            #getLevelConfig(level) {
-                const table = [
-                    { iMin: 2, iMax: 2, jMin: 1, jMax: 1, noBorrow: true },
-                    { iMin: 2, iMax: 2, jMin: 1, jMax: 1, borrow: true },
-                    { iMin: 2, iMax: 2, jMin: 2, jMax: 2, noBorrow: true },
-                    { iMin: 2, iMax: 2, jMin: 2, jMax: 2, borrow: true },
-                    { iMin: 3, iMax: 3, jMin: 2, jMax: 2 },
-                    { iMin: 3, iMax: 3, jMin: 3, jMax: 3 },
-                    { iMin: 3, iMax: 3, jMin: 3, jMax: 3, borrow: true, needZero: true },
-                    { iMin: 4, iMax: 4, jMin: 3, jMax: 3 },
-                    { iMin: 4, iMax: 4, jMin: 4, jMax: 4 },
-                    { iMin: 4, iMax: 4, jMin: 4, jMax: 4, borrow: true, needZero: true },
-                    { iMin: 2, iMax: 3, jMin: 2, jMax: 3, k1: 1, k2: 1 },
-                    { iMin: 2, iMax: 3, jMin: 2, jMax: 3, k1: 1 },
-                    { iMin: 2, iMax: 3, jMin: 2, jMax: 3, k1: 1, k2: 2 },
-                    { iMin: 2, iMax: 3, jMin: 2, jMax: 3, k1: 2, k2: 1 },
-                    { iMin: 2, iMax: 3, jMin: 2, jMax: 3, k1: 2, k2: 2 },
-                    { iMin: 3, iMax: 3, jMin: 3, jMax: 3, k1: 1, k2: 2 },
-                    { iMin: 3, iMax: 4, jMin: 3, jMax: 3, k1: 2, k2: 2 },
-                    { iMin: 4, iMax: 4, jMin: 3, jMax: 4, k1: 2, k2: 1 },
-                    { iMin: 4, iMax: 4, jMin: 4, jMax: 4, k1: 2, k2: 2 },
-                    { iMin: 4, iMax: 5, jMin: 4, jMax: 4, k1: 2, k2: 2, bigDigits: true }
-                ];
-                const index = Math.min(Math.max(level, 1), table.length) - 1;
-                return table[index];
-            }
-
-            #createProblem(level) {
-                const cfg = this.#getLevelConfig(level);
-                const k1 = cfg.k1 || 0;
-                const k2 = cfg.k2 || 0;
-
-                for (let attempt = 0; attempt < 600; attempt++) {
-                    const firstIntegerDigits = this.#randomInt(cfg.iMin, cfg.iMax);
-                    const secondIntegerDigits = this.#randomInt(cfg.jMin, cfg.jMax);
-                    const firstDigits = this.#randomNumberString(firstIntegerDigits, k1, cfg.bigDigits);
-                    const secondDigits = this.#randomNumberString(secondIntegerDigits, k2, cfg.bigDigits);
-
-                    const scale = Math.max(k1, k2);
-                    const first = Number(this.#scaledDigits(firstDigits, k1, scale));
-                    const second = Number(this.#scaledDigits(secondDigits, k2, scale));
-                    if (first <= second) continue;
-
-                    const difference = String(first - second);
-                    if (difference.length > this.#config.maxResultDigits) continue;
-
-                    // Keep the difference the same length as the minuend (no leading zeros)
-                    if (difference.length - scale !== firstDigits.length - k1) continue;
-
-                    const borrow = this.#hasBorrow(firstDigits, k1, secondDigits, k2);
-                    if (cfg.noBorrow && borrow) continue;
-                    if (cfg.borrow && !borrow) continue;
-                    if (cfg.needZero && !this.#hasInnerZero(firstDigits, k1)) continue;
-
-                    // Keep the notebook grid inside the column budget, otherwise the
-                    // cells get too small to read on a phone.
-                    if (this.#geometry(firstDigits, k1, secondDigits, k2).numCols > this.#config.maxGridColumns) continue;
-
-                    return {
-                        firstDigits,
-                        firstDecimals: k1,
-                        secondDigits,
-                        secondDecimals: k2
-                    };
-                }
-
-                return { firstDigits: '12', firstDecimals: 0, secondDigits: '5', secondDecimals: 0 };
-            }
-
-            // ---------------------------------------------------------------
-            // Round setup
-            // ---------------------------------------------------------------
-
-            #startNewRound() {
-                BrainWarsColumnGame.startNewRound(this.#ctx());
-            }
-
-            #beginRound(problem, isCustomRound) {
-                this.#elements.completionOverlay.classList.remove('show');
-                this.#state.isCustomRound = !!isCustomRound;
-                this.#state.hadErrorThisRound = false;
-                this.#state.currentInput = '';
-                this.#state.firstDigits = problem.firstDigits;
-                this.#state.firstDecimals = problem.firstDecimals;
-                this.#state.secondDigits = problem.secondDigits;
-                this.#state.secondDecimals = problem.secondDecimals;
-
-                this.#renderLevelBadge();
-                this.#computeGeometry();
-                this.#computePlan();
-                this.#buildGrid();
-                this.#renderCommas();
-
-                this.#state.stepIndex = 0;
-                this.#promptCurrentStep();
-            }
-
-            // Sign gutter + the widest operand or result + the decimal places. No
-            // trailing column is reserved, so the right-most cell always holds a digit.
-            #geometry(firstDigits, firstDecimals, secondDigits, secondDecimals) {
-                const scale = Math.max(firstDecimals, secondDecimals);
-                const firstScaled = this.#scaledDigits(firstDigits, firstDecimals, scale);
-                const secondScaled = this.#scaledDigits(secondDigits, secondDecimals, scale);
-                const resultDigits = String(Number(firstScaled) - Number(secondScaled));
-                const integerColumns = Math.max(
-                    firstScaled.length - scale,
-                    secondScaled.length - scale,
-                    resultDigits.length - scale
-                );
-
-                // Column 0 is the single sign/carry gutter: the operands start there.
-                return {
-                    scale,
-                    resultDigits,
-                    baseCol: integerColumns,
-                    numCols: integerColumns + 1 + scale
-                };
-            }
-
-            #computeGeometry() {
-                const s = this.#state;
-                const geometry = this.#geometry(s.firstDigits, s.firstDecimals, s.secondDigits, s.secondDecimals);
-
-                s.resultDecimals = geometry.scale;
-                s.resultDigits = geometry.resultDigits;
-                s.baseCol = geometry.baseCol;
-                s.numCols = geometry.numCols;
-                // Operands on rows 0-1 and the result right below the line on row 2.
-                s.numRows = 3;
-                s.resultRow = 2;
-            }
-
-            #computePlan() {
-                const s = this.#state;
-                const scale = s.resultDecimals;
-                const a = this.#scaledDigits(s.firstDigits, s.firstDecimals, scale);
-                const b = this.#scaledDigits(s.secondDigits, s.secondDecimals, scale);
-                const steps = [];
-                let borrow = 0;
-
-                for (let c = 0; c < s.resultDigits.length; c++) {
-                    const col = s.baseCol - c + scale;
-                    const aDigit = c < a.length ? Number(a[a.length - 1 - c]) : 0;
-                    const bDigit = c < b.length ? Number(b[b.length - 1 - c]) : 0;
-                    const borrowBefore = borrow;
-                    const reduced = aDigit - borrowBefore;
-
-                    if (reduced < bDigit) {
-                        const work = reduced + 10;
-                        borrow = 1;
-                        steps.push({
-                            type: 'SUB',
-                            borrow: true,
-                            expected: work - bDigit,
-                            writeDigit: work - bDigit,
-                            expr: `${work} − ${bDigit}`,
-                            row: s.resultRow,
-                            col,
-                            badge: { row: 0, col: col - 1 }
-                        });
-                    } else {
-                        borrow = 0;
-                        steps.push({
-                            type: 'SUB',
-                            borrow: false,
-                            expected: reduced - bDigit,
-                            writeDigit: reduced - bDigit,
-                            expr: `${reduced} − ${bDigit}`,
-                            row: s.resultRow,
-                            col,
-                            badge: null
-                        });
-                    }
-                }
-
-                s.steps = steps;
-            }
-
-            // ---------------------------------------------------------------
-            // Grid
-            // ---------------------------------------------------------------
-
-            #buildGrid() {
-                const s = this.#state;
-                const scale = s.resultDecimals;
-                const firstLength = s.firstDigits.length;
-                const secondLength = s.secondDigits.length;
-                const firstIntegerColumns = firstLength - s.firstDecimals;
-                const secondIntegerColumns = secondLength - s.secondDecimals;
-
-                const matrix = [];
-                for (let r = 0; r < s.numRows; r++) {
-                    const row = [];
-                    for (let c = 0; c < s.numCols; c++) {
-                        row.push({ char: '', classes: [] });
-                    }
-                    matrix.push(row);
-                }
-
-                // Operands, placed by place value so the decimal points align
-                for (let i = 0; i < firstLength; i++) {
-                    matrix[0][s.baseCol - i + s.firstDecimals].char = s.firstDigits[firstLength - 1 - i];
-                }
-                for (let i = 0; i < secondLength; i++) {
-                    matrix[1][s.baseCol - i + s.secondDecimals].char = s.secondDigits[secondLength - 1 - i];
-                }
-                matrix[1][s.baseCol - secondIntegerColumns].char = '−';
-                matrix[1][s.baseCol - secondIntegerColumns].classes.push('operator-sign');
-
-                // Line under the operands
-                const leftmost = s.baseCol - Math.max(firstIntegerColumns, secondIntegerColumns) + 1;
-                for (let c = leftmost; c <= s.baseCol + scale; c++) {
-                    matrix[1][c].classes.push('subtraction-line');
-                }
-
-                s.gridMatrix = matrix;
-                this.#renderGridDOM();
-            }
-
-            #renderGridDOM() {
-                BrainWarsColumnGame.renderGridDOM(this.#ctx());
-            }
-
-            // The notebook grid is the main content, so cells grow to fill the free
-            // width. They only shrink (down to a readable floor) when a long problem
-            // needs more columns than fit on screen.
-            #applyCellSize() {
-                BrainWarsColumnGame.applyCellSize(this.#elements, this.#state);
-            }
-
-            // Decimal points are aligned, so one boundary per row is enough.
-            #renderCommas() {
-                const layer = this.#elements.commaLayer;
-                layer.innerHTML = '';
-
-                const grid = this.#elements.mathGrid;
-                const gridRect = grid.getBoundingClientRect();
-                const separator = I18n.t('decimal_separator');
-
-                const place = (row, decimals) => {
-                    if (!decimals) return;
-                    const cell = document.getElementById(`cell-${row}-${this.#state.baseCol}`);
-                    if (!cell) return;
-                    const rect = cell.getBoundingClientRect();
-                    const span = document.createElement('span');
-                    span.className = 'comma-overlay';
-                    span.textContent = separator;
-                    span.style.left = (rect.left - gridRect.left) + 'px';
-                    span.style.top = (rect.top - gridRect.top) + 'px';
-                    span.style.height = rect.height + 'px';
-                    layer.appendChild(span);
-                };
-
-                place(0, this.#state.firstDecimals);
-                place(1, this.#state.secondDecimals);
-                place(this.#state.resultRow, this.#state.resultDecimals);
-            }
-
-            // ---------------------------------------------------------------
-            // Prompting and input
-            // ---------------------------------------------------------------
-
-            #promptCurrentStep() {
-                const step = this.#state.steps[this.#state.stepIndex];
-                if (!step) {
-                    this.#finishRound();
-                    return;
-                }
-
-                this.#state.currentInput = '';
-                this.#state.expectedAnswer = String(step.expected);
-                this.#elements.instructionHint.classList.remove('is-error');
-                this.#syncActiveCell();
-
-                this.#elements.instructionHint.textContent = step.borrow
-                    ? I18n.t('ls_borrow_hint', { expr: step.expr })
-                    : I18n.t('ls_sub_hint', { expr: step.expr });
-            }
-
-            #writeStep(step) {
-                this.#setCellValue(step.row, step.col, String(step.writeDigit), ['correct-flash']);
-                if (step.badge) {
-                    this.#setBorrowMark(step.badge.row, step.badge.col);
-                }
-            }
-
-            #syncActiveCell() {
-                BrainWarsColumnGame.syncActiveCell(this.#ctx());
-            }
-
-            #scrollCellIntoView(cell) {
-                BrainWarsColumnGame.scrollCellIntoView(cell, this.#elements);
-            }
-
-            #handleKeyPress(key) {
-                BrainWarsColumnGame.handleKeyPress(key, this.#ctx());
-            }
-
-            #renderTypingPreview() {
-                BrainWarsColumnGame.renderTypingPreview(this.#state);
-            }
-
-            #submitCurrentInput() {
-                BrainWarsColumnGame.submitCurrentInput(this.#ctx());
-            }
-
-            #handleCorrectInput() {
-                const step = this.#state.steps[this.#state.stepIndex];
-
-                this.#writeStep(step);
-                this.#state.stepIndex++;
-                this.#promptCurrentStep();
-            }
-
-            #handleWrongInput() {
-                this.#state.hadErrorThisRound = true;
-
-                this.#state.activeTargetCells.forEach(({ r, c }) => {
-                    const cell = document.getElementById(`cell-${r}-${c}`);
-                    if (!cell) return;
-                    cell.classList.add('error-shake');
-                    setTimeout(() => cell.classList.remove('error-shake'), 600);
-                });
-
-                this.#elements.instructionHint.classList.add('is-error');
-                this.#elements.instructionHint.textContent = I18n.t('ls_wrong_hint');
-
-                setTimeout(() => {
-                    this.#elements.instructionHint.classList.remove('is-error');
-                }, 1200);
-
-                this.#state.currentInput = '';
-                this.#renderTypingPreview();
-            }
-
-            #setCellValue(r, c, char, additionalClasses = []) {
-                BrainWarsColumnGame.setCellValue(r, c, char, additionalClasses, this.#state);
-            }
-
-            #setBorrowMark(r, c) {
-                const cell = document.getElementById(`cell-${r}-${c}`);
-                if (!cell) return;
-                const mark = document.createElement('span');
-                mark.className = 'borrow-mark';
-                mark.textContent = '−1';
-                cell.appendChild(mark);
-            }
-
-            #clearBorrowMarks() {
-                document.querySelectorAll('.borrow-mark').forEach(mark => mark.remove());
-            }
-
-            // ---------------------------------------------------------------
-            // Terminology highlights
-            // ---------------------------------------------------------------
-
-            // Paint every element `collect` returns, then drop the paint again.
-            #paint(cls, collect) {
-                BrainWarsColumnGame.paint(cls, collect);
-            }
-
-            #digitCells(row, digits, decimals) {
-                const cells = [];
-                for (let i = 0; i < digits.length; i++) {
-                    cells.push(document.getElementById(`cell-${row}-${this.#state.baseCol - i + decimals}`));
-                }
-                return cells.filter(Boolean);
-            }
-
-            #differenceCells() {
-                const state = this.#state;
-                return this.#digitCells(state.resultRow, state.resultDigits, state.resultDecimals)
-                    .filter((cell) => cell.textContent);
-            }
-
-            #borrowCells() {
-                const mark = document.querySelector('.borrow-mark');
-                const step = this.#state.steps[Math.min(this.#state.stepIndex, this.#state.steps.length - 1)];
-                const target = mark ? mark.parentElement : (step ? document.getElementById(`cell-0-${step.col - 1}`) : null);
-                return target ? [target] : [];
-            }
-
-            #highlightTerm(term) {
-                const state = this.#state;
-                if (term === 'minuend') return this.#paint('term-highlight-blue', () => this.#digitCells(0, state.firstDigits, state.firstDecimals));
-                if (term === 'subtrahend') return this.#paint('term-highlight-amber', () => this.#digitCells(1, state.secondDigits, state.secondDecimals));
-                if (term === 'difference') return this.#paint('term-highlight-green', () => this.#differenceCells());
-                if (term === 'borrow') return this.#paint('term-highlight-purple', () => this.#borrowCells());
-            }
-
-            // ---------------------------------------------------------------
-            // Round completion
-            // ---------------------------------------------------------------
-
-            #formatNumberText(digits, decimals) {
-                return BrainWarsColumnGame.formatNumberText(digits, decimals);
-            }
-
-            #renderCompletionEquation() {
-                this.#elements.completionEquation.textContent =
-                    `${this.#formatNumberText(this.#state.firstDigits, this.#state.firstDecimals)}` +
-                    ` − ${this.#formatNumberText(this.#state.secondDigits, this.#state.secondDecimals)}` +
-                    ` = ${this.#formatNumberText(this.#state.resultDigits, this.#state.resultDecimals)}`;
-            }
-
-            #finishRound() {
-                this.#state.activeTargetCells = [];
-                this.#clearBorrowMarks();
-
-                // Custom equations don't affect the level progression
-                if (!this.#state.isCustomRound) {
-                    if (this.#state.hadErrorThisRound) {
-                        this.#state.level = Math.max(1, this.#state.level - 1);
-                    } else {
-                        this.#state.level = Math.min(this.#config.maxLevel, this.#state.level + 1);
-                    }
-                }
-
-                this.#renderCompletionEquation();
-
-                setTimeout(() => {
-                    this.#elements.completionOverlay.classList.add('show');
-                }, 400);
-            }
-
-            // ---------------------------------------------------------------
-            // Level picker
-            // ---------------------------------------------------------------
-
-            #renderLevelBadge() {
-                BrainWarsColumnGame.renderLevelBadge(this.#elements, this.#state);
-            }
-
-            #renderLevelMenu() {
-                BrainWarsColumnGame.renderLevelMenu(this.#elements, this.#state, this.#config);
-            }
-
-            #toggleLevelMenu(open) {
-                BrainWarsColumnGame.toggleLevelMenu(open, this.#ctx());
-            }
-
-            #positionLevelMenu() {
-                BrainWarsColumnGame.positionLevelMenu(this.#elements);
-            }
-
-            #selectLevel(level) {
-                BrainWarsColumnGame.selectLevel(level, this.#ctx());
-            }
-
-            // ---------------------------------------------------------------
-            // Modals
-            // ---------------------------------------------------------------
-
-
-            #toggleCustomModal(open) {
-                this.#elements.customModal.classList.toggle('open', open);
-                this.#elements.customError.textContent = '';
-                if (open) {
-                    this.#elements.customFactor1.value =
-                        this.#formatNumberText(this.#state.firstDigits, this.#state.firstDecimals);
-                    this.#elements.customFactor2.value =
-                        this.#formatNumberText(this.#state.secondDigits, this.#state.secondDecimals);
-                    this.#elements.customFactor1.focus();
-                    this.#elements.customFactor1.select();
-                }
-            }
-
-            #showCustomError(key) {
-                BrainWarsColumnGame.showCustomError(key, this.#elements);
-            }
-
-            #parseOperand(raw) {
-                // Accept generous input here: the result and column budgets below
-                // decide what can be shown, and they report their own "too big" message.
-                const match = String(raw).trim().replace(/\s+/g, '').match(/^(\d{1,12})(?:[.,](\d{1,2}))?$/);
-                if (!match || Number(match[1]) < 1) return null;
-                let fraction = match[2] || '';
-                while (fraction.endsWith('0')) fraction = fraction.slice(0, -1);
-                return { digits: match[1] + fraction, decimals: fraction.length };
-            }
-
-            #submitCustomProblem() {
-                const minuend = this.#parseOperand(this.#elements.customFactor1.value);
-                const subtrahend = this.#parseOperand(this.#elements.customFactor2.value);
-                if (!minuend || !subtrahend) {
-                    this.#showCustomError('ls_custom_err_subtrahend');
-                    return;
-                }
-
-                const scale = Math.max(minuend.decimals, subtrahend.decimals);
-                const first = Number(this.#scaledDigits(minuend.digits, minuend.decimals, scale));
-                const second = Number(this.#scaledDigits(subtrahend.digits, subtrahend.decimals, scale));
-                if (first < second) {
-                    this.#showCustomError('ls_custom_err_order');
-                    return;
-                }
-
-                // Same column budget as the generated levels: a longer example would
-                // shrink the grid cells until the digits are unreadable.
-                if (this.#geometry(minuend.digits, minuend.decimals, subtrahend.digits, subtrahend.decimals).numCols > this.#config.maxGridColumns) {
-                    this.#showCustomError('ls_custom_err_too_big');
-                    return;
-                }
-
-                this.#toggleCustomModal(false);
-                this.#beginRound({
-                    firstDigits: minuend.digits,
-                    firstDecimals: minuend.decimals,
-                    secondDigits: subtrahend.digits,
-                    secondDecimals: subtrahend.decimals
-                }, true);
-            }
-        }
-
         document.addEventListener('DOMContentLoaded', () => {
+            class LongSubtractionGame extends BrainWarsColumnGame.ColumnGame {
+                constructor() {
+                    super({
+                        operator: '−',
+                        keys: { wrongHint: 'ls_wrong_hint' }
+                    });
+                }
+
+                // Subtraction marks borrows instead of carries.
+                clearMarks() {
+                    this.clearBorrowMarks();
+                }
+
+                getLevelConfig(level) {
+                    const table = [
+                        { iMin: 2, iMax: 2, jMin: 1, jMax: 1, noBorrow: true },
+                        { iMin: 2, iMax: 2, jMin: 1, jMax: 1, borrow: true },
+                        { iMin: 2, iMax: 2, jMin: 2, jMax: 2, noBorrow: true },
+                        { iMin: 2, iMax: 2, jMin: 2, jMax: 2, borrow: true },
+                        { iMin: 3, iMax: 3, jMin: 2, jMax: 2 },
+                        { iMin: 3, iMax: 3, jMin: 3, jMax: 3 },
+                        { iMin: 3, iMax: 3, jMin: 3, jMax: 3, borrow: true, needZero: true },
+                        { iMin: 4, iMax: 4, jMin: 3, jMax: 3 },
+                        { iMin: 4, iMax: 4, jMin: 4, jMax: 4 },
+                        { iMin: 4, iMax: 4, jMin: 4, jMax: 4, borrow: true, needZero: true },
+                        { iMin: 2, iMax: 3, jMin: 2, jMax: 3, k1: 1, k2: 1 },
+                        { iMin: 2, iMax: 3, jMin: 2, jMax: 3, k1: 1 },
+                        { iMin: 2, iMax: 3, jMin: 2, jMax: 3, k1: 1, k2: 2 },
+                        { iMin: 2, iMax: 3, jMin: 2, jMax: 3, k1: 2, k2: 1 },
+                        { iMin: 2, iMax: 3, jMin: 2, jMax: 3, k1: 2, k2: 2 },
+                        { iMin: 3, iMax: 3, jMin: 3, jMax: 3, k1: 1, k2: 2 },
+                        { iMin: 3, iMax: 4, jMin: 3, jMax: 3, k1: 2, k2: 2 },
+                        { iMin: 4, iMax: 4, jMin: 3, jMax: 4, k1: 2, k2: 1 },
+                        { iMin: 4, iMax: 4, jMin: 4, jMax: 4, k1: 2, k2: 2 },
+                        { iMin: 4, iMax: 5, jMin: 4, jMax: 4, k1: 2, k2: 2, bigDigits: true }
+                    ];
+                    const index = Math.min(Math.max(level, 1), table.length) - 1;
+                    return table[index];
+                }
+
+                createProblem(level) {
+                    const cfg = this.getLevelConfig(level);
+                    const k1 = cfg.k1 || 0;
+                    const k2 = cfg.k2 || 0;
+
+                    for (let attempt = 0; attempt < 600; attempt++) {
+                        const firstIntegerDigits = this.randomInt(cfg.iMin, cfg.iMax);
+                        const secondIntegerDigits = this.randomInt(cfg.jMin, cfg.jMax);
+                        const firstDigits = this.randomNumberString(firstIntegerDigits, k1, cfg.bigDigits);
+                        const secondDigits = this.randomNumberString(secondIntegerDigits, k2, cfg.bigDigits);
+
+                        const scale = Math.max(k1, k2);
+                        const first = Number(this.scaledDigits(firstDigits, k1, scale));
+                        const second = Number(this.scaledDigits(secondDigits, k2, scale));
+                        if (first <= second) continue;
+
+                        const difference = String(first - second);
+                        if (difference.length > this.config.maxResultDigits) continue;
+
+                        // Keep the difference the same length as the minuend (no leading zeros)
+                        if (difference.length - scale !== firstDigits.length - k1) continue;
+
+                        const borrow = this.hasBorrow(firstDigits, k1, secondDigits, k2);
+                        if (cfg.noBorrow && borrow) continue;
+                        if (cfg.borrow && !borrow) continue;
+                        if (cfg.needZero && !this.hasInnerZero(firstDigits, k1)) continue;
+
+                        // Keep the notebook grid inside the column budget, otherwise the
+                        // cells get too small to read on a phone.
+                        if (this.geometry(firstDigits, k1, secondDigits, k2).numCols > this.config.maxGridColumns) continue;
+
+                        return {
+                            firstDigits,
+                            firstDecimals: k1,
+                            secondDigits,
+                            secondDecimals: k2
+                        };
+                    }
+
+                    return { firstDigits: '12', firstDecimals: 0, secondDigits: '5', secondDecimals: 0 };
+                }
+
+                computePlan() {
+                    const s = this.state;
+                    const scale = s.resultDecimals;
+                    const a = this.scaledDigits(s.firstDigits, s.firstDecimals, scale);
+                    const b = this.scaledDigits(s.secondDigits, s.secondDecimals, scale);
+                    const steps = [];
+                    let borrow = 0;
+
+                    for (let c = 0; c < s.resultDigits.length; c++) {
+                        const col = s.baseCol - c + scale;
+                        const aDigit = c < a.length ? Number(a[a.length - 1 - c]) : 0;
+                        const bDigit = c < b.length ? Number(b[b.length - 1 - c]) : 0;
+                        const borrowBefore = borrow;
+                        const reduced = aDigit - borrowBefore;
+
+                        if (reduced < bDigit) {
+                            const work = reduced + 10;
+                            borrow = 1;
+                            steps.push({
+                                type: 'SUB',
+                                borrow: true,
+                                expected: work - bDigit,
+                                writeDigit: work - bDigit,
+                                expr: `${work} − ${bDigit}`,
+                                row: s.resultRow,
+                                col,
+                                badge: { row: 0, col: col - 1 }
+                            });
+                        } else {
+                            borrow = 0;
+                            steps.push({
+                                type: 'SUB',
+                                borrow: false,
+                                expected: reduced - bDigit,
+                                writeDigit: reduced - bDigit,
+                                expr: `${reduced} − ${bDigit}`,
+                                row: s.resultRow,
+                                col,
+                                badge: null
+                            });
+                        }
+                    }
+
+                    s.steps = steps;
+                }
+
+                promptCurrentStep() {
+                    const step = this.state.steps[this.state.stepIndex];
+                    if (!step) {
+                        this.finishRound();
+                        return;
+                    }
+
+                    this.state.currentInput = '';
+                    this.state.expectedAnswer = String(step.expected);
+                    this.elements.instructionHint.classList.remove('is-error');
+                    this.syncActiveCell();
+
+                    this.elements.instructionHint.textContent = step.borrow
+                        ? I18n.t('ls_borrow_hint', { expr: step.expr })
+                        : I18n.t('ls_sub_hint', { expr: step.expr });
+                }
+
+                writeStep(step) {
+                    this.setCellValue(step.row, step.col, String(step.writeDigit), ['correct-flash']);
+                    if (step.badge) {
+                        this.setBorrowMark(step.badge.row, step.badge.col);
+                    }
+                }
+
+                highlightTerm(term) {
+                    const state = this.state;
+                    if (term === 'minuend') return this.paint('term-highlight-blue', () => this.digitCells(0, state.firstDigits, state.firstDecimals));
+                    if (term === 'subtrahend') return this.paint('term-highlight-amber', () => this.digitCells(1, state.secondDigits, state.secondDecimals));
+                    if (term === 'difference') return this.paint('term-highlight-green', () => this.differenceCells());
+                    if (term === 'borrow') return this.paint('term-highlight-purple', () => this.borrowCells());
+                }
+
+                renderCompletionEquation() {
+                    this.elements.completionEquation.textContent =
+                        `${this.formatNumberText(this.state.firstDigits, this.state.firstDecimals)}` +
+                        ` − ${this.formatNumberText(this.state.secondDigits, this.state.secondDecimals)}` +
+                        ` = ${this.formatNumberText(this.state.resultDigits, this.state.resultDecimals)}`;
+                }
+
+                submitCustomProblem() {
+                    const minuend = this.parseOperand(this.elements.customFactor1.value);
+                    const subtrahend = this.parseOperand(this.elements.customFactor2.value);
+                    if (!minuend || !subtrahend) {
+                        this.showCustomError('ls_custom_err_subtrahend');
+                        return;
+                    }
+
+                    const scale = Math.max(minuend.decimals, subtrahend.decimals);
+                    const first = Number(this.scaledDigits(minuend.digits, minuend.decimals, scale));
+                    const second = Number(this.scaledDigits(subtrahend.digits, subtrahend.decimals, scale));
+                    if (first < second) {
+                        this.showCustomError('ls_custom_err_order');
+                        return;
+                    }
+
+                    // Same column budget as the generated levels: a longer example would
+                    // shrink the grid cells until the digits are unreadable.
+                    if (this.geometry(minuend.digits, minuend.decimals, subtrahend.digits, subtrahend.decimals).numCols > this.config.maxGridColumns) {
+                        this.showCustomError('ls_custom_err_too_big');
+                        return;
+                    }
+
+                    this.toggleCustomModal(false);
+                    this.beginRound({
+                        firstDigits: minuend.digits,
+                        firstDecimals: minuend.decimals,
+                        secondDigits: subtrahend.digits,
+                        secondDecimals: subtrahend.decimals
+                    }, true);
+                }
+
+            }
             new LongSubtractionGame();
         });
 
