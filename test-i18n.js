@@ -639,26 +639,7 @@ check('the ladder has twenty levels', () => {
     assert.strictEqual(TimeCalc.maxLevel, 20, 'expected twenty levels');
 });
 
-check('every generated time problem is mathematically sound', () => {
-    const rng = mulberry32(20261007);
-    for (let level = 1; level <= TimeCalc.maxLevel; level++) {
-        for (let i = 0; i < 120; i++) {
-            const p = TimeCalc.build(level, rng);
-            assert.ok(p.op === 'add' || p.op === 'sub', 'unknown op ' + p.op);
-            [p.a, p.b].forEach((time) => {
-                assert.ok(Number.isInteger(time.hours) && time.hours >= 1 && time.hours <= 89, 'bad hours: ' + JSON.stringify(time));
-                assert.ok(Number.isInteger(time.minutes) && time.minutes >= 1 && time.minutes <= 59, 'bad minutes: ' + JSON.stringify(time));
-            });
-            assert.ok(p.result.hours >= 0 && p.result.hours <= 99, 'result hours out of range: ' + JSON.stringify(p.result));
-            assert.ok(p.result.minutes >= 0 && p.result.minutes <= 59, 'result minutes out of range: ' + JSON.stringify(p.result));
-            const a = p.a.hours * 60 + p.a.minutes;
-            const b = p.b.hours * 60 + p.b.minutes;
-            const total = p.op === 'add' ? a + b : a - b;
-            assert.ok(total > 0, 'empty result: ' + JSON.stringify(p));
-            assert.strictEqual(total, p.result.hours * 60 + p.result.minutes, 'result mismatch: ' + JSON.stringify(p));
-        }
-    }
-});
+checkMathematicallySound({ module: TimeCalc, title: 'every generated time problem is mathematically sound', major: 'hours', unit: 'minutes', unitMax: 59, scale: 60, seed: 20261007 });
 
 // Both column games build the same four-step plan; only the unit words differ.
 function checkStepPlan(opts) {
@@ -715,56 +696,89 @@ function assertCarryOrBorrow(p, kinds, steps, { unit, closing, closingName, sumK
     }
 }
 
+// The generator checks below share one shape for money and time; only the unit
+// words, the scale and the seed differ, so each pair calls one helper.
+function checkMathematicallySound({ module, title, major, unit, unitMax, scale, seed }) {
+    check(title, () => {
+        const rng = mulberry32(seed);
+        for (let level = 1; level <= module.maxLevel; level++) {
+            for (let i = 0; i < 120; i++) {
+                const p = module.build(level, rng);
+                assert.ok(p.op === 'add' || p.op === 'sub', `unknown op ${p.op}`);
+                [p.a, p.b].forEach((amount) => {
+                    assert.ok(Number.isInteger(amount[major]) && amount[major] >= 1 && amount[major] <= 89, `bad ${major}: ${JSON.stringify(amount)}`);
+                    assert.ok(Number.isInteger(amount[unit]) && amount[unit] >= 1 && amount[unit] <= unitMax, `bad ${unit}: ${JSON.stringify(amount)}`);
+                });
+                assert.ok(p.result[major] >= 0 && p.result[major] <= 99, `result ${major} out of range: ${JSON.stringify(p.result)}`);
+                assert.ok(p.result[unit] >= 0 && p.result[unit] <= unitMax, `result ${unit} out of range: ${JSON.stringify(p.result)}`);
+                const a = p.a[major] * scale + p.a[unit];
+                const b = p.b[major] * scale + p.b[unit];
+                const total = p.op === 'add' ? a + b : a - b;
+                assert.ok(total > 0, `empty result: ${JSON.stringify(p)}`);
+                assert.strictEqual(total, p.result[major] * scale + p.result[unit], `result mismatch: ${JSON.stringify(p)}`);
+            }
+        }
+    });
+}
+
+function checkEarlyLevels({ module, title, major, unit, scale, wholeName }) {
+    check(title, () => {
+        const rng = mulberry32(99);
+        const sample = (level, count) => {
+            const out = [];
+            for (let i = 0; i < count; i++) out.push(module.build(level, rng));
+            return out;
+        };
+        sample(1, 60).forEach((p) => {
+            assert.strictEqual(p.op, 'add', 'level 1 adds');
+            assert.ok(p.a[unit] + p.b[unit] < scale, 'level 1 never carries');
+            assert.ok(p.a[major] <= 9 && p.b[major] <= 9, 'level 1 stays small');
+        });
+        sample(3, 60).forEach((p) => {
+            assert.strictEqual(p.op, 'add', 'level 3 adds');
+            assert.ok(p.a[unit] + p.b[unit] > scale, 'level 3 always carries');
+        });
+        sample(5, 60).forEach((p) => {
+            assert.strictEqual(p.op, 'add', 'level 5 adds');
+            assert.strictEqual(p.a[unit] + p.b[unit], scale, `level 5 is exactly one ${wholeName}`);
+        });
+        sample(6, 60).forEach((p) => {
+            assert.strictEqual(p.op, 'sub', 'level 6 subtracts');
+            assert.ok(p.a[unit] >= p.b[unit], `level 6 subtracts ${unit} directly`);
+        });
+        sample(8, 60).forEach((p) => {
+            assert.strictEqual(p.op, 'sub', 'level 8 subtracts');
+            assert.ok(p.a[unit] < p.b[unit], 'level 8 always borrows');
+        });
+        sample(10, 60).forEach((p) => {
+            assert.strictEqual(p.op, 'sub', 'level 10 subtracts');
+            assert.strictEqual(p.a[unit], p.b[unit], `level 10 has matching ${unit}`);
+        });
+    });
+}
+
+function checkNoRepeat({ module, title, major, unit }) {
+    check(title, () => {
+        const key = (p) => [p.op, p.a[major], p.a[unit], p.b[major], p.b[unit]].join(':');
+        const rng = mulberry32(4242);
+        for (let level = 1; level <= module.maxLevel; level++) {
+            let previous = null;
+            for (let i = 0; i < 150; i++) {
+                const problem = module.build(level, rng, previous);
+                if (previous) assert.notStrictEqual(key(problem), key(previous), `level ${level} repeated a problem`);
+                previous = problem;
+            }
+        }
+    });
+}
+
 check('the step plan mirrors the column method', () => {
     checkStepPlan({ module: TimeCalc, unit: 'minutes', closing: 'hours', closingName: 'hour', sumKind: 'minutesSum', scale: 60 });
 });
 
-check('the early levels teach one idea at a time', () => {
-    const rng = mulberry32(99);
-    const sample = (level, count) => {
-        const out = [];
-        for (let i = 0; i < count; i++) out.push(TimeCalc.build(level, rng));
-        return out;
-    };
-    sample(1, 60).forEach((p) => {
-        assert.strictEqual(p.op, 'add', 'level 1 adds');
-        assert.ok(p.a.minutes + p.b.minutes < 60, 'level 1 never carries');
-        assert.ok(p.a.hours <= 9 && p.b.hours <= 9, 'level 1 stays small');
-    });
-    sample(3, 60).forEach((p) => {
-        assert.strictEqual(p.op, 'add', 'level 3 adds');
-        assert.ok(p.a.minutes + p.b.minutes > 60, 'level 3 always carries');
-    });
-    sample(5, 60).forEach((p) => {
-        assert.strictEqual(p.op, 'add', 'level 5 adds');
-        assert.strictEqual(p.a.minutes + p.b.minutes, 60, 'level 5 is exactly one hour');
-    });
-    sample(6, 60).forEach((p) => {
-        assert.strictEqual(p.op, 'sub', 'level 6 subtracts');
-        assert.ok(p.a.minutes >= p.b.minutes, 'level 6 subtracts minutes directly');
-    });
-    sample(8, 60).forEach((p) => {
-        assert.strictEqual(p.op, 'sub', 'level 8 subtracts');
-        assert.ok(p.a.minutes < p.b.minutes, 'level 8 always borrows');
-    });
-    sample(10, 60).forEach((p) => {
-        assert.strictEqual(p.op, 'sub', 'level 10 subtracts');
-        assert.strictEqual(p.a.minutes, p.b.minutes, 'level 10 has matching minutes');
-    });
-});
+checkEarlyLevels({ module: TimeCalc, title: 'the early levels teach one idea at a time', major: 'hours', unit: 'minutes', scale: 60, wholeName: 'hour' });
 
-check('the same time problem never comes twice in a row', () => {
-    const key = (p) => [p.op, p.a.hours, p.a.minutes, p.b.hours, p.b.minutes].join(':');
-    const rng = mulberry32(4242);
-    for (let level = 1; level <= TimeCalc.maxLevel; level++) {
-        let previous = null;
-        for (let i = 0; i < 150; i++) {
-            const problem = TimeCalc.build(level, rng, previous);
-            if (previous) assert.notStrictEqual(key(problem), key(previous), 'level ' + level + ' repeated a problem');
-            previous = problem;
-        }
-    }
-});
+checkNoRepeat({ module: TimeCalc, title: 'the same time problem never comes twice in a row', major: 'hours', unit: 'minutes' });
 
 check('the time calculations page uses only defined tc_ keys', () => {
     const source = fs.readFileSync(path.join(__dirname, 'time-calculations.html'), 'utf8');
@@ -783,77 +797,15 @@ check('the money ladder has twenty levels', () => {
     assert.strictEqual(MoneyCalc.maxLevel, 20, 'expected twenty levels');
 });
 
-check('every generated money problem is mathematically sound', () => {
-    const rng = mulberry32(20261009);
-    for (let level = 1; level <= MoneyCalc.maxLevel; level++) {
-        for (let i = 0; i < 120; i++) {
-            const p = MoneyCalc.build(level, rng);
-            assert.ok(p.op === 'add' || p.op === 'sub', 'unknown op ' + p.op);
-            [p.a, p.b].forEach((amount) => {
-                assert.ok(Number.isInteger(amount.euros) && amount.euros >= 1 && amount.euros <= 89, 'bad euros: ' + JSON.stringify(amount));
-                assert.ok(Number.isInteger(amount.cents) && amount.cents >= 1 && amount.cents <= 99, 'bad cents: ' + JSON.stringify(amount));
-            });
-            assert.ok(p.result.euros >= 0 && p.result.euros <= 99, 'result euros out of range: ' + JSON.stringify(p.result));
-            assert.ok(p.result.cents >= 0 && p.result.cents <= 99, 'result cents out of range: ' + JSON.stringify(p.result));
-            const a = p.a.euros * 100 + p.a.cents;
-            const b = p.b.euros * 100 + p.b.cents;
-            const total = p.op === 'add' ? a + b : a - b;
-            assert.ok(total > 0, 'empty result: ' + JSON.stringify(p));
-            assert.strictEqual(total, p.result.euros * 100 + p.result.cents, 'result mismatch: ' + JSON.stringify(p));
-        }
-    }
-});
+checkMathematicallySound({ module: MoneyCalc, title: 'every generated money problem is mathematically sound', major: 'euros', unit: 'cents', unitMax: 99, scale: 100, seed: 20261009 });
 
 check('the money step plan mirrors the column method', () => {
     checkStepPlan({ module: MoneyCalc, unit: 'cents', closing: 'euros', closingName: 'euro', sumKind: 'centsSum', scale: 100 });
 });
 
-check('the early money levels teach one idea at a time', () => {
-    const rng = mulberry32(99);
-    const sample = (level, count) => {
-        const out = [];
-        for (let i = 0; i < count; i++) out.push(MoneyCalc.build(level, rng));
-        return out;
-    };
-    sample(1, 60).forEach((p) => {
-        assert.strictEqual(p.op, 'add', 'level 1 adds');
-        assert.ok(p.a.cents + p.b.cents < 100, 'level 1 never carries');
-        assert.ok(p.a.euros <= 9 && p.b.euros <= 9, 'level 1 stays small');
-    });
-    sample(3, 60).forEach((p) => {
-        assert.strictEqual(p.op, 'add', 'level 3 adds');
-        assert.ok(p.a.cents + p.b.cents > 100, 'level 3 always carries');
-    });
-    sample(5, 60).forEach((p) => {
-        assert.strictEqual(p.op, 'add', 'level 5 adds');
-        assert.strictEqual(p.a.cents + p.b.cents, 100, 'level 5 is exactly one euro');
-    });
-    sample(6, 60).forEach((p) => {
-        assert.strictEqual(p.op, 'sub', 'level 6 subtracts');
-        assert.ok(p.a.cents >= p.b.cents, 'level 6 subtracts cents directly');
-    });
-    sample(8, 60).forEach((p) => {
-        assert.strictEqual(p.op, 'sub', 'level 8 subtracts');
-        assert.ok(p.a.cents < p.b.cents, 'level 8 always borrows');
-    });
-    sample(10, 60).forEach((p) => {
-        assert.strictEqual(p.op, 'sub', 'level 10 subtracts');
-        assert.strictEqual(p.a.cents, p.b.cents, 'level 10 has matching cents');
-    });
-});
+checkEarlyLevels({ module: MoneyCalc, title: 'the early money levels teach one idea at a time', major: 'euros', unit: 'cents', scale: 100, wholeName: 'euro' });
 
-check('the same money problem never comes twice in a row', () => {
-    const key = (p) => [p.op, p.a.euros, p.a.cents, p.b.euros, p.b.cents].join(':');
-    const rng = mulberry32(4242);
-    for (let level = 1; level <= MoneyCalc.maxLevel; level++) {
-        let previous = null;
-        for (let i = 0; i < 150; i++) {
-            const problem = MoneyCalc.build(level, rng, previous);
-            if (previous) assert.notStrictEqual(key(problem), key(previous), 'level ' + level + ' repeated a problem');
-            previous = problem;
-        }
-    }
-});
+checkNoRepeat({ module: MoneyCalc, title: 'the same money problem never comes twice in a row', major: 'euros', unit: 'cents' });
 
 check('the money calculations page uses only defined mc_ keys', () => {
     const source = fs.readFileSync(path.join(__dirname, 'money-calculations.html'), 'utf8');

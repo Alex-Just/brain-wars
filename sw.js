@@ -50,6 +50,7 @@ const PRECACHE = [
     './column-game.css',
     './column-game.js',
     './elapsed-time.js',
+    './quantity-calculations.js',
     './time-calculations.js',
     './money-calculations.js',
     './unit-conversions.js',

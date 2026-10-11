@@ -11,978 +11,1898 @@
     const DEFAULT_LANG = 'es';
     const FLAGS = { en: '🇬🇧', es: '🇪🇸', ru: '🇷🇺' };
 
-    const translations = {
-        en: {
-            lang_selector_aria: 'Language selector',
-            level_label: 'Level {n}',
-            decimal_separator: '.',
+    // One row per key, in reading order, with the three languages side by side:
+    //   [key, English, Español, Русский]
+    // Building the three dictionaries from one table keeps every language in sync;
+    // the i18n tests check that the languages still share exactly the same keys.
+    const TRANSLATION_ROWS = [
 
-            hub_title: 'Choose Game',
-            nav_back: 'Back to the games',
-            game_follow: 'Follow the Leader',
-            game_unfollow: 'Unfollow the Leader',
-            game_operations: 'Mental Math',
-            game_time: 'What time is it?',
-            game_division: 'Long Division',
-            game_multiplication: 'Long Multiplication',
-            game_addition: 'Long Addition',
-            game_subtraction: 'Long Subtraction',
+        // ---- Common ----
+        [
+            'lang_selector_aria',
+            'Language selector',
+            'Selección de idioma',
+            'Выбор языка'
+        ],
+        [
+            'level_label',
+            'Level {n}',
+            'Nivel {n}',
+            'Уровень {n}'
+        ],
+        [
+            'decimal_separator',
+            '.',
+            ',',
+            ','
+        ],
 
-            ops_choose_sign: 'Choose the correct sign',
-            ops_operators_aria: 'Math operators',
-            ops_plus: 'plus',
-            ops_minus: 'minus',
-            ops_times: 'times',
-            ops_divide: 'divided by',
+        // ---- Hub and game names ----
+        [
+            'hub_title',
+            'Choose Game',
+            'Elige un juego',
+            'Выбор игры'
+        ],
+        [
+            'nav_back',
+            'Back to the games',
+            'Volver a los juegos',
+            'Назад к играм'
+        ],
+        [
+            'game_follow',
+            'Follow the Leader',
+            'Sigue al líder',
+            'Повтори за мной'
+        ],
+        [
+            'game_unfollow',
+            'Unfollow the Leader',
+            'No sigas al líder',
+            'Повтори наоборот'
+        ],
+        [
+            'game_operations',
+            'Mental Math',
+            'Matemáticas',
+            'Математика'
+        ],
+        [
+            'game_time',
+            'What time is it?',
+            '¿Qué hora es?',
+            'Который час?'
+        ],
+        [
+            'game_division',
+            'Long Division',
+            'División larga',
+            'Деление в столбик'
+        ],
+        [
+            'game_multiplication',
+            'Long Multiplication',
+            'Multiplicación larga',
+            'Умножение в столбик'
+        ],
+        [
+            'game_addition',
+            'Long Addition',
+            'Suma en columna',
+            'Сложение в столбик'
+        ],
+        [
+            'game_subtraction',
+            'Long Subtraction',
+            'Resta en columna',
+            'Вычитание в столбик'
+        ],
 
-            ftl_remember: 'Remember the sequence',
-            ftl_your_turn: 'Your turn!',
-            ftl_great_job: 'Great job!',
-            ftl_try_again: 'Try again!',
-            ftl_remember_next: 'Level {n}: Remember the sequence',
-            ftl_square_aria: 'Square {n}',
-            uftl_remember: 'Remember the sequence, then tap the squares in reverse order',
-            uftl_your_turn: 'Now tap them backwards!',
-            uftl_great_job: 'Great job!',
-            uftl_try_again: 'Try again!',
-            uftl_remember_next: 'Level {n}: Remember the sequence, then tap it backwards',
-            uftl_square_aria: 'Square {n}',
+        // ---- Mental math (ops_*) ----
+        [
+            'ops_choose_sign',
+            'Choose the correct sign',
+            'Elige el signo correcto',
+            'Выбери правильный знак'
+        ],
+        [
+            'ops_operators_aria',
+            'Math operators',
+            'Operadores matemáticos',
+            'Математические операторы'
+        ],
+        [
+            'ops_plus',
+            'plus',
+            'más',
+            'плюс'
+        ],
+        [
+            'ops_minus',
+            'minus',
+            'menos',
+            'минус'
+        ],
+        [
+            'ops_times',
+            'times',
+            'por',
+            'умножить'
+        ],
+        [
+            'ops_divide',
+            'divided by',
+            'entre',
+            'разделить'
+        ],
 
-            tt_choose_time: 'Choose the correct time',
-            tt_tap_continue: 'Tap to continue',
-            tt_correct: 'Correct!',
-            tt_correct_answer: 'Correct:',
-            tt_choices_aria: 'Time options',
+        // ---- Follow / unfollow the leader (ftl_*, uftl_*) ----
+        [
+            'ftl_remember',
+            'Remember the sequence',
+            'Recuerda la secuencia',
+            'Запомни порядок появления квадратов'
+        ],
+        [
+            'ftl_your_turn',
+            'Your turn!',
+            '¡Tu turno!',
+            'Твоя очередь!'
+        ],
+        [
+            'ftl_great_job',
+            'Great job!',
+            '¡Excelente!',
+            'Отлично!'
+        ],
+        [
+            'ftl_try_again',
+            'Try again!',
+            '¡Inténtalo de nuevo!',
+            'Попробуй ещё раз!'
+        ],
+        [
+            'ftl_remember_next',
+            'Level {n}: Remember the sequence',
+            'Nivel {n}: Recuerda la secuencia',
+            'Уровень {n}: Запомни последовательность'
+        ],
+        [
+            'ftl_square_aria',
+            'Square {n}',
+            'Casilla {n}',
+            'Квадрат {n}'
+        ],
+        [
+            'uftl_remember',
+            'Remember the sequence, then tap the squares in reverse order',
+            'Recuerda la secuencia y toca los cuadros al revés',
+            'Запомни порядок появления квадратов и нажми их в обратном порядке'
+        ],
+        [
+            'uftl_your_turn',
+            'Now tap them backwards!',
+            '¡Ahora al revés!',
+            'Теперь наоборот!'
+        ],
+        [
+            'uftl_great_job',
+            'Great job!',
+            '¡Excelente!',
+            'Отлично!'
+        ],
+        [
+            'uftl_try_again',
+            'Try again!',
+            '¡Inténtalo de nuevo!',
+            'Попробуй ещё раз!'
+        ],
+        [
+            'uftl_remember_next',
+            'Level {n}: Remember the sequence, then tap it backwards',
+            'Nivel {n}: Recuerda la secuencia y tócala al revés',
+            'Уровень {n}: Запомни последовательность — и повтори наоборот'
+        ],
+        [
+            'uftl_square_aria',
+            'Square {n}',
+            'Casilla {n}',
+            'Квадрат {n}'
+        ],
 
-            ld_level_menu_aria: 'Choose level',
-            ld_term_dividend: 'Dividend',
-            ld_term_dividend_title: 'The number we are dividing',
-            ld_term_divisor: 'Divisor',
-            ld_term_divisor_title: 'The number we divide by',
-            ld_term_quotient: 'Quotient',
-            ld_term_quotient_title: 'The result of division',
-            ld_term_incomplete: 'Partial dividend',
-            ld_term_incomplete_title: 'The part of the dividend divided at this step',
-            ld_numpad_aria: 'Number pad',
-            ld_q_digit_text: 'Divide the partial dividend <strong>{incVal}</strong> by the divisor <strong>{d}</strong>',
-            ld_q_digit_hint: 'Which digit goes in the quotient? ({incVal} ÷ {d} = ?)',
-            ld_product_text: 'Multiply the divisor <strong>{d}</strong> by the quotient digit <strong>{qDigit}</strong>',
-            ld_product_hint: 'What do we write under {incVal}? ({d} × {qDigit} = ?)',
-            ld_rem_text: 'Find the remainder by subtracting: <strong>{incVal} − {prod}</strong>',
-            ld_rem_hint: 'What is the remainder?',
-            ld_bring_text: 'Remainder {rem} &lt; {d}. Bring down the next digit of the dividend: <strong>{nextDigit}</strong>',
-            ld_bring_hint: 'Write the digit {nextDigit} next to the remainder',
-            ld_wrong_hint: 'Not quite. Try again!',
-            ld_done_title: 'Well done!',
-            ld_done_next: 'Next problem →',
-            lm_level_menu_aria: 'Choose level',
-            lm_numpad_aria: 'Number pad',
-            lm_term_multiplicand: 'Multiplicand',
-            lm_term_multiplicand_title: 'The number being multiplied',
-            lm_term_multiplier: 'Multiplier',
-            lm_term_multiplier_title: 'The number we multiply by',
-            lm_term_product: 'Product',
-            lm_term_product_title: 'The result of multiplication',
-            lm_term_partial: 'Partial product',
-            lm_term_partial_title: 'The product row for one digit of the multiplier',
-            lm_mul_hint: 'What do you get? ({a} × {b} = ?)',
-            lm_mul_hint_carry: 'What do you get? ({a} × {b} + {carry} = ?)',
-            lm_carry_hint: 'A carry {carry} is left over. Which digit do we write?',
-            lm_add_hint: 'What do you get? ({expr} = ?)',
-            lm_wrong_hint: 'Not quite. Try again!',
-            lm_done_title: 'Well done!',
-            lm_done_next: 'Next problem →',
-            lm_custom_btn: '✏️ Custom equation',
-            lm_custom_title: 'Custom equation',
-            lm_custom_factor1: 'First factor',
-            lm_custom_factor2: 'Second factor',
-            lm_custom_solve: 'Solve',
-            lm_custom_cancel: 'Cancel',
-            lm_custom_close_aria: 'Close dialog',
-            lm_custom_err_factor: 'Enter a number: a whole number or a decimal, e.g. 123 or 1.5',
-            lm_custom_err_too_big: 'The numbers are too big. The product must have at most 8 digits.',
-            la_level_menu_aria: 'Choose level',
-            la_numpad_aria: 'Number pad',
-            la_term_addend: 'Addend',
-            la_term_addend_title: 'A number we add',
-            la_term_sum: 'Sum',
-            la_term_sum_title: 'The result of addition',
-            la_term_carry: 'Carry',
-            la_term_carry_title: 'The ten carried to the next column',
-            la_add_hint: 'What do you get? ({expr} = ?)',
-            la_carry_hint: 'A carry {carry} is left over. Which digit do we write?',
-            la_wrong_hint: 'Not quite. Try again!',
-            la_done_title: 'Well done!',
-            la_done_next: 'Next problem →',
-            la_custom_btn: '✏️ Custom equation',
-            la_custom_title: 'Custom equation',
-            la_custom_addend1: 'First addend',
-            la_custom_addend2: 'Second addend',
-            la_custom_solve: 'Solve',
-            la_custom_cancel: 'Cancel',
-            la_custom_close_aria: 'Close dialog',
-            la_custom_err_addend: 'Enter a number: a whole number or a decimal, e.g. 123 or 1.5',
-            la_custom_err_too_big: 'The numbers are too big. The result must have at most 8 digits.',
-            ls_level_menu_aria: 'Choose level',
-            ls_numpad_aria: 'Number pad',
-            ls_term_minuend: 'Minuend',
-            ls_term_minuend_title: 'The number we subtract from',
-            ls_term_subtrahend: 'Subtrahend',
-            ls_term_subtrahend_title: 'The number we subtract',
-            ls_term_difference: 'Difference',
-            ls_term_difference_title: 'The result of subtraction',
-            ls_term_borrow: 'Borrow',
-            ls_term_borrow_title: 'A ten taken from the next column',
-            ls_sub_hint: 'What do you get? ({expr} = ?)',
-            ls_borrow_hint: 'We borrow a ten. What do you get? ({expr} = ?)',
-            ls_wrong_hint: 'Not quite. Try again!',
-            ls_done_title: 'Well done!',
-            ls_done_next: 'Next problem →',
-            ls_custom_btn: '✏️ Custom equation',
-            ls_custom_title: 'Custom equation',
-            ls_custom_minuend: 'Minuend',
-            ls_custom_subtrahend: 'Subtrahend',
-            ls_custom_solve: 'Solve',
-            ls_custom_cancel: 'Cancel',
-            ls_custom_close_aria: 'Close dialog',
-            ls_custom_err_subtrahend: 'Enter a number: a whole number or a decimal, e.g. 123 or 1.5',
-            ls_custom_err_order: 'The minuend must be greater than or equal to the subtrahend.',
-            ls_custom_err_too_big: 'The numbers are too big. The result must have at most 8 digits.',
-            ld_custom_btn: '✏️ Custom equation',
-            ld_custom_title: 'Custom equation',
-            ld_custom_dividend: 'Dividend',
-            ld_custom_divisor: 'Divisor',
-            ld_custom_solve: 'Solve',
-            ld_custom_cancel: 'Cancel',
-            ld_custom_close_aria: 'Close dialog',
-            ld_custom_err_dividend: 'Enter a dividend: a whole number or a decimal, e.g. 124 or 12.5',
-            ld_custom_err_divisor: 'The divisor must be a whole number from 2 to 99',
-            ld_custom_err_too_big: 'The number is too big: maximum 8 digits, and the whole example must fit in 12 columns.',
-            ld_custom_err_not_exact: 'This division does not come out even. Try another equation.',
+        // ---- What time is it? (tt_*) ----
+        [
+            'tt_choose_time',
+            'Choose the correct time',
+            'Elige la hora correcta',
+            'Выбери правильное время'
+        ],
+        [
+            'tt_tap_continue',
+            'Tap to continue',
+            'Toca para continuar',
+            'Нажмите, чтобы продолжить'
+        ],
+        [
+            'tt_correct',
+            'Correct!',
+            '¡Correcto!',
+            'Верно!'
+        ],
+        [
+            'tt_correct_answer',
+            'Correct:',
+            'Correcto:',
+            'Правильно:'
+        ],
+        [
+            'tt_choices_aria',
+            'Time options',
+            'Opciones de hora',
+            'Варианты времени'
+        ],
 
-            // Money word problems (mp_*)
-            game_money: 'Money Word Problems',
-            mp_intro: '{name} has in her purse:',
-            mp_wallet_aria: 'Money in the purse',
-            mp_unit_eur: '€',
-            mp_unit_cts: 'cents',
-            mp_letter_a: 'a)',
-            mp_letter_b: 'b)',
-            mp_letter_c: 'c)',
-            mp_short_a: 'Total',
-            mp_short_b: 'Can she buy it?',
-            mp_short_c_over: 'Left over',
-            mp_short_c_short: 'Missing',
-            mp_q_a: 'How much money does {name} have in total?',
-            mp_q_b: 'Can she buy this for {price}?',
-            mp_q_c_over: 'How much money will be left over?',
-            mp_q_c_short: 'How much money is missing?',
-            mp_hint_a: 'Add up every bill and coin.',
-            mp_hint_b: 'Compare the total with the price.',
-            mp_hint_c_over: 'Subtract the price from the total.',
-            mp_hint_c_short: 'Subtract the total from the price.',
-            mp_yes: 'Yes',
-            mp_no: 'No',
-            mp_numpad_aria: 'Number pad',
-            mp_wrong: 'Not quite. Try again!',
-            mp_done_title: 'Well done!',
-            mp_done_next: 'Next problem →',
-            mp_level_menu_aria: 'Choose the level',
-            mp_item_chocolate: 'chocolate',
-            mp_item_notebook: 'notebook',
-            mp_item_icecream: 'ice cream',
-            mp_item_pizza: 'pizza',
-            mp_item_book: 'book',
-            mp_item_ball: 'ball',
-            mp_item_teddy: 'teddy bear',
-            mp_item_backpack: 'backpack',
-            mp_item_headphones: 'headphones',
-            // Name pool: 20 girls, one is picked at random for every problem,
-            mp_name_1: 'Lucy',
-            mp_name_2: 'Emma',
-            mp_name_3: 'Mia',
-            mp_name_4: 'Sophie',
-            mp_name_5: 'Anna',
-            mp_name_6: 'Ella',
-            mp_name_7: 'Chloe',
-            mp_name_8: 'Zoe',
-            mp_name_9: 'Lily',
-            mp_name_10: 'Grace',
-            mp_name_11: 'Nina',
-            mp_name_12: 'Ava',
-            mp_name_13: 'Ruby',
-            mp_name_14: 'Daisy',
-            mp_name_15: 'Holly',
-            mp_name_16: 'Ivy',
-            mp_name_17: 'Rose',
-            mp_name_18: 'Bella',
-            mp_name_19: 'Clara',
-            mp_name_20: 'Maya',
-            // Elapsed time (et_*),
-            game_elapsed: 'Elapsed Time',
-            game_time_calc: 'Time Calculations',
-            et_level_menu_aria: 'Choose the level',
-            et_numpad_aria: 'Number pad',
-            et_answer_aria: 'Your answer',
-            et_hours_aria: 'Hours',
-            et_minutes_aria: 'Minutes',
-            et_box_hours: 'h',
-            et_box_minutes: 'min',
-            et_clock_aria: 'The clock shows {time}',
-            et_span_aria: 'From {start} to {end}',
-            et_format_minutes: 'Answer in minutes',
-            et_format_hours_minutes: 'Answer in hours and minutes',
-            et_correct: 'Correct!',
-            et_wrong: 'Not quite, try again',
-            et_fill: 'Type the answer first',
-            et_range_hours: 'Hours go from 1 to 12',
-            et_range_hours_time: 'Hours go from 0 to 23',
-            et_range_minutes: 'Minutes go from 0 to 59',
-            et_q_end_plain: "It's {time}. What time will it be in {duration}?",
-            et_q_end_1: 'The cake goes into the oven at {time} and bakes for {duration}. When is it ready?',
-            et_q_end_2: 'The bus leaves at {time} and the ride takes {duration}. What time does it arrive?',
-            et_q_end_3: 'Football practice starts at {time} and lasts {duration}. What time does it end?',
-            et_q_start_plain: "It's {time}. What time was it {duration} ago?",
-            et_q_start_1: 'The cake comes out of the oven at {time}. It baked for {duration}. When did it go in?',
-            et_q_start_2: 'The bus arrives at {time}. The ride took {duration}. What time did it leave?',
-            et_q_start_3: 'The film ends at {time}. It lasts {duration}. What time did it start?',
-            et_q_dur_plain: 'How much time passes between the two times?',
-            et_q_dur_1: 'Maria read her book. How long did she read?',
-            et_q_dur_2: 'The cake was in the oven. How long was it baking?',
-            et_q_dur_3: 'The bus was on the road. How long was the ride?',
-            // Time calculations (tc_*)
-            tc_unit_hours: 'h',
-            tc_unit_minutes: 'min',
-            tc_numpad_aria: 'Number pad',
-            tc_level_menu_aria: 'Choose level',
-            tc_board_aria: 'The calculation',
-            tc_scratch_aria: 'Working minutes',
-            tc_carry_aria: 'Carried hour',
-            tc_result_hours_aria: 'Result hours',
-            tc_result_minutes_aria: 'Result minutes',
-            tc_hint_minutes_sum: 'Add the minutes: {a} + {b} = ?',
-            tc_hint_write_minutes: 'How many minutes are left? {sum} − 60 = ?',
-            tc_hint_carry: '1 h = 60 min. How many whole hours are in {sum} min? Write the carry.',
-            tc_hint_borrow: 'You cannot take {b} min from {a} min. Borrow 1 hour: {a} + 60 = ?',
-            tc_hint_subtract_minutes: 'Subtract the minutes: {a} − {b} = ?',
-            tc_hint_minutes_from: 'Subtract the minutes: {total} − {b} = ?',
-            tc_hint_add_hours: 'Add the hours: {a} + {b} = ?',
-            tc_hint_add_hours_carry: 'Add the hours: {a} + {b} + 1 = ?',
-            tc_hint_subtract_hours: 'Subtract the hours: {a} − {b} = ?',
-            tc_hint_subtract_hours_borrow: 'Subtract the hours: {a} − 1 − {b} = ?',
-            tc_wrong: 'Not quite, try again',
-            tc_done_title: 'Well done!',
-            tc_done_next: 'Next problem →',
-            // Money calculations (mc_*)
-            game_money_calc: 'Money Calculations',
-            mc_unit_euros: '€',
-            mc_unit_cents: 'cents',
-            mc_numpad_aria: 'Number pad',
-            mc_level_menu_aria: 'Choose level',
-            mc_board_aria: 'The calculation',
-            mc_scratch_aria: 'Working cents',
-            mc_carry_aria: 'Carried euro',
-            mc_result_euros_aria: 'Result euros',
-            mc_result_cents_aria: 'Result cents',
-            mc_hint_cents_sum: 'Add the cents: {a} + {b} = ?',
-            mc_hint_write_cents: 'How many cents are left? {sum} − 100 = ?',
-            mc_hint_carry: '1 € = 100 cents. How many whole euros are in {sum} cents? Write the carry.',
-            mc_hint_borrow: 'You cannot take {b} cents from {a} cents. Borrow 1 euro: {a} + 100 = ?',
-            mc_hint_subtract_cents: 'Subtract the cents: {a} − {b} = ?',
-            mc_hint_cents_from: 'Subtract the cents: {total} − {b} = ?',
-            mc_hint_add_euros: 'Add the euros: {a} + {b} = ?',
-            mc_hint_add_euros_carry: 'Add the euros: {a} + {b} + 1 = ?',
-            mc_hint_subtract_euros: 'Subtract the euros: {a} − {b} = ?',
-            mc_hint_subtract_euros_borrow: 'Subtract the euros: {a} − 1 − {b} = ?',
-            mc_wrong: 'Not quite, try again',
-            mc_done_title: 'Well done!',
-            mc_done_next: 'Next problem →',
-            // Unit conversions (uc_*)
-            game_units: 'Unit Conversions',
-            uc_level_menu_aria: 'Choose the level',
-            uc_numpad_aria: 'Number pad',
-            uc_answer_aria: 'Your answer',
-            uc_check_aria: 'Check the answer',
-            uc_decimal_aria: 'Decimal separator',
-            uc_backspace_aria: 'Delete',
-            uc_convert: 'Convert {value} {from} to {to}',
-            uc_hint_down: 'Going to a smaller unit: the number gets bigger.',
-            uc_hint_up: 'Going to a bigger unit: the number gets smaller.',
-            uc_correct: 'Correct!',
-            uc_wrong: 'Not quite, try again',
-            uc_fill: 'Type the answer first',
-            uc_unit_kg: 'kg',
-            uc_unit_g: 'g',
-            uc_unit_km: 'km',
-            uc_unit_m: 'm',
-            uc_unit_cm: 'cm',
-            uc_unit_mm: 'mm',
-            uc_unit_l: 'l',
-            uc_unit_ml: 'ml',
-            // Challenge mode (ch_*),
-            ch_title: 'Challenge',
-            ch_games_label: 'Games',
-            ch_difficulty_label: 'Difficulty',
-            ch_start: 'Start',
-            ch_continue_run: 'Continue run ({solved}/{total})',
-            ch_decrease: 'Fewer',
-            ch_increase: 'More',
-            ch_progress_aria: 'Challenge progress',
-            ch_dirty_title: 'Solved with mistakes',
-            ch_done_title: 'Challenge complete!',
-            ch_done_line: 'Games solved: {total}',
-            ch_retries: 'Retries: {n}',
-            ch_stars_aria: '{n} of 3 stars',
-            ch_play_again: 'Play again',
-        },
-        es: {
-            lang_selector_aria: 'Selección de idioma',
-            level_label: 'Nivel {n}',
-            decimal_separator: ',',
+        // ---- Column games: long division, multiplication, addition, subtraction ----
+        [
+            'ld_level_menu_aria',
+            'Choose level',
+            'Elige el nivel',
+            'Выберите уровень'
+        ],
+        [
+            'ld_term_dividend',
+            'Dividend',
+            'Dividendo',
+            'Делимое'
+        ],
+        [
+            'ld_term_dividend_title',
+            'The number we are dividing',
+            'El número que dividimos',
+            'Число, которое мы делим'
+        ],
+        [
+            'ld_term_divisor',
+            'Divisor',
+            'Divisor',
+            'Делитель'
+        ],
+        [
+            'ld_term_divisor_title',
+            'The number we divide by',
+            'El número por el que dividimos',
+            'Число, на которое мы делим'
+        ],
+        [
+            'ld_term_quotient',
+            'Quotient',
+            'Cociente',
+            'Частное'
+        ],
+        [
+            'ld_term_quotient_title',
+            'The result of division',
+            'El resultado de la división',
+            'Результат деления'
+        ],
+        [
+            'ld_term_incomplete',
+            'Partial dividend',
+            'Dividendo parcial',
+            'Неполное делимое'
+        ],
+        [
+            'ld_term_incomplete_title',
+            'The part of the dividend divided at this step',
+            'La parte del dividendo que se divide en este paso',
+            'Часть делимого, которую делим на данном шаге'
+        ],
+        [
+            'ld_numpad_aria',
+            'Number pad',
+            'Teclado numérico',
+            'Цифровая клавиатура'
+        ],
+        [
+            'ld_q_digit_text',
+            'Divide the partial dividend <strong>{incVal}</strong> by the divisor <strong>{d}</strong>',
+            'Divide el dividendo parcial <strong>{incVal}</strong> entre el divisor <strong>{d}</strong>',
+            'Раздели неполное делимое <strong>{incVal}</strong> на делитель <strong>{d}</strong>'
+        ],
+        [
+            'ld_q_digit_hint',
+            'Which digit goes in the quotient? ({incVal} ÷ {d} = ?)',
+            '¿Qué cifra escribimos en el cociente? ({incVal} : {d} = ?)',
+            'Какую цифру пишем в частное? ({incVal} : {d} = ?)'
+        ],
+        [
+            'ld_product_text',
+            'Multiply the divisor <strong>{d}</strong> by the quotient digit <strong>{qDigit}</strong>',
+            'Multiplica el divisor <strong>{d}</strong> por la cifra del cociente <strong>{qDigit}</strong>',
+            'Умножь делитель <strong>{d}</strong> на цифру частного <strong>{qDigit}</strong>'
+        ],
+        [
+            'ld_product_hint',
+            'What do we write under {incVal}? ({d} × {qDigit} = ?)',
+            '¿Qué escribimos debajo de {incVal}? ({d} × {qDigit} = ?)',
+            'Сколько запишем под {incVal}? ({d} × {qDigit} = ?)'
+        ],
+        [
+            'ld_rem_text',
+            'Find the remainder by subtracting: <strong>{incVal} − {prod}</strong>',
+            'Halla el resto restando: <strong>{incVal} − {prod}</strong>',
+            'Найди остаток вычитанием: <strong>{incVal} − {prod}</strong>'
+        ],
+        [
+            'ld_rem_hint',
+            'What is the remainder?',
+            '¿Cuál es el resto?',
+            'Чему равен остаток?'
+        ],
+        [
+            'ld_bring_text',
+            'Remainder {rem} &lt; {d}. Bring down the next digit of the dividend: <strong>{nextDigit}</strong>',
+            'El resto {rem} &lt; {d}. Bajamos la siguiente cifra del dividendo: <strong>{nextDigit}</strong>',
+            'Остаток {rem} &lt; {d}. Сносим следующую цифру делимого: <strong>{nextDigit}</strong>'
+        ],
+        [
+            'ld_bring_hint',
+            'Write the digit {nextDigit} next to the remainder',
+            'Escribe la cifra {nextDigit} junto al resto',
+            'Запиши цифру {nextDigit} рядом с остатком'
+        ],
+        [
+            'ld_wrong_hint',
+            'Not quite. Try again!',
+            'No exactamente. ¡Inténtalo de nuevo!',
+            'Не совсем так. Попробуй ещё раз!'
+        ],
+        [
+            'ld_done_title',
+            'Well done!',
+            '¡Bien hecho!',
+            'Отлично решено!'
+        ],
+        [
+            'ld_done_next',
+            'Next problem →',
+            'Siguiente ejemplo →',
+            'Следующий пример →'
+        ],
+        [
+            'lm_level_menu_aria',
+            'Choose level',
+            'Elige el nivel',
+            'Выберите уровень'
+        ],
+        [
+            'lm_numpad_aria',
+            'Number pad',
+            'Teclado numérico',
+            'Цифровая клавиатура'
+        ],
+        [
+            'lm_term_multiplicand',
+            'Multiplicand',
+            'Multiplicando',
+            'Множимое'
+        ],
+        [
+            'lm_term_multiplicand_title',
+            'The number being multiplied',
+            'El número que se multiplica',
+            'Число, которое умножаем'
+        ],
+        [
+            'lm_term_multiplier',
+            'Multiplier',
+            'Multiplicador',
+            'Множитель'
+        ],
+        [
+            'lm_term_multiplier_title',
+            'The number we multiply by',
+            'El número por el que multiplicamos',
+            'Число, на которое умножаем'
+        ],
+        [
+            'lm_term_product',
+            'Product',
+            'Producto',
+            'Произведение'
+        ],
+        [
+            'lm_term_product_title',
+            'The result of multiplication',
+            'El resultado de la multiplicación',
+            'Результат умножения'
+        ],
+        [
+            'lm_term_partial',
+            'Partial product',
+            'Producto parcial',
+            'Неполное произведение'
+        ],
+        [
+            'lm_term_partial_title',
+            'The product row for one digit of the multiplier',
+            'La fila del producto para una cifra del multiplicador',
+            'Строка произведения для одной цифры множителя'
+        ],
+        [
+            'lm_mul_hint',
+            'What do you get? ({a} × {b} = ?)',
+            '¿Cuánto sale? ({a} × {b} = ?)',
+            'Сколько получится? ({a} × {b} = ?)'
+        ],
+        [
+            'lm_mul_hint_carry',
+            'What do you get? ({a} × {b} + {carry} = ?)',
+            '¿Cuánto sale? ({a} × {b} + {carry} = ?)',
+            'Сколько получится? ({a} × {b} + {carry} = ?)'
+        ],
+        [
+            'lm_carry_hint',
+            'A carry {carry} is left over. Which digit do we write?',
+            'Queda una reserva {carry}. ¿Qué cifra escribimos?',
+            'Остался перенос {carry}. Какую цифру пишем?'
+        ],
+        [
+            'lm_add_hint',
+            'What do you get? ({expr} = ?)',
+            '¿Cuánto sale? ({expr} = ?)',
+            'Сколько получится? ({expr} = ?)'
+        ],
+        [
+            'lm_wrong_hint',
+            'Not quite. Try again!',
+            'No exactamente. ¡Inténtalo de nuevo!',
+            'Не совсем так. Попробуй ещё раз!'
+        ],
+        [
+            'lm_done_title',
+            'Well done!',
+            '¡Bien hecho!',
+            'Отлично решено!'
+        ],
+        [
+            'lm_done_next',
+            'Next problem →',
+            'Siguiente ejemplo →',
+            'Следующий пример →'
+        ],
+        [
+            'lm_custom_btn',
+            '✏️ Custom equation',
+            '✏️ Ecuación propia',
+            '✏️ Своё выражение'
+        ],
+        [
+            'lm_custom_title',
+            'Custom equation',
+            'Ecuación propia',
+            'Своё выражение'
+        ],
+        [
+            'lm_custom_factor1',
+            'First factor',
+            'Primer factor',
+            'Первый множитель'
+        ],
+        [
+            'lm_custom_factor2',
+            'Second factor',
+            'Segundo factor',
+            'Второй множитель'
+        ],
+        [
+            'lm_custom_solve',
+            'Solve',
+            'Resolver',
+            'Решить'
+        ],
+        [
+            'lm_custom_cancel',
+            'Cancel',
+            'Cancelar',
+            'Отмена'
+        ],
+        [
+            'lm_custom_close_aria',
+            'Close dialog',
+            'Cerrar la ventana',
+            'Закрыть окно'
+        ],
+        [
+            'lm_custom_err_factor',
+            'Enter a number: a whole number or a decimal, e.g. 123 or 1.5',
+            'Introduce un número: entero o decimal, por ejemplo 123 o 1,5',
+            'Введи число: целое или десятичную дробь, например 123 или 1,5'
+        ],
+        [
+            'lm_custom_err_too_big',
+            'The numbers are too big. The product must have at most 8 digits.',
+            'Los números son demasiado grandes. El producto debe tener como máximo 8 cifras.',
+            'Слишком большие числа. В произведении должно быть не больше 8 цифр.'
+        ],
+        [
+            'la_level_menu_aria',
+            'Choose level',
+            'Elige el nivel',
+            'Выберите уровень'
+        ],
+        [
+            'la_numpad_aria',
+            'Number pad',
+            'Teclado numérico',
+            'Цифровая клавиатура'
+        ],
+        [
+            'la_term_addend',
+            'Addend',
+            'Sumando',
+            'Слагаемое'
+        ],
+        [
+            'la_term_addend_title',
+            'A number we add',
+            'Un número que sumamos',
+            'Число, которое складываем'
+        ],
+        [
+            'la_term_sum',
+            'Sum',
+            'Suma',
+            'Сумма'
+        ],
+        [
+            'la_term_sum_title',
+            'The result of addition',
+            'El resultado de la suma',
+            'Результат сложения'
+        ],
+        [
+            'la_term_carry',
+            'Carry',
+            'Reserva',
+            'Перенос'
+        ],
+        [
+            'la_term_carry_title',
+            'The ten carried to the next column',
+            'La decena que se lleva a la siguiente columna',
+            'Десяток, который переносим в следующий разряд'
+        ],
+        [
+            'la_add_hint',
+            'What do you get? ({expr} = ?)',
+            '¿Cuánto sale? ({expr} = ?)',
+            'Сколько получится? ({expr} = ?)'
+        ],
+        [
+            'la_carry_hint',
+            'A carry {carry} is left over. Which digit do we write?',
+            'Queda una reserva {carry}. ¿Qué cifra escribimos?',
+            'Остался перенос {carry}. Какую цифру пишем?'
+        ],
+        [
+            'la_wrong_hint',
+            'Not quite. Try again!',
+            'No exactamente. ¡Inténtalo de nuevo!',
+            'Не совсем так. Попробуй ещё раз!'
+        ],
+        [
+            'la_done_title',
+            'Well done!',
+            '¡Bien hecho!',
+            'Отлично решено!'
+        ],
+        [
+            'la_done_next',
+            'Next problem →',
+            'Siguiente ejemplo →',
+            'Следующий пример →'
+        ],
+        [
+            'la_custom_btn',
+            '✏️ Custom equation',
+            '✏️ Ecuación propia',
+            '✏️ Своё выражение'
+        ],
+        [
+            'la_custom_title',
+            'Custom equation',
+            'Ecuación propia',
+            'Своё выражение'
+        ],
+        [
+            'la_custom_addend1',
+            'First addend',
+            'Primer sumando',
+            'Первое слагаемое'
+        ],
+        [
+            'la_custom_addend2',
+            'Second addend',
+            'Segundo sumando',
+            'Второе слагаемое'
+        ],
+        [
+            'la_custom_solve',
+            'Solve',
+            'Resolver',
+            'Решить'
+        ],
+        [
+            'la_custom_cancel',
+            'Cancel',
+            'Cancelar',
+            'Отмена'
+        ],
+        [
+            'la_custom_close_aria',
+            'Close dialog',
+            'Cerrar la ventana',
+            'Закрыть окно'
+        ],
+        [
+            'la_custom_err_addend',
+            'Enter a number: a whole number or a decimal, e.g. 123 or 1.5',
+            'Introduce un número: entero o decimal, por ejemplo 123 o 1,5',
+            'Введи число: целое или десятичную дробь, например 123 или 1,5'
+        ],
+        [
+            'la_custom_err_too_big',
+            'The numbers are too big. The result must have at most 8 digits.',
+            'Los números son demasiado grandes. El resultado debe tener como máximo 8 cifras.',
+            'Слишком большие числа. В сумме должно быть не больше 8 цифр.'
+        ],
+        [
+            'ls_level_menu_aria',
+            'Choose level',
+            'Elige el nivel',
+            'Выберите уровень'
+        ],
+        [
+            'ls_numpad_aria',
+            'Number pad',
+            'Teclado numérico',
+            'Цифровая клавиатура'
+        ],
+        [
+            'ls_term_minuend',
+            'Minuend',
+            'Minuendo',
+            'Уменьшаемое'
+        ],
+        [
+            'ls_term_minuend_title',
+            'The number we subtract from',
+            'El número del que restamos',
+            'Число, из которого вычитаем'
+        ],
+        [
+            'ls_term_subtrahend',
+            'Subtrahend',
+            'Sustraendo',
+            'Вычитаемое'
+        ],
+        [
+            'ls_term_subtrahend_title',
+            'The number we subtract',
+            'El número que restamos',
+            'Число, которое вычитаем'
+        ],
+        [
+            'ls_term_difference',
+            'Difference',
+            'Diferencia',
+            'Разность'
+        ],
+        [
+            'ls_term_difference_title',
+            'The result of subtraction',
+            'El resultado de la resta',
+            'Результат вычитания'
+        ],
+        [
+            'ls_term_borrow',
+            'Borrow',
+            'Préstamo',
+            'Заём'
+        ],
+        [
+            'ls_term_borrow_title',
+            'A ten taken from the next column',
+            'Una decena que se toma de la siguiente columna',
+            'Десяток, который занимаем у следующего разряда'
+        ],
+        [
+            'ls_sub_hint',
+            'What do you get? ({expr} = ?)',
+            '¿Cuánto sale? ({expr} = ?)',
+            'Сколько получится? ({expr} = ?)'
+        ],
+        [
+            'ls_borrow_hint',
+            'We borrow a ten. What do you get? ({expr} = ?)',
+            'Tomamos una decena. ¿Cuánto sale? ({expr} = ?)',
+            'Занимаем десяток. Сколько получится? ({expr} = ?)'
+        ],
+        [
+            'ls_wrong_hint',
+            'Not quite. Try again!',
+            'No exactamente. ¡Inténtalo de nuevo!',
+            'Не совсем так. Попробуй ещё раз!'
+        ],
+        [
+            'ls_done_title',
+            'Well done!',
+            '¡Bien hecho!',
+            'Отлично решено!'
+        ],
+        [
+            'ls_done_next',
+            'Next problem →',
+            'Siguiente ejemplo →',
+            'Следующий пример →'
+        ],
+        [
+            'ls_custom_btn',
+            '✏️ Custom equation',
+            '✏️ Ecuación propia',
+            '✏️ Своё выражение'
+        ],
+        [
+            'ls_custom_title',
+            'Custom equation',
+            'Ecuación propia',
+            'Своё выражение'
+        ],
+        [
+            'ls_custom_minuend',
+            'Minuend',
+            'Minuendo',
+            'Уменьшаемое'
+        ],
+        [
+            'ls_custom_subtrahend',
+            'Subtrahend',
+            'Sustraendo',
+            'Вычитаемое'
+        ],
+        [
+            'ls_custom_solve',
+            'Solve',
+            'Resolver',
+            'Решить'
+        ],
+        [
+            'ls_custom_cancel',
+            'Cancel',
+            'Cancelar',
+            'Отмена'
+        ],
+        [
+            'ls_custom_close_aria',
+            'Close dialog',
+            'Cerrar la ventana',
+            'Закрыть окно'
+        ],
+        [
+            'ls_custom_err_subtrahend',
+            'Enter a number: a whole number or a decimal, e.g. 123 or 1.5',
+            'Introduce un número: entero o decimal, por ejemplo 123 o 1,5',
+            'Введи число: целое или десятичную дробь, например 123 или 1,5'
+        ],
+        [
+            'ls_custom_err_order',
+            'The minuend must be greater than or equal to the subtrahend.',
+            'El minuendo debe ser mayor o igual que el sustraendo.',
+            'Уменьшаемое должно быть больше или равно вычитаемому.'
+        ],
+        [
+            'ls_custom_err_too_big',
+            'The numbers are too big. The result must have at most 8 digits.',
+            'Los números son demasiado grandes. El resultado debe tener como máximo 8 cifras.',
+            'Слишком большие числа. В разности должно быть не больше 8 цифр.'
+        ],
+        [
+            'ld_custom_btn',
+            '✏️ Custom equation',
+            '✏️ Ecuación propia',
+            '✏️ Своё выражение'
+        ],
+        [
+            'ld_custom_title',
+            'Custom equation',
+            'Ecuación propia',
+            'Своё выражение'
+        ],
+        [
+            'ld_custom_dividend',
+            'Dividend',
+            'Dividendo',
+            'Делимое'
+        ],
+        [
+            'ld_custom_divisor',
+            'Divisor',
+            'Divisor',
+            'Делитель'
+        ],
+        [
+            'ld_custom_solve',
+            'Solve',
+            'Resolver',
+            'Решить'
+        ],
+        [
+            'ld_custom_cancel',
+            'Cancel',
+            'Cancelar',
+            'Отмена'
+        ],
+        [
+            'ld_custom_close_aria',
+            'Close dialog',
+            'Cerrar la ventana',
+            'Закрыть окно'
+        ],
+        [
+            'ld_custom_err_dividend',
+            'Enter a dividend: a whole number or a decimal, e.g. 124 or 12.5',
+            'Introduce el dividendo: un número entero o decimal, por ejemplo 124 o 12,5',
+            'Введи делимое: целое число или десятичную дробь, например 124 или 12,5'
+        ],
+        [
+            'ld_custom_err_divisor',
+            'The divisor must be a whole number from 2 to 99',
+            'El divisor debe ser un número entero entre 2 y 99',
+            'Делитель — целое число от 2 до 99'
+        ],
+        [
+            'ld_custom_err_too_big',
+            'The number is too big: maximum 8 digits, and the whole example must fit in 12 columns.',
+            'El número es demasiado grande: máximo 8 cifras, y el ejemplo completo debe caber en 12 columnas.',
+            'Слишком большое число: максимум 8 цифр, и весь пример должен умещаться в 12 столбцов.'
+        ],
+        [
+            'ld_custom_err_not_exact',
+            'This division does not come out even. Try another equation.',
+            'Esta división no es exacta. Prueba otra ecuación.',
+            'Такой пример не делится нацело. Попробуй другое выражение.'
+        ],
 
-            hub_title: 'Elige un juego',
-            nav_back: 'Volver a los juegos',
-            game_follow: 'Sigue al líder',
-            game_unfollow: 'No sigas al líder',
-            game_operations: 'Matemáticas',
-            game_time: '¿Qué hora es?',
-            game_division: 'División larga',
-            game_multiplication: 'Multiplicación larga',
-            game_addition: 'Suma en columna',
-            game_subtraction: 'Resta en columna',
+        // ---- Money word problems (mp_*) ----
+        [
+            'game_money',
+            'Money Word Problems',
+            'Problemas con dinero',
+            'Задачи про деньги'
+        ],
+        [
+            'mp_intro',
+            '{name} has in her purse:',
+            '{name} tiene en su cartera:',
+            'У {name} в кошельке:'
+        ],
+        [
+            'mp_wallet_aria',
+            'Money in the purse',
+            'Dinero en la cartera',
+            'Деньги в кошельке'
+        ],
+        [
+            'mp_unit_eur',
+            '€',
+            '€',
+            '€'
+        ],
+        [
+            'mp_unit_cts',
+            'cents',
+            'cts',
+            'центов'
+        ],
+        [
+            'mp_letter_a',
+            'a)',
+            'a)',
+            'а)'
+        ],
+        [
+            'mp_letter_b',
+            'b)',
+            'b)',
+            'б)'
+        ],
+        [
+            'mp_letter_c',
+            'c)',
+            'c)',
+            'в)'
+        ],
+        [
+            'mp_short_a',
+            'Total',
+            'Total',
+            'Всего'
+        ],
+        [
+            'mp_short_b',
+            'Can she buy it?',
+            '¿Puede comprar?',
+            'Хватит ли?'
+        ],
+        [
+            'mp_short_c_over',
+            'Left over',
+            'Le sobra',
+            'Останется'
+        ],
+        [
+            'mp_short_c_short',
+            'Missing',
+            'Le falta',
+            'Не хватает'
+        ],
+        [
+            'mp_q_a',
+            'How much money does {name} have in total?',
+            '¿Cuántos euros tiene {name} en total?',
+            'Сколько всего денег у {name}?'
+        ],
+        [
+            'mp_q_b',
+            'Can she buy this for {price}?',
+            '¿Puede comprar esto por {price}?',
+            'Сможет ли она купить это за {price}?'
+        ],
+        [
+            'mp_q_c_over',
+            'How much money will be left over?',
+            '¿Cuánto dinero le sobra?',
+            'Сколько денег останется?'
+        ],
+        [
+            'mp_q_c_short',
+            'How much money is missing?',
+            '¿Cuánto dinero le falta?',
+            'Сколько денег не хватает?'
+        ],
+        [
+            'mp_hint_a',
+            'Add up every bill and coin.',
+            'Suma todos los billetes y monedas.',
+            'Сложи все купюры и монеты.'
+        ],
+        [
+            'mp_hint_b',
+            'Compare the total with the price.',
+            'Compara el total con el precio.',
+            'Сравни сумму с ценой.'
+        ],
+        [
+            'mp_hint_c_over',
+            'Subtract the price from the total.',
+            'Resta el precio del total.',
+            'Вычти цену из суммы.'
+        ],
+        [
+            'mp_hint_c_short',
+            'Subtract the total from the price.',
+            'Resta el total del precio.',
+            'Вычти сумму из цены.'
+        ],
+        [
+            'mp_yes',
+            'Yes',
+            'Sí',
+            'Да'
+        ],
+        [
+            'mp_no',
+            'No',
+            'No',
+            'Нет'
+        ],
+        [
+            'mp_numpad_aria',
+            'Number pad',
+            'Teclado numérico',
+            'Цифровая клавиатура'
+        ],
+        [
+            'mp_wrong',
+            'Not quite. Try again!',
+            'No exactamente. ¡Inténtalo de nuevo!',
+            'Не совсем так. Попробуй ещё раз!'
+        ],
+        [
+            'mp_done_title',
+            'Well done!',
+            '¡Bien hecho!',
+            'Отлично!'
+        ],
+        [
+            'mp_done_next',
+            'Next problem →',
+            'Siguiente problema →',
+            'Следующая задача →'
+        ],
+        [
+            'mp_level_menu_aria',
+            'Choose the level',
+            'Elige el nivel',
+            'Выберите уровень'
+        ],
+        [
+            'mp_item_chocolate',
+            'chocolate',
+            'chocolate',
+            'шоколад'
+        ],
+        [
+            'mp_item_notebook',
+            'notebook',
+            'cuaderno',
+            'тетрадь'
+        ],
+        [
+            'mp_item_icecream',
+            'ice cream',
+            'helado',
+            'мороженое'
+        ],
+        [
+            'mp_item_pizza',
+            'pizza',
+            'pizza',
+            'пицца'
+        ],
+        [
+            'mp_item_book',
+            'book',
+            'libro',
+            'книга'
+        ],
+        [
+            'mp_item_ball',
+            'ball',
+            'balón',
+            'мяч'
+        ],
+        [
+            'mp_item_teddy',
+            'teddy bear',
+            'peluche',
+            'мишка'
+        ],
+        [
+            'mp_item_backpack',
+            'backpack',
+            'mochila',
+            'рюкзак'
+        ],
+        [
+            'mp_item_headphones',
+            'headphones',
+            'auriculares',
+            'наушники'
+        ],
 
-            ops_choose_sign: 'Elige el signo correcto',
-            ops_operators_aria: 'Operadores matemáticos',
-            ops_plus: 'más',
-            ops_minus: 'menos',
-            ops_times: 'por',
-            ops_divide: 'entre',
+        // ---- Name pool: 20 girls, one is picked at random for every problem ----
+        [
+            'mp_name_1',
+            'Lucy',
+            'Lucía',
+            'Люси'
+        ],
+        [
+            'mp_name_2',
+            'Emma',
+            'Marta',
+            'Маши'
+        ],
+        [
+            'mp_name_3',
+            'Mia',
+            'Sara',
+            'Саши'
+        ],
+        [
+            'mp_name_4',
+            'Sophie',
+            'Elena',
+            'Кати'
+        ],
+        [
+            'mp_name_5',
+            'Anna',
+            'Carmen',
+            'Насти'
+        ],
+        [
+            'mp_name_6',
+            'Ella',
+            'Paula',
+            'Даши'
+        ],
+        [
+            'mp_name_7',
+            'Chloe',
+            'Julia',
+            'Поли'
+        ],
+        [
+            'mp_name_8',
+            'Zoe',
+            'Alba',
+            'Ани'
+        ],
+        [
+            'mp_name_9',
+            'Lily',
+            'Nuria',
+            'Лизы'
+        ],
+        [
+            'mp_name_10',
+            'Grace',
+            'Irene',
+            'Веры'
+        ],
+        [
+            'mp_name_11',
+            'Nina',
+            'Laura',
+            'Тани'
+        ],
+        [
+            'mp_name_12',
+            'Ava',
+            'Ana',
+            'Оли'
+        ],
+        [
+            'mp_name_13',
+            'Ruby',
+            'Clara',
+            'Юли'
+        ],
+        [
+            'mp_name_14',
+            'Daisy',
+            'Vega',
+            'Сони'
+        ],
+        [
+            'mp_name_15',
+            'Holly',
+            'Aitana',
+            'Алисы'
+        ],
+        [
+            'mp_name_16',
+            'Ivy',
+            'Daniela',
+            'Ксюши'
+        ],
+        [
+            'mp_name_17',
+            'Rose',
+            'Valeria',
+            'Кристины'
+        ],
+        [
+            'mp_name_18',
+            'Bella',
+            'Rocío',
+            'Дианы'
+        ],
+        [
+            'mp_name_19',
+            'Clara',
+            'Pilar',
+            'Наташи'
+        ],
+        [
+            'mp_name_20',
+            'Maya',
+            'Inés',
+            'Иры'
+        ],
 
-            ftl_remember: 'Recuerda la secuencia',
-            ftl_your_turn: '¡Tu turno!',
-            ftl_great_job: '¡Excelente!',
-            ftl_try_again: '¡Inténtalo de nuevo!',
-            ftl_remember_next: 'Nivel {n}: Recuerda la secuencia',
-            ftl_square_aria: 'Casilla {n}',
-            uftl_remember: 'Recuerda la secuencia y toca los cuadros al revés',
-            uftl_your_turn: '¡Ahora al revés!',
-            uftl_great_job: '¡Excelente!',
-            uftl_try_again: '¡Inténtalo de nuevo!',
-            uftl_remember_next: 'Nivel {n}: Recuerda la secuencia y tócala al revés',
-            uftl_square_aria: 'Casilla {n}',
+        // ---- Elapsed time (et_*) ----
+        [
+            'game_elapsed',
+            'Elapsed Time',
+            'Tiempo transcurrido',
+            'Сколько времени прошло?'
+        ],
+        [
+            'game_time_calc',
+            'Time Calculations',
+            'Cálculo con tiempo',
+            'Вычисления со временем'
+        ],
+        [
+            'et_level_menu_aria',
+            'Choose the level',
+            'Elige el nivel',
+            'Выберите уровень'
+        ],
+        [
+            'et_numpad_aria',
+            'Number pad',
+            'Teclado numérico',
+            'Цифровая клавиатура'
+        ],
+        [
+            'et_answer_aria',
+            'Your answer',
+            'Tu respuesta',
+            'Твой ответ'
+        ],
+        [
+            'et_hours_aria',
+            'Hours',
+            'Horas',
+            'Часы'
+        ],
+        [
+            'et_minutes_aria',
+            'Minutes',
+            'Minutos',
+            'Минуты'
+        ],
+        [
+            'et_box_hours',
+            'h',
+            'h',
+            'ч'
+        ],
+        [
+            'et_box_minutes',
+            'min',
+            'min',
+            'мин'
+        ],
+        [
+            'et_clock_aria',
+            'The clock shows {time}',
+            'El reloj marca {time}',
+            'Часы показывают {time}'
+        ],
+        [
+            'et_span_aria',
+            'From {start} to {end}',
+            'De {start} a {end}',
+            'С {start} до {end}'
+        ],
+        [
+            'et_format_minutes',
+            'Answer in minutes',
+            'Responde en minutos',
+            'Ответь в минутах'
+        ],
+        [
+            'et_format_hours_minutes',
+            'Answer in hours and minutes',
+            'Responde en horas y minutos',
+            'Ответь в часах и минутах'
+        ],
+        [
+            'et_correct',
+            'Correct!',
+            '¡Correcto!',
+            'Верно!'
+        ],
+        [
+            'et_wrong',
+            'Not quite, try again',
+            'Casi, inténtalo otra vez',
+            'Не совсем, попробуй ещё раз'
+        ],
+        [
+            'et_fill',
+            'Type the answer first',
+            'Escribe primero la respuesta',
+            'Сначала впиши ответ'
+        ],
+        [
+            'et_range_hours',
+            'Hours go from 1 to 12',
+            'Las horas van del 1 al 12',
+            'Часы — от 1 до 12'
+        ],
+        [
+            'et_range_hours_time',
+            'Hours go from 0 to 23',
+            'Las horas van del 0 al 23',
+            'Часы — от 0 до 23'
+        ],
+        [
+            'et_range_minutes',
+            'Minutes go from 0 to 59',
+            'Los minutos van del 0 al 59',
+            'Минуты — от 0 до 59'
+        ],
+        [
+            'et_q_end_plain',
+            'It\'s {time}. What time will it be in {duration}?',
+            'Son las {time}. ¿Qué hora será en {duration}?',
+            'Сейчас {time}. Какое время будет через {duration}?'
+        ],
+        [
+            'et_q_end_1',
+            'The cake goes into the oven at {time} and bakes for {duration}. When is it ready?',
+            'El pastel entra al horno a las {time} y se hornea {duration}. ¿Cuándo estará listo?',
+            'Пирог ставят в духовку в {time}, он печётся {duration}. Когда он будет готов?'
+        ],
+        [
+            'et_q_end_2',
+            'The bus leaves at {time} and the ride takes {duration}. What time does it arrive?',
+            'El autobús sale a las {time} y el viaje dura {duration}. ¿A qué hora llega?',
+            'Автобус отправляется в {time}, поездка длится {duration}. В какое время он приедет?'
+        ],
+        [
+            'et_q_end_3',
+            'Football practice starts at {time} and lasts {duration}. What time does it end?',
+            'El entrenamiento empieza a las {time} y dura {duration}. ¿A qué hora termina?',
+            'Тренировка начинается в {time} и длится {duration}. Во сколько она закончится?'
+        ],
+        [
+            'et_q_start_plain',
+            'It\'s {time}. What time was it {duration} ago?',
+            'Son las {time}. ¿Qué hora era hace {duration}?',
+            'Сейчас {time}. Какое время было {duration} назад?'
+        ],
+        [
+            'et_q_start_1',
+            'The cake comes out of the oven at {time}. It baked for {duration}. When did it go in?',
+            'El pastel sale del horno a las {time}. Se horneó {duration}. ¿Cuándo entró?',
+            'Пирог достают из духовки в {time}. Он пёкся {duration}. Когда его поставили?'
+        ],
+        [
+            'et_q_start_2',
+            'The bus arrives at {time}. The ride took {duration}. What time did it leave?',
+            'El autobús llega a las {time}. El viaje duró {duration}. ¿A qué hora salió?',
+            'Автобус прибывает в {time}. Поездка длилась {duration}. Во сколько он уехал?'
+        ],
+        [
+            'et_q_start_3',
+            'The film ends at {time}. It lasts {duration}. What time did it start?',
+            'La película termina a las {time}. Dura {duration}. ¿A qué hora empezó?',
+            'Фильм заканчивается в {time}. Он идёт {duration}. Во сколько он начался?'
+        ],
+        [
+            'et_q_dur_plain',
+            'How much time passes between the two times?',
+            '¿Cuánto tiempo pasa entre las dos horas?',
+            'Сколько времени проходит между двумя моментами?'
+        ],
+        [
+            'et_q_dur_1',
+            'Maria read her book. How long did she read?',
+            'María leyó su libro. ¿Cuánto tiempo leyó?',
+            'Мария читала книгу. Сколько времени она читала?'
+        ],
+        [
+            'et_q_dur_2',
+            'The cake was in the oven. How long was it baking?',
+            'El pastel estuvo en el horno. ¿Cuánto tiempo se horneó?',
+            'Пирог был в духовке. Сколько времени он пёкся?'
+        ],
+        [
+            'et_q_dur_3',
+            'The bus was on the road. How long was the ride?',
+            'El autobús estuvo en camino. ¿Cuánto duró el viaje?',
+            'Автобус был в пути. Сколько длилась поездка?'
+        ],
 
-            tt_choose_time: 'Elige la hora correcta',
-            tt_tap_continue: 'Toca para continuar',
-            tt_correct: '¡Correcto!',
-            tt_correct_answer: 'Correcto:',
-            tt_choices_aria: 'Opciones de hora',
+        // ---- Time calculations (tc_*) ----
+        [
+            'tc_unit_hours',
+            'h',
+            'h',
+            'ч'
+        ],
+        [
+            'tc_unit_minutes',
+            'min',
+            'min',
+            'мин'
+        ],
+        [
+            'tc_numpad_aria',
+            'Number pad',
+            'Teclado numérico',
+            'Цифровая клавиатура'
+        ],
+        [
+            'tc_level_menu_aria',
+            'Choose level',
+            'Elige un nivel',
+            'Выберите уровень'
+        ],
+        [
+            'tc_board_aria',
+            'The calculation',
+            'La operación',
+            'Пример'
+        ],
+        [
+            'tc_scratch_aria',
+            'Working minutes',
+            'Minutos de trabajo',
+            'Рабочие минуты'
+        ],
+        [
+            'tc_carry_aria',
+            'Carried hour',
+            'Hora que llevas',
+            'Перенос часов'
+        ],
+        [
+            'tc_result_hours_aria',
+            'Result hours',
+            'Horas del resultado',
+            'Часы ответа'
+        ],
+        [
+            'tc_result_minutes_aria',
+            'Result minutes',
+            'Minutos del resultado',
+            'Минуты ответа'
+        ],
+        [
+            'tc_hint_minutes_sum',
+            'Add the minutes: {a} + {b} = ?',
+            'Suma los minutos: {a} + {b} = ?',
+            'Складываю минуты: {a} + {b} = ?'
+        ],
+        [
+            'tc_hint_write_minutes',
+            'How many minutes are left? {sum} − 60 = ?',
+            '¿Cuántos minutos quedan? {sum} − 60 = ?',
+            'Сколько минут останется? {sum} − 60 = ?'
+        ],
+        [
+            'tc_hint_carry',
+            '1 h = 60 min. How many whole hours are in {sum} min? Write the carry.',
+            '1 h = 60 min. ¿Cuántas horas enteras hay en {sum} min? Escribe lo que llevas.',
+            '1 ч = 60 мин. Сколько целых часов в {sum} мин? Впиши перенос.'
+        ],
+        [
+            'tc_hint_borrow',
+            'You cannot take {b} min from {a} min. Borrow 1 hour: {a} + 60 = ?',
+            'No puedes quitar {b} min de {a} min. Pide 1 hora: {a} + 60 = ?',
+            'Из {a} мин нельзя вычесть {b} мин. Занимаю 1 час: {a} + 60 = ?'
+        ],
+        [
+            'tc_hint_subtract_minutes',
+            'Subtract the minutes: {a} − {b} = ?',
+            'Resta los minutos: {a} − {b} = ?',
+            'Вычитаю минуты: {a} − {b} = ?'
+        ],
+        [
+            'tc_hint_minutes_from',
+            'Subtract the minutes: {total} − {b} = ?',
+            'Resta los minutos: {total} − {b} = ?',
+            'Вычитаю минуты: {total} − {b} = ?'
+        ],
+        [
+            'tc_hint_add_hours',
+            'Add the hours: {a} + {b} = ?',
+            'Suma las horas: {a} + {b} = ?',
+            'Складываю часы: {a} + {b} = ?'
+        ],
+        [
+            'tc_hint_add_hours_carry',
+            'Add the hours: {a} + {b} + 1 = ?',
+            'Suma las horas: {a} + {b} + 1 = ?',
+            'Складываю часы: {a} + {b} + 1 = ?'
+        ],
+        [
+            'tc_hint_subtract_hours',
+            'Subtract the hours: {a} − {b} = ?',
+            'Resta las horas: {a} − {b} = ?',
+            'Вычитаю часы: {a} − {b} = ?'
+        ],
+        [
+            'tc_hint_subtract_hours_borrow',
+            'Subtract the hours: {a} − 1 − {b} = ?',
+            'Resta las horas: {a} − 1 − {b} = ?',
+            'Вычитаю часы: {a} − 1 − {b} = ?'
+        ],
+        [
+            'tc_wrong',
+            'Not quite, try again',
+            'Casi, inténtalo otra vez',
+            'Не совсем, попробуй ещё раз'
+        ],
+        [
+            'tc_done_title',
+            'Well done!',
+            '¡Muy bien!',
+            'Молодец!'
+        ],
+        [
+            'tc_done_next',
+            'Next problem →',
+            'Siguiente problema →',
+            'Следующая задача →'
+        ],
 
-            ld_level_menu_aria: 'Elige el nivel',
-            ld_term_dividend: 'Dividendo',
-            ld_term_dividend_title: 'El número que dividimos',
-            ld_term_divisor: 'Divisor',
-            ld_term_divisor_title: 'El número por el que dividimos',
-            ld_term_quotient: 'Cociente',
-            ld_term_quotient_title: 'El resultado de la división',
-            ld_term_incomplete: 'Dividendo parcial',
-            ld_term_incomplete_title: 'La parte del dividendo que se divide en este paso',
-            ld_numpad_aria: 'Teclado numérico',
-            ld_q_digit_text: 'Divide el dividendo parcial <strong>{incVal}</strong> entre el divisor <strong>{d}</strong>',
-            ld_q_digit_hint: '¿Qué cifra escribimos en el cociente? ({incVal} : {d} = ?)',
-            ld_product_text: 'Multiplica el divisor <strong>{d}</strong> por la cifra del cociente <strong>{qDigit}</strong>',
-            ld_product_hint: '¿Qué escribimos debajo de {incVal}? ({d} × {qDigit} = ?)',
-            ld_rem_text: 'Halla el resto restando: <strong>{incVal} − {prod}</strong>',
-            ld_rem_hint: '¿Cuál es el resto?',
-            ld_bring_text: 'El resto {rem} &lt; {d}. Bajamos la siguiente cifra del dividendo: <strong>{nextDigit}</strong>',
-            ld_bring_hint: 'Escribe la cifra {nextDigit} junto al resto',
-            ld_wrong_hint: 'No exactamente. ¡Inténtalo de nuevo!',
-            ld_done_title: '¡Bien hecho!',
-            ld_done_next: 'Siguiente ejemplo →',
-            lm_level_menu_aria: 'Elige el nivel',
-            lm_numpad_aria: 'Teclado numérico',
-            lm_term_multiplicand: 'Multiplicando',
-            lm_term_multiplicand_title: 'El número que se multiplica',
-            lm_term_multiplier: 'Multiplicador',
-            lm_term_multiplier_title: 'El número por el que multiplicamos',
-            lm_term_product: 'Producto',
-            lm_term_product_title: 'El resultado de la multiplicación',
-            lm_term_partial: 'Producto parcial',
-            lm_term_partial_title: 'La fila del producto para una cifra del multiplicador',
-            lm_mul_hint: '¿Cuánto sale? ({a} × {b} = ?)',
-            lm_mul_hint_carry: '¿Cuánto sale? ({a} × {b} + {carry} = ?)',
-            lm_carry_hint: 'Queda una reserva {carry}. ¿Qué cifra escribimos?',
-            lm_add_hint: '¿Cuánto sale? ({expr} = ?)',
-            lm_wrong_hint: 'No exactamente. ¡Inténtalo de nuevo!',
-            lm_done_title: '¡Bien hecho!',
-            lm_done_next: 'Siguiente ejemplo →',
-            lm_custom_btn: '✏️ Ecuación propia',
-            lm_custom_title: 'Ecuación propia',
-            lm_custom_factor1: 'Primer factor',
-            lm_custom_factor2: 'Segundo factor',
-            lm_custom_solve: 'Resolver',
-            lm_custom_cancel: 'Cancelar',
-            lm_custom_close_aria: 'Cerrar la ventana',
-            lm_custom_err_factor: 'Introduce un número: entero o decimal, por ejemplo 123 o 1,5',
-            lm_custom_err_too_big: 'Los números son demasiado grandes. El producto debe tener como máximo 8 cifras.',
-            la_level_menu_aria: 'Elige el nivel',
-            la_numpad_aria: 'Teclado numérico',
-            la_term_addend: 'Sumando',
-            la_term_addend_title: 'Un número que sumamos',
-            la_term_sum: 'Suma',
-            la_term_sum_title: 'El resultado de la suma',
-            la_term_carry: 'Reserva',
-            la_term_carry_title: 'La decena que se lleva a la siguiente columna',
-            la_add_hint: '¿Cuánto sale? ({expr} = ?)',
-            la_carry_hint: 'Queda una reserva {carry}. ¿Qué cifra escribimos?',
-            la_wrong_hint: 'No exactamente. ¡Inténtalo de nuevo!',
-            la_done_title: '¡Bien hecho!',
-            la_done_next: 'Siguiente ejemplo →',
-            la_custom_btn: '✏️ Ecuación propia',
-            la_custom_title: 'Ecuación propia',
-            la_custom_addend1: 'Primer sumando',
-            la_custom_addend2: 'Segundo sumando',
-            la_custom_solve: 'Resolver',
-            la_custom_cancel: 'Cancelar',
-            la_custom_close_aria: 'Cerrar la ventana',
-            la_custom_err_addend: 'Introduce un número: entero o decimal, por ejemplo 123 o 1,5',
-            la_custom_err_too_big: 'Los números son demasiado grandes. El resultado debe tener como máximo 8 cifras.',
-            ls_level_menu_aria: 'Elige el nivel',
-            ls_numpad_aria: 'Teclado numérico',
-            ls_term_minuend: 'Minuendo',
-            ls_term_minuend_title: 'El número del que restamos',
-            ls_term_subtrahend: 'Sustraendo',
-            ls_term_subtrahend_title: 'El número que restamos',
-            ls_term_difference: 'Diferencia',
-            ls_term_difference_title: 'El resultado de la resta',
-            ls_term_borrow: 'Préstamo',
-            ls_term_borrow_title: 'Una decena que se toma de la siguiente columna',
-            ls_sub_hint: '¿Cuánto sale? ({expr} = ?)',
-            ls_borrow_hint: 'Tomamos una decena. ¿Cuánto sale? ({expr} = ?)',
-            ls_wrong_hint: 'No exactamente. ¡Inténtalo de nuevo!',
-            ls_done_title: '¡Bien hecho!',
-            ls_done_next: 'Siguiente ejemplo →',
-            ls_custom_btn: '✏️ Ecuación propia',
-            ls_custom_title: 'Ecuación propia',
-            ls_custom_minuend: 'Minuendo',
-            ls_custom_subtrahend: 'Sustraendo',
-            ls_custom_solve: 'Resolver',
-            ls_custom_cancel: 'Cancelar',
-            ls_custom_close_aria: 'Cerrar la ventana',
-            ls_custom_err_subtrahend: 'Introduce un número: entero o decimal, por ejemplo 123 o 1,5',
-            ls_custom_err_order: 'El minuendo debe ser mayor o igual que el sustraendo.',
-            ls_custom_err_too_big: 'Los números son demasiado grandes. El resultado debe tener como máximo 8 cifras.',
-            ld_custom_btn: '✏️ Ecuación propia',
-            ld_custom_title: 'Ecuación propia',
-            ld_custom_dividend: 'Dividendo',
-            ld_custom_divisor: 'Divisor',
-            ld_custom_solve: 'Resolver',
-            ld_custom_cancel: 'Cancelar',
-            ld_custom_close_aria: 'Cerrar la ventana',
-            ld_custom_err_dividend: 'Introduce el dividendo: un número entero o decimal, por ejemplo 124 o 12,5',
-            ld_custom_err_divisor: 'El divisor debe ser un número entero entre 2 y 99',
-            ld_custom_err_too_big: 'El número es demasiado grande: máximo 8 cifras, y el ejemplo completo debe caber en 12 columnas.',
-            ld_custom_err_not_exact: 'Esta división no es exacta. Prueba otra ecuación.',
+        // ---- Money calculations (mc_*) ----
+        [
+            'game_money_calc',
+            'Money Calculations',
+            'Cálculo con dinero',
+            'Вычисления с деньгами'
+        ],
+        [
+            'mc_unit_euros',
+            '€',
+            '€',
+            '€'
+        ],
+        [
+            'mc_unit_cents',
+            'cents',
+            'cts',
+            'центов'
+        ],
+        [
+            'mc_numpad_aria',
+            'Number pad',
+            'Teclado numérico',
+            'Цифровая клавиатура'
+        ],
+        [
+            'mc_level_menu_aria',
+            'Choose level',
+            'Elige un nivel',
+            'Выберите уровень'
+        ],
+        [
+            'mc_board_aria',
+            'The calculation',
+            'La operación',
+            'Пример'
+        ],
+        [
+            'mc_scratch_aria',
+            'Working cents',
+            'Cts de trabajo',
+            'Рабочие центы'
+        ],
+        [
+            'mc_carry_aria',
+            'Carried euro',
+            'Euro que llevas',
+            'Перенос евро'
+        ],
+        [
+            'mc_result_euros_aria',
+            'Result euros',
+            'Euros del resultado',
+            'Евро ответа'
+        ],
+        [
+            'mc_result_cents_aria',
+            'Result cents',
+            'Cts del resultado',
+            'Центы ответа'
+        ],
+        [
+            'mc_hint_cents_sum',
+            'Add the cents: {a} + {b} = ?',
+            'Suma los cts: {a} + {b} = ?',
+            'Складываю центы: {a} + {b} = ?'
+        ],
+        [
+            'mc_hint_write_cents',
+            'How many cents are left? {sum} − 100 = ?',
+            '¿Cuántos cts quedan? {sum} − 100 = ?',
+            'Сколько центов останется? {sum} − 100 = ?'
+        ],
+        [
+            'mc_hint_carry',
+            '1 € = 100 cents. How many whole euros are in {sum} cents? Write the carry.',
+            '1 € = 100 cts. ¿Cuántos euros enteros hay en {sum} cts? Escribe lo que llevas.',
+            '1 € = 100 центов. Сколько целых евро в {sum} центах? Впиши перенос.'
+        ],
+        [
+            'mc_hint_borrow',
+            'You cannot take {b} cents from {a} cents. Borrow 1 euro: {a} + 100 = ?',
+            'No puedes quitar {b} cts de {a} cts. Pide 1 euro: {a} + 100 = ?',
+            'Из {a} центов нельзя вычесть {b} центов. Занимаю 1 евро: {a} + 100 = ?'
+        ],
+        [
+            'mc_hint_subtract_cents',
+            'Subtract the cents: {a} − {b} = ?',
+            'Resta los cts: {a} − {b} = ?',
+            'Вычитаю центы: {a} − {b} = ?'
+        ],
+        [
+            'mc_hint_cents_from',
+            'Subtract the cents: {total} − {b} = ?',
+            'Resta los cts: {total} − {b} = ?',
+            'Вычитаю центы: {total} − {b} = ?'
+        ],
+        [
+            'mc_hint_add_euros',
+            'Add the euros: {a} + {b} = ?',
+            'Suma los euros: {a} + {b} = ?',
+            'Складываю евро: {a} + {b} = ?'
+        ],
+        [
+            'mc_hint_add_euros_carry',
+            'Add the euros: {a} + {b} + 1 = ?',
+            'Suma los euros: {a} + {b} + 1 = ?',
+            'Складываю евро: {a} + {b} + 1 = ?'
+        ],
+        [
+            'mc_hint_subtract_euros',
+            'Subtract the euros: {a} − {b} = ?',
+            'Resta los euros: {a} − {b} = ?',
+            'Вычитаю евро: {a} − {b} = ?'
+        ],
+        [
+            'mc_hint_subtract_euros_borrow',
+            'Subtract the euros: {a} − 1 − {b} = ?',
+            'Resta los euros: {a} − 1 − {b} = ?',
+            'Вычитаю евро: {a} − 1 − {b} = ?'
+        ],
+        [
+            'mc_wrong',
+            'Not quite, try again',
+            'Casi, inténtalo otra vez',
+            'Не совсем, попробуй ещё раз'
+        ],
+        [
+            'mc_done_title',
+            'Well done!',
+            '¡Muy bien!',
+            'Молодец!'
+        ],
+        [
+            'mc_done_next',
+            'Next problem →',
+            'Siguiente problema →',
+            'Следующая задача →'
+        ],
 
-            // Money word problems (mp_*)
-            game_money: 'Problemas con dinero',
-            mp_intro: '{name} tiene en su cartera:',
-            mp_wallet_aria: 'Dinero en la cartera',
-            mp_unit_eur: '€',
-            mp_unit_cts: 'cts',
-            mp_letter_a: 'a)',
-            mp_letter_b: 'b)',
-            mp_letter_c: 'c)',
-            mp_short_a: 'Total',
-            mp_short_b: '¿Puede comprar?',
-            mp_short_c_over: 'Le sobra',
-            mp_short_c_short: 'Le falta',
-            mp_q_a: '¿Cuántos euros tiene {name} en total?',
-            mp_q_b: '¿Puede comprar esto por {price}?',
-            mp_q_c_over: '¿Cuánto dinero le sobra?',
-            mp_q_c_short: '¿Cuánto dinero le falta?',
-            mp_hint_a: 'Suma todos los billetes y monedas.',
-            mp_hint_b: 'Compara el total con el precio.',
-            mp_hint_c_over: 'Resta el precio del total.',
-            mp_hint_c_short: 'Resta el total del precio.',
-            mp_yes: 'Sí',
-            mp_no: 'No',
-            mp_numpad_aria: 'Teclado numérico',
-            mp_wrong: 'No exactamente. ¡Inténtalo de nuevo!',
-            mp_done_title: '¡Bien hecho!',
-            mp_done_next: 'Siguiente problema →',
-            mp_level_menu_aria: 'Elige el nivel',
-            mp_item_chocolate: 'chocolate',
-            mp_item_notebook: 'cuaderno',
-            mp_item_icecream: 'helado',
-            mp_item_pizza: 'pizza',
-            mp_item_book: 'libro',
-            mp_item_ball: 'balón',
-            mp_item_teddy: 'peluche',
-            mp_item_backpack: 'mochila',
-            mp_item_headphones: 'auriculares',
-            // Name pool: 20 girls, one is picked at random for every problem,
-            mp_name_1: 'Lucía',
-            mp_name_2: 'Marta',
-            mp_name_3: 'Sara',
-            mp_name_4: 'Elena',
-            mp_name_5: 'Carmen',
-            mp_name_6: 'Paula',
-            mp_name_7: 'Julia',
-            mp_name_8: 'Alba',
-            mp_name_9: 'Nuria',
-            mp_name_10: 'Irene',
-            mp_name_11: 'Laura',
-            mp_name_12: 'Ana',
-            mp_name_13: 'Clara',
-            mp_name_14: 'Vega',
-            mp_name_15: 'Aitana',
-            mp_name_16: 'Daniela',
-            mp_name_17: 'Valeria',
-            mp_name_18: 'Rocío',
-            mp_name_19: 'Pilar',
-            mp_name_20: 'Inés',
-            // Elapsed time (et_*),
-            game_elapsed: 'Tiempo transcurrido',
-            game_time_calc: 'Cálculo con tiempo',
-            et_level_menu_aria: 'Elige el nivel',
-            et_numpad_aria: 'Teclado numérico',
-            et_answer_aria: 'Tu respuesta',
-            et_hours_aria: 'Horas',
-            et_minutes_aria: 'Minutos',
-            et_box_hours: 'h',
-            et_box_minutes: 'min',
-            et_clock_aria: 'El reloj marca {time}',
-            et_span_aria: 'De {start} a {end}',
-            et_format_minutes: 'Responde en minutos',
-            et_format_hours_minutes: 'Responde en horas y minutos',
-            et_correct: '¡Correcto!',
-            et_wrong: 'Casi, inténtalo otra vez',
-            et_fill: 'Escribe primero la respuesta',
-            et_range_hours: 'Las horas van del 1 al 12',
-            et_range_hours_time: 'Las horas van del 0 al 23',
-            et_range_minutes: 'Los minutos van del 0 al 59',
-            et_q_end_plain: 'Son las {time}. ¿Qué hora será en {duration}?',
-            et_q_end_1: 'El pastel entra al horno a las {time} y se hornea {duration}. ¿Cuándo estará listo?',
-            et_q_end_2: 'El autobús sale a las {time} y el viaje dura {duration}. ¿A qué hora llega?',
-            et_q_end_3: 'El entrenamiento empieza a las {time} y dura {duration}. ¿A qué hora termina?',
-            et_q_start_plain: 'Son las {time}. ¿Qué hora era hace {duration}?',
-            et_q_start_1: 'El pastel sale del horno a las {time}. Se horneó {duration}. ¿Cuándo entró?',
-            et_q_start_2: 'El autobús llega a las {time}. El viaje duró {duration}. ¿A qué hora salió?',
-            et_q_start_3: 'La película termina a las {time}. Dura {duration}. ¿A qué hora empezó?',
-            et_q_dur_plain: '¿Cuánto tiempo pasa entre las dos horas?',
-            et_q_dur_1: 'María leyó su libro. ¿Cuánto tiempo leyó?',
-            et_q_dur_2: 'El pastel estuvo en el horno. ¿Cuánto tiempo se horneó?',
-            et_q_dur_3: 'El autobús estuvo en camino. ¿Cuánto duró el viaje?',
-            // Time calculations (tc_*)
-            tc_unit_hours: 'h',
-            tc_unit_minutes: 'min',
-            tc_numpad_aria: 'Teclado numérico',
-            tc_level_menu_aria: 'Elige un nivel',
-            tc_board_aria: 'La operación',
-            tc_scratch_aria: 'Minutos de trabajo',
-            tc_carry_aria: 'Hora que llevas',
-            tc_result_hours_aria: 'Horas del resultado',
-            tc_result_minutes_aria: 'Minutos del resultado',
-            tc_hint_minutes_sum: 'Suma los minutos: {a} + {b} = ?',
-            tc_hint_write_minutes: '¿Cuántos minutos quedan? {sum} − 60 = ?',
-            tc_hint_carry: '1 h = 60 min. ¿Cuántas horas enteras hay en {sum} min? Escribe lo que llevas.',
-            tc_hint_borrow: 'No puedes quitar {b} min de {a} min. Pide 1 hora: {a} + 60 = ?',
-            tc_hint_subtract_minutes: 'Resta los minutos: {a} − {b} = ?',
-            tc_hint_minutes_from: 'Resta los minutos: {total} − {b} = ?',
-            tc_hint_add_hours: 'Suma las horas: {a} + {b} = ?',
-            tc_hint_add_hours_carry: 'Suma las horas: {a} + {b} + 1 = ?',
-            tc_hint_subtract_hours: 'Resta las horas: {a} − {b} = ?',
-            tc_hint_subtract_hours_borrow: 'Resta las horas: {a} − 1 − {b} = ?',
-            tc_wrong: 'Casi, inténtalo otra vez',
-            tc_done_title: '¡Muy bien!',
-            tc_done_next: 'Siguiente problema →',
-            // Money calculations (mc_*)
-            game_money_calc: 'Cálculo con dinero',
-            mc_unit_euros: '€',
-            mc_unit_cents: 'cts',
-            mc_numpad_aria: 'Teclado numérico',
-            mc_level_menu_aria: 'Elige un nivel',
-            mc_board_aria: 'La operación',
-            mc_scratch_aria: 'Cts de trabajo',
-            mc_carry_aria: 'Euro que llevas',
-            mc_result_euros_aria: 'Euros del resultado',
-            mc_result_cents_aria: 'Cts del resultado',
-            mc_hint_cents_sum: 'Suma los cts: {a} + {b} = ?',
-            mc_hint_write_cents: '¿Cuántos cts quedan? {sum} − 100 = ?',
-            mc_hint_carry: '1 € = 100 cts. ¿Cuántos euros enteros hay en {sum} cts? Escribe lo que llevas.',
-            mc_hint_borrow: 'No puedes quitar {b} cts de {a} cts. Pide 1 euro: {a} + 100 = ?',
-            mc_hint_subtract_cents: 'Resta los cts: {a} − {b} = ?',
-            mc_hint_cents_from: 'Resta los cts: {total} − {b} = ?',
-            mc_hint_add_euros: 'Suma los euros: {a} + {b} = ?',
-            mc_hint_add_euros_carry: 'Suma los euros: {a} + {b} + 1 = ?',
-            mc_hint_subtract_euros: 'Resta los euros: {a} − {b} = ?',
-            mc_hint_subtract_euros_borrow: 'Resta los euros: {a} − 1 − {b} = ?',
-            mc_wrong: 'Casi, inténtalo otra vez',
-            mc_done_title: '¡Muy bien!',
-            mc_done_next: 'Siguiente problema →',
-            // Unit conversions (uc_*)
-            game_units: 'Conversión de unidades',
-            uc_level_menu_aria: 'Elige un nivel',
-            uc_numpad_aria: 'Teclado numérico',
-            uc_answer_aria: 'Tu respuesta',
-            uc_check_aria: 'Comprobar la respuesta',
-            uc_decimal_aria: 'Separador decimal',
-            uc_backspace_aria: 'Borrar',
-            uc_convert: 'Convierte {value} {from} a {to}',
-            uc_hint_down: 'Vas a una unidad más pequeña: el número se hace más grande.',
-            uc_hint_up: 'Vas a una unidad más grande: el número se hace más pequeño.',
-            uc_correct: '¡Correcto!',
-            uc_wrong: 'Casi, inténtalo otra vez',
-            uc_fill: 'Escribe primero la respuesta',
-            uc_unit_kg: 'kg',
-            uc_unit_g: 'g',
-            uc_unit_km: 'km',
-            uc_unit_m: 'm',
-            uc_unit_cm: 'cm',
-            uc_unit_mm: 'mm',
-            uc_unit_l: 'l',
-            uc_unit_ml: 'ml',
-            // Challenge mode (ch_*),
-            ch_title: 'Desafío',
-            ch_games_label: 'Juegos',
-            ch_difficulty_label: 'Dificultad',
-            ch_start: 'Empezar',
-            ch_continue_run: 'Continuar ({solved}/{total})',
-            ch_decrease: 'Menos',
-            ch_increase: 'Más',
-            ch_progress_aria: 'Progreso del desafío',
-            ch_dirty_title: 'Resuelto con errores',
-            ch_done_title: '¡Desafío completado!',
-            ch_done_line: 'Juegos resueltos: {total}',
-            ch_retries: 'Repeticiones: {n}',
-            ch_stars_aria: '{n} de 3 estrellas',
-            ch_play_again: 'Jugar otra vez',
-        },
-        ru: {
-            lang_selector_aria: 'Выбор языка',
-            level_label: 'Уровень {n}',
-            decimal_separator: ',',
+        // ---- Unit conversions (uc_*) ----
+        [
+            'game_units',
+            'Unit Conversions',
+            'Conversión de unidades',
+            'Перевод единиц'
+        ],
+        [
+            'uc_level_menu_aria',
+            'Choose the level',
+            'Elige un nivel',
+            'Выберите уровень'
+        ],
+        [
+            'uc_numpad_aria',
+            'Number pad',
+            'Teclado numérico',
+            'Цифровая клавиатура'
+        ],
+        [
+            'uc_answer_aria',
+            'Your answer',
+            'Tu respuesta',
+            'Твой ответ'
+        ],
+        [
+            'uc_check_aria',
+            'Check the answer',
+            'Comprobar la respuesta',
+            'Проверить ответ'
+        ],
+        [
+            'uc_decimal_aria',
+            'Decimal separator',
+            'Separador decimal',
+            'Десятичный разделитель'
+        ],
+        [
+            'uc_backspace_aria',
+            'Delete',
+            'Borrar',
+            'Удалить'
+        ],
+        [
+            'uc_convert',
+            'Convert {value} {from} to {to}',
+            'Convierte {value} {from} a {to}',
+            'Переведи {value} {from} в {to}'
+        ],
+        [
+            'uc_hint_down',
+            'Going to a smaller unit: the number gets bigger.',
+            'Vas a una unidad más pequeña: el número se hace más grande.',
+            'Переходишь к меньшей единице: число растёт.'
+        ],
+        [
+            'uc_hint_up',
+            'Going to a bigger unit: the number gets smaller.',
+            'Vas a una unidad más grande: el número se hace más pequeño.',
+            'Переходишь к большей единице: число уменьшается.'
+        ],
+        [
+            'uc_correct',
+            'Correct!',
+            '¡Correcto!',
+            'Верно!'
+        ],
+        [
+            'uc_wrong',
+            'Not quite, try again',
+            'Casi, inténtalo otra vez',
+            'Не совсем, попробуй ещё раз'
+        ],
+        [
+            'uc_fill',
+            'Type the answer first',
+            'Escribe primero la respuesta',
+            'Сначала введи ответ'
+        ],
+        [
+            'uc_unit_kg',
+            'kg',
+            'kg',
+            'кг'
+        ],
+        [
+            'uc_unit_g',
+            'g',
+            'g',
+            'г'
+        ],
+        [
+            'uc_unit_km',
+            'km',
+            'km',
+            'км'
+        ],
+        [
+            'uc_unit_m',
+            'm',
+            'm',
+            'м'
+        ],
+        [
+            'uc_unit_cm',
+            'cm',
+            'cm',
+            'см'
+        ],
+        [
+            'uc_unit_mm',
+            'mm',
+            'mm',
+            'мм'
+        ],
+        [
+            'uc_unit_l',
+            'l',
+            'l',
+            'л'
+        ],
+        [
+            'uc_unit_ml',
+            'ml',
+            'ml',
+            'мл'
+        ],
 
-            hub_title: 'Выбор игры',
-            nav_back: 'Назад к играм',
-            game_follow: 'Повтори за мной',
-            game_unfollow: 'Повтори наоборот',
-            game_operations: 'Математика',
-            game_time: 'Который час?',
-            game_division: 'Деление в столбик',
-            game_multiplication: 'Умножение в столбик',
-            game_addition: 'Сложение в столбик',
-            game_subtraction: 'Вычитание в столбик',
+        // ---- Challenge mode (ch_*) ----
+        [
+            'ch_title',
+            'Challenge',
+            'Desafío',
+            'Челлендж'
+        ],
+        [
+            'ch_games_label',
+            'Games',
+            'Juegos',
+            'Игр'
+        ],
+        [
+            'ch_difficulty_label',
+            'Difficulty',
+            'Dificultad',
+            'Сложность'
+        ],
+        [
+            'ch_start',
+            'Start',
+            'Empezar',
+            'Начать'
+        ],
+        [
+            'ch_continue_run',
+            'Continue run ({solved}/{total})',
+            'Continuar ({solved}/{total})',
+            'Продолжить ({solved}/{total})'
+        ],
+        [
+            'ch_decrease',
+            'Fewer',
+            'Menos',
+            'Меньше'
+        ],
+        [
+            'ch_increase',
+            'More',
+            'Más',
+            'Больше'
+        ],
+        [
+            'ch_progress_aria',
+            'Challenge progress',
+            'Progreso del desafío',
+            'Прогресс челленджа'
+        ],
+        [
+            'ch_dirty_title',
+            'Solved with mistakes',
+            'Resuelto con errores',
+            'Решено с ошибками'
+        ],
+        [
+            'ch_done_title',
+            'Challenge complete!',
+            '¡Desafío completado!',
+            'Челлендж пройден!'
+        ],
+        [
+            'ch_done_line',
+            'Games solved: {total}',
+            'Juegos resueltos: {total}',
+            'Пройдено игр: {total}'
+        ],
+        [
+            'ch_retries',
+            'Retries: {n}',
+            'Repeticiones: {n}',
+            'Повторов: {n}'
+        ],
+        [
+            'ch_stars_aria',
+            '{n} of 3 stars',
+            '{n} de 3 estrellas',
+            '{n} из 3 звёзд'
+        ],
+        [
+            'ch_play_again',
+            'Play again',
+            'Jugar otra vez',
+            'Играть снова'
+        ],
+    ];
 
-            ops_choose_sign: 'Выбери правильный знак',
-            ops_operators_aria: 'Математические операторы',
-            ops_plus: 'плюс',
-            ops_minus: 'минус',
-            ops_times: 'умножить',
-            ops_divide: 'разделить',
+    function buildTranslations() {
+        const dictionaries = { en: {}, es: {}, ru: {} };
+        TRANSLATION_ROWS.forEach((row) => {
+            dictionaries.en[row[0]] = row[1];
+            dictionaries.es[row[0]] = row[2];
+            dictionaries.ru[row[0]] = row[3];
+        });
+        return dictionaries;
+    }
 
-            ftl_remember: 'Запомни порядок появления квадратов',
-            ftl_your_turn: 'Твоя очередь!',
-            ftl_great_job: 'Отлично!',
-            ftl_try_again: 'Попробуй ещё раз!',
-            ftl_remember_next: 'Уровень {n}: Запомни последовательность',
-            ftl_square_aria: 'Квадрат {n}',
-            uftl_remember: 'Запомни порядок появления квадратов и нажми их в обратном порядке',
-            uftl_your_turn: 'Теперь наоборот!',
-            uftl_great_job: 'Отлично!',
-            uftl_try_again: 'Попробуй ещё раз!',
-            uftl_remember_next: 'Уровень {n}: Запомни последовательность — и повтори наоборот',
-            uftl_square_aria: 'Квадрат {n}',
-
-            tt_choose_time: 'Выбери правильное время',
-            tt_tap_continue: 'Нажмите, чтобы продолжить',
-            tt_correct: 'Верно!',
-            tt_correct_answer: 'Правильно:',
-            tt_choices_aria: 'Варианты времени',
-
-            ld_level_menu_aria: 'Выберите уровень',
-            ld_term_dividend: 'Делимое',
-            ld_term_dividend_title: 'Число, которое мы делим',
-            ld_term_divisor: 'Делитель',
-            ld_term_divisor_title: 'Число, на которое мы делим',
-            ld_term_quotient: 'Частное',
-            ld_term_quotient_title: 'Результат деления',
-            ld_term_incomplete: 'Неполное делимое',
-            ld_term_incomplete_title: 'Часть делимого, которую делим на данном шаге',
-            ld_numpad_aria: 'Цифровая клавиатура',
-            ld_q_digit_text: 'Раздели неполное делимое <strong>{incVal}</strong> на делитель <strong>{d}</strong>',
-            ld_q_digit_hint: 'Какую цифру пишем в частное? ({incVal} : {d} = ?)',
-            ld_product_text: 'Умножь делитель <strong>{d}</strong> на цифру частного <strong>{qDigit}</strong>',
-            ld_product_hint: 'Сколько запишем под {incVal}? ({d} × {qDigit} = ?)',
-            ld_rem_text: 'Найди остаток вычитанием: <strong>{incVal} − {prod}</strong>',
-            ld_rem_hint: 'Чему равен остаток?',
-            ld_bring_text: 'Остаток {rem} &lt; {d}. Сносим следующую цифру делимого: <strong>{nextDigit}</strong>',
-            ld_bring_hint: 'Запиши цифру {nextDigit} рядом с остатком',
-            ld_wrong_hint: 'Не совсем так. Попробуй ещё раз!',
-            ld_done_title: 'Отлично решено!',
-            ld_done_next: 'Следующий пример →',
-            lm_level_menu_aria: 'Выберите уровень',
-            lm_numpad_aria: 'Цифровая клавиатура',
-            lm_term_multiplicand: 'Множимое',
-            lm_term_multiplicand_title: 'Число, которое умножаем',
-            lm_term_multiplier: 'Множитель',
-            lm_term_multiplier_title: 'Число, на которое умножаем',
-            lm_term_product: 'Произведение',
-            lm_term_product_title: 'Результат умножения',
-            lm_term_partial: 'Неполное произведение',
-            lm_term_partial_title: 'Строка произведения для одной цифры множителя',
-            lm_mul_hint: 'Сколько получится? ({a} × {b} = ?)',
-            lm_mul_hint_carry: 'Сколько получится? ({a} × {b} + {carry} = ?)',
-            lm_carry_hint: 'Остался перенос {carry}. Какую цифру пишем?',
-            lm_add_hint: 'Сколько получится? ({expr} = ?)',
-            lm_wrong_hint: 'Не совсем так. Попробуй ещё раз!',
-            lm_done_title: 'Отлично решено!',
-            lm_done_next: 'Следующий пример →',
-            lm_custom_btn: '✏️ Своё выражение',
-            lm_custom_title: 'Своё выражение',
-            lm_custom_factor1: 'Первый множитель',
-            lm_custom_factor2: 'Второй множитель',
-            lm_custom_solve: 'Решить',
-            lm_custom_cancel: 'Отмена',
-            lm_custom_close_aria: 'Закрыть окно',
-            lm_custom_err_factor: 'Введи число: целое или десятичную дробь, например 123 или 1,5',
-            lm_custom_err_too_big: 'Слишком большие числа. В произведении должно быть не больше 8 цифр.',
-            la_level_menu_aria: 'Выберите уровень',
-            la_numpad_aria: 'Цифровая клавиатура',
-            la_term_addend: 'Слагаемое',
-            la_term_addend_title: 'Число, которое складываем',
-            la_term_sum: 'Сумма',
-            la_term_sum_title: 'Результат сложения',
-            la_term_carry: 'Перенос',
-            la_term_carry_title: 'Десяток, который переносим в следующий разряд',
-            la_add_hint: 'Сколько получится? ({expr} = ?)',
-            la_carry_hint: 'Остался перенос {carry}. Какую цифру пишем?',
-            la_wrong_hint: 'Не совсем так. Попробуй ещё раз!',
-            la_done_title: 'Отлично решено!',
-            la_done_next: 'Следующий пример →',
-            la_custom_btn: '✏️ Своё выражение',
-            la_custom_title: 'Своё выражение',
-            la_custom_addend1: 'Первое слагаемое',
-            la_custom_addend2: 'Второе слагаемое',
-            la_custom_solve: 'Решить',
-            la_custom_cancel: 'Отмена',
-            la_custom_close_aria: 'Закрыть окно',
-            la_custom_err_addend: 'Введи число: целое или десятичную дробь, например 123 или 1,5',
-            la_custom_err_too_big: 'Слишком большие числа. В сумме должно быть не больше 8 цифр.',
-            ls_level_menu_aria: 'Выберите уровень',
-            ls_numpad_aria: 'Цифровая клавиатура',
-            ls_term_minuend: 'Уменьшаемое',
-            ls_term_minuend_title: 'Число, из которого вычитаем',
-            ls_term_subtrahend: 'Вычитаемое',
-            ls_term_subtrahend_title: 'Число, которое вычитаем',
-            ls_term_difference: 'Разность',
-            ls_term_difference_title: 'Результат вычитания',
-            ls_term_borrow: 'Заём',
-            ls_term_borrow_title: 'Десяток, который занимаем у следующего разряда',
-            ls_sub_hint: 'Сколько получится? ({expr} = ?)',
-            ls_borrow_hint: 'Занимаем десяток. Сколько получится? ({expr} = ?)',
-            ls_wrong_hint: 'Не совсем так. Попробуй ещё раз!',
-            ls_done_title: 'Отлично решено!',
-            ls_done_next: 'Следующий пример →',
-            ls_custom_btn: '✏️ Своё выражение',
-            ls_custom_title: 'Своё выражение',
-            ls_custom_minuend: 'Уменьшаемое',
-            ls_custom_subtrahend: 'Вычитаемое',
-            ls_custom_solve: 'Решить',
-            ls_custom_cancel: 'Отмена',
-            ls_custom_close_aria: 'Закрыть окно',
-            ls_custom_err_subtrahend: 'Введи число: целое или десятичную дробь, например 123 или 1,5',
-            ls_custom_err_order: 'Уменьшаемое должно быть больше или равно вычитаемому.',
-            ls_custom_err_too_big: 'Слишком большие числа. В разности должно быть не больше 8 цифр.',
-            ld_custom_btn: '✏️ Своё выражение',
-            ld_custom_title: 'Своё выражение',
-            ld_custom_dividend: 'Делимое',
-            ld_custom_divisor: 'Делитель',
-            ld_custom_solve: 'Решить',
-            ld_custom_cancel: 'Отмена',
-            ld_custom_close_aria: 'Закрыть окно',
-            ld_custom_err_dividend: 'Введи делимое: целое число или десятичную дробь, например 124 или 12,5',
-            ld_custom_err_divisor: 'Делитель — целое число от 2 до 99',
-            ld_custom_err_too_big: 'Слишком большое число: максимум 8 цифр, и весь пример должен умещаться в 12 столбцов.',
-            ld_custom_err_not_exact: 'Такой пример не делится нацело. Попробуй другое выражение.',
-
-            // Money word problems (mp_*)
-            game_money: 'Задачи про деньги',
-            mp_intro: 'У {name} в кошельке:',
-            mp_wallet_aria: 'Деньги в кошельке',
-            mp_unit_eur: '€',
-            mp_unit_cts: 'центов',
-            mp_letter_a: 'а)',
-            mp_letter_b: 'б)',
-            mp_letter_c: 'в)',
-            mp_short_a: 'Всего',
-            mp_short_b: 'Хватит ли?',
-            mp_short_c_over: 'Останется',
-            mp_short_c_short: 'Не хватает',
-            mp_q_a: 'Сколько всего денег у {name}?',
-            mp_q_b: 'Сможет ли она купить это за {price}?',
-            mp_q_c_over: 'Сколько денег останется?',
-            mp_q_c_short: 'Сколько денег не хватает?',
-            mp_hint_a: 'Сложи все купюры и монеты.',
-            mp_hint_b: 'Сравни сумму с ценой.',
-            mp_hint_c_over: 'Вычти цену из суммы.',
-            mp_hint_c_short: 'Вычти сумму из цены.',
-            mp_yes: 'Да',
-            mp_no: 'Нет',
-            mp_numpad_aria: 'Цифровая клавиатура',
-            mp_wrong: 'Не совсем так. Попробуй ещё раз!',
-            mp_done_title: 'Отлично!',
-            mp_done_next: 'Следующая задача →',
-            mp_level_menu_aria: 'Выберите уровень',
-            mp_item_chocolate: 'шоколад',
-            mp_item_notebook: 'тетрадь',
-            mp_item_icecream: 'мороженое',
-            mp_item_pizza: 'пицца',
-            mp_item_book: 'книга',
-            mp_item_ball: 'мяч',
-            mp_item_teddy: 'мишка',
-            mp_item_backpack: 'рюкзак',
-            mp_item_headphones: 'наушники',
-            // Name pool: 20 girls, one is picked at random for every problem,
-            // (Russian names are genitive: "У <name> в кошельке"),
-            mp_name_1: 'Люси',
-            mp_name_2: 'Маши',
-            mp_name_3: 'Саши',
-            mp_name_4: 'Кати',
-            mp_name_5: 'Насти',
-            mp_name_6: 'Даши',
-            mp_name_7: 'Поли',
-            mp_name_8: 'Ани',
-            mp_name_9: 'Лизы',
-            mp_name_10: 'Веры',
-            mp_name_11: 'Тани',
-            mp_name_12: 'Оли',
-            mp_name_13: 'Юли',
-            mp_name_14: 'Сони',
-            mp_name_15: 'Алисы',
-            mp_name_16: 'Ксюши',
-            mp_name_17: 'Кристины',
-            mp_name_18: 'Дианы',
-            mp_name_19: 'Наташи',
-            mp_name_20: 'Иры',
-            // Elapsed time (et_*),
-            game_elapsed: 'Сколько времени прошло?',
-            game_time_calc: 'Вычисления со временем',
-            et_level_menu_aria: 'Выберите уровень',
-            et_numpad_aria: 'Цифровая клавиатура',
-            et_answer_aria: 'Твой ответ',
-            et_hours_aria: 'Часы',
-            et_minutes_aria: 'Минуты',
-            et_box_hours: 'ч',
-            et_box_minutes: 'мин',
-            et_clock_aria: 'Часы показывают {time}',
-            et_span_aria: 'С {start} до {end}',
-            et_format_minutes: 'Ответь в минутах',
-            et_format_hours_minutes: 'Ответь в часах и минутах',
-            et_correct: 'Верно!',
-            et_wrong: 'Не совсем, попробуй ещё раз',
-            et_fill: 'Сначала впиши ответ',
-            et_range_hours: 'Часы — от 1 до 12',
-            et_range_hours_time: 'Часы — от 0 до 23',
-            et_range_minutes: 'Минуты — от 0 до 59',
-            et_q_end_plain: 'Сейчас {time}. Какое время будет через {duration}?',
-            et_q_end_1: 'Пирог ставят в духовку в {time}, он печётся {duration}. Когда он будет готов?',
-            et_q_end_2: 'Автобус отправляется в {time}, поездка длится {duration}. В какое время он приедет?',
-            et_q_end_3: 'Тренировка начинается в {time} и длится {duration}. Во сколько она закончится?',
-            et_q_start_plain: 'Сейчас {time}. Какое время было {duration} назад?',
-            et_q_start_1: 'Пирог достают из духовки в {time}. Он пёкся {duration}. Когда его поставили?',
-            et_q_start_2: 'Автобус прибывает в {time}. Поездка длилась {duration}. Во сколько он уехал?',
-            et_q_start_3: 'Фильм заканчивается в {time}. Он идёт {duration}. Во сколько он начался?',
-            et_q_dur_plain: 'Сколько времени проходит между двумя моментами?',
-            et_q_dur_1: 'Мария читала книгу. Сколько времени она читала?',
-            et_q_dur_2: 'Пирог был в духовке. Сколько времени он пёкся?',
-            et_q_dur_3: 'Автобус был в пути. Сколько длилась поездка?',
-            // Time calculations (tc_*)
-            tc_unit_hours: 'ч',
-            tc_unit_minutes: 'мин',
-            tc_numpad_aria: 'Цифровая клавиатура',
-            tc_level_menu_aria: 'Выберите уровень',
-            tc_board_aria: 'Пример',
-            tc_scratch_aria: 'Рабочие минуты',
-            tc_carry_aria: 'Перенос часов',
-            tc_result_hours_aria: 'Часы ответа',
-            tc_result_minutes_aria: 'Минуты ответа',
-            tc_hint_minutes_sum: 'Складываю минуты: {a} + {b} = ?',
-            tc_hint_write_minutes: 'Сколько минут останется? {sum} − 60 = ?',
-            tc_hint_carry: '1 ч = 60 мин. Сколько целых часов в {sum} мин? Впиши перенос.',
-            tc_hint_borrow: 'Из {a} мин нельзя вычесть {b} мин. Занимаю 1 час: {a} + 60 = ?',
-            tc_hint_subtract_minutes: 'Вычитаю минуты: {a} − {b} = ?',
-            tc_hint_minutes_from: 'Вычитаю минуты: {total} − {b} = ?',
-            tc_hint_add_hours: 'Складываю часы: {a} + {b} = ?',
-            tc_hint_add_hours_carry: 'Складываю часы: {a} + {b} + 1 = ?',
-            tc_hint_subtract_hours: 'Вычитаю часы: {a} − {b} = ?',
-            tc_hint_subtract_hours_borrow: 'Вычитаю часы: {a} − 1 − {b} = ?',
-            tc_wrong: 'Не совсем, попробуй ещё раз',
-            tc_done_title: 'Молодец!',
-            tc_done_next: 'Следующая задача →',
-            // Money calculations (mc_*)
-            game_money_calc: 'Вычисления с деньгами',
-            mc_unit_euros: '€',
-            mc_unit_cents: 'центов',
-            mc_numpad_aria: 'Цифровая клавиатура',
-            mc_level_menu_aria: 'Выберите уровень',
-            mc_board_aria: 'Пример',
-            mc_scratch_aria: 'Рабочие центы',
-            mc_carry_aria: 'Перенос евро',
-            mc_result_euros_aria: 'Евро ответа',
-            mc_result_cents_aria: 'Центы ответа',
-            mc_hint_cents_sum: 'Складываю центы: {a} + {b} = ?',
-            mc_hint_write_cents: 'Сколько центов останется? {sum} − 100 = ?',
-            mc_hint_carry: '1 € = 100 центов. Сколько целых евро в {sum} центах? Впиши перенос.',
-            mc_hint_borrow: 'Из {a} центов нельзя вычесть {b} центов. Занимаю 1 евро: {a} + 100 = ?',
-            mc_hint_subtract_cents: 'Вычитаю центы: {a} − {b} = ?',
-            mc_hint_cents_from: 'Вычитаю центы: {total} − {b} = ?',
-            mc_hint_add_euros: 'Складываю евро: {a} + {b} = ?',
-            mc_hint_add_euros_carry: 'Складываю евро: {a} + {b} + 1 = ?',
-            mc_hint_subtract_euros: 'Вычитаю евро: {a} − {b} = ?',
-            mc_hint_subtract_euros_borrow: 'Вычитаю евро: {a} − 1 − {b} = ?',
-            mc_wrong: 'Не совсем, попробуй ещё раз',
-            mc_done_title: 'Молодец!',
-            mc_done_next: 'Следующая задача →',
-            // Unit conversions (uc_*)
-            game_units: 'Перевод единиц',
-            uc_level_menu_aria: 'Выберите уровень',
-            uc_numpad_aria: 'Цифровая клавиатура',
-            uc_answer_aria: 'Твой ответ',
-            uc_check_aria: 'Проверить ответ',
-            uc_decimal_aria: 'Десятичный разделитель',
-            uc_backspace_aria: 'Удалить',
-            uc_convert: 'Переведи {value} {from} в {to}',
-            uc_hint_down: 'Переходишь к меньшей единице: число растёт.',
-            uc_hint_up: 'Переходишь к большей единице: число уменьшается.',
-            uc_correct: 'Верно!',
-            uc_wrong: 'Не совсем, попробуй ещё раз',
-            uc_fill: 'Сначала введи ответ',
-            uc_unit_kg: 'кг',
-            uc_unit_g: 'г',
-            uc_unit_km: 'км',
-            uc_unit_m: 'м',
-            uc_unit_cm: 'см',
-            uc_unit_mm: 'мм',
-            uc_unit_l: 'л',
-            uc_unit_ml: 'мл',
-            // Challenge mode (ch_*),
-            ch_title: 'Челлендж',
-            ch_games_label: 'Игр',
-            ch_difficulty_label: 'Сложность',
-            ch_start: 'Начать',
-            ch_continue_run: 'Продолжить ({solved}/{total})',
-            ch_decrease: 'Меньше',
-            ch_increase: 'Больше',
-            ch_progress_aria: 'Прогресс челленджа',
-            ch_dirty_title: 'Решено с ошибками',
-            ch_done_title: 'Челлендж пройден!',
-            ch_done_line: 'Пройдено игр: {total}',
-            ch_retries: 'Повторов: {n}',
-            ch_stars_aria: '{n} из 3 звёзд',
-            ch_play_again: 'Играть снова',
-        }
-    };
+    const translations = buildTranslations();
 
     // ---- Time phrase word tables ----
     const EN_HOURS = {
