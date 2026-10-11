@@ -62,6 +62,11 @@ export const SKILL_INFO = {
         name: 'Money Calculations',
         skill: 'Column addition & subtraction of euros and cents',
         tip: 'Remember that 100 cents = 1 euro. In column math, carry 1 euro when cents reach 100 or more, and borrow 100 cents when subtracting.'
+    },
+    'unit-conversions': {
+        name: 'Unit Conversions',
+        skill: 'Metric units of mass, length and capacity',
+        tip: 'Going to a smaller unit makes the number bigger (multiply by 10 for each step); going to a bigger unit makes it smaller (divide). 1 kg = 1000 g, 1 m = 100 cm, 1 l = 1000 ml.'
     }
 };
 

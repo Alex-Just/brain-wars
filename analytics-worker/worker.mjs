@@ -9,7 +9,8 @@ import { generateWeeklySummary, renderReportHtml, sendReportEmail } from './repo
 export const GAME_IDS = [
     'follow-the-leader', 'unfollow-the-leader', 'operations', 'telling-time',
     'long-division', 'long-multiplication', 'long-addition', 'long-subtraction',
-    'money-problems', 'elapsed-time', 'time-calculations', 'money-calculations'
+    'money-problems', 'elapsed-time', 'time-calculations', 'money-calculations',
+    'unit-conversions'
 ];
 
 const BATCH_MAX = 200;

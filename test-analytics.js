@@ -140,7 +140,11 @@ check('the worker guide documents the live ingest and the rate limit', () => {
     assert.ok(readme.includes('https://brain-wars-answers.alex-just.workers.dev/ingest'), 'the guide names the live ingest URL');
     assert.ok(readme.includes('received_at'), 'the count uses received_at');
     assert.ok(readme.includes('wrangler deploy'), 'deploy uses Wrangler');
-    assert.ok(readme.includes('v14'), 'the guide names the current service worker version');
+    // The guide names the current service worker version; read it from sw.js so the
+    // two never drift when VERSION is bumped.
+    const version = fs.readFileSync(path.join(__dirname, 'sw.js'), 'utf8').match(/const VERSION = '([^']+)'/);
+    assert.ok(version, 'sw.js must define VERSION');
+    assert.ok(readme.includes(version[1]), `the guide names the current service worker version (${version[1]})`);
     assert.ok(!readme.includes('"ts":0'), 'ts 0 is outside the validation window');
 });
 
@@ -174,6 +178,17 @@ const Games = require('./games.js');
         const expected = Games.all().map((game) => game.id)
             .concat(['follow-the-leader', 'unfollow-the-leader']).sort(compareStrings);
         assert.deepStrictEqual([...Worker.GAME_IDS].sort(compareStrings), expected);
+    });
+
+    await checkAsync('every game id has skill info for the weekly report', () => {
+        Worker.GAME_IDS.forEach((id) => {
+            const info = Report.SKILL_INFO[id];
+            assert.ok(info, `SKILL_INFO is missing ${id}`);
+            assert.ok(info.name && info.skill && info.tip, `${id} needs a name, a skill and a tip`);
+        });
+        Object.keys(Report.SKILL_INFO).forEach((id) => {
+            assert.ok(Worker.GAME_IDS.includes(id), `SKILL_INFO has an unknown game ${id}`);
+        });
     });
 
     await checkAsync('validateEvents accepts a valid event', () => {

@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#f5f5f5">
+    <link rel="icon" type="image/png" href="./icons/icon-32.png">
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Brain Wars">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <script src="pwa.js" defer></script>
+    <style>
+        /* Boot loader: painted before the deferred scripts run, faded out when the page is ready */
+        #boot-loader {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f5f5f5;
+            transition: opacity 0.25s ease;
+        }
+        #boot-loader.is-done {
+            opacity: 0;
+            pointer-events: none;
+        }
+        #boot-loader::after {
+            content: '';
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 3px solid rgba(0, 0, 0, 0.12);
+            border-top-color: #4d8a98;
+            animation: boot-spin 0.8s linear infinite;
+        }
+        @keyframes boot-spin {
+            to { transform: rotate(360deg); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            #boot-loader::after { animation-duration: 2.4s; }
+        }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const loader = document.getElementById('boot-loader');
+            if (!loader) return;
+            loader.classList.add('is-done');
+            setTimeout(() => loader.remove(), 400);
+        });
+    </script>
+    <title data-i18n="game_units">Перевод единиц</title>
+    <script src="i18n.js" defer></script>
+    <script src="games.js" defer></script>
+    <script src="analytics.js" defer></script>
+    <script src="unit-conversions.js" defer></script>
+    <script src="challenge.js" defer></script>
+    <style>
+        :root {
+            --color-primary: #60ACBD;
+            --color-primary-dark: #4d8a98;
+            --color-primary-text: #3B6D78;
+            --color-success: #2E7D32;
+            --color-error: #D32F2F;
+            --color-text: #333333;
+            --color-text-secondary: #666666;
+            --color-text-light: #999999;
+            --color-background: #f5f5f5;
+            --color-purple: #7B61FF;
+            --color-purple-text: #6D4FD8;
+            --color-purple-light: #EDE9FE;
+            --radius-md: 12px;
+            --radius-lg: 20px;
+            --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        [hidden] {
+            display: none !important;
+        }
+
+        :focus-visible {
+            outline: 3px solid var(--color-primary-text);
+            outline-offset: 2px;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--color-background);
+            color: var(--color-text);
+            min-height: 100vh;
+            min-height: 100svh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 12px 8px;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+            overflow-x: hidden;
+            overflow-y: auto;
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+        }
+
+        @supports (padding: max(0px)) {
+            body {
+                padding-top: max(12px, env(safe-area-inset-top));
+                padding-bottom: max(12px, env(safe-area-inset-bottom));
+                padding-left: max(8px, env(safe-area-inset-left));
+                padding-right: max(8px, env(safe-area-inset-right));
+            }
+        }
+
+        /* Header navigation */
+        .top-nav {
+            width: min(94vw, 380px);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            gap: 8px;
+            flex-wrap: wrap;
+            z-index: 10;
+        }
+
+        .nav-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border: 1px solid rgba(0,0,0,0.08);
+            color: var(--color-text-secondary);
+            border-radius: 10px;
+            min-height: 44px;
+            padding: 10px 14px;
+            font-size: 14px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .nav-btn:active {
+            background-color: #f8fafc;
+            color: var(--color-primary-dark);
+            transform: scale(0.97);
+        }
+
+        .icon-btn {
+            min-width: 44px;
+            padding: 10px 12px;
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        .level-picker {
+            position: relative;
+        }
+
+        .level-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(0, 0, 0, 0.08);
+            color: var(--color-text-secondary);
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 600;
+            min-height: 44px;
+            padding: 10px 12px;
+            border: 1px solid transparent;
+            border-radius: 10px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background-color 0.15s ease;
+        }
+
+        .level-badge:active,
+        .level-badge[aria-expanded="true"] {
+            background: rgba(0, 0, 0, 0.14);
+        }
+
+        .level-caret {
+            font-size: 11px;
+            line-height: 1;
+            color: var(--color-primary-text);
+        }
+
+        .level-menu {
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            z-index: 30;
+            display: none;
+            grid-template-columns: repeat(4, 44px);
+            gap: 6px;
+            padding: 8px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+            max-height: min(60vh, 60dvh);
+            overflow-y: auto;
+        }
+
+        .level-menu.open {
+            display: grid;
+        }
+
+        .level-menu-item {
+            width: 44px;
+            height: 44px;
+            padding: 0;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            background: #f8fafc;
+            color: var(--color-text);
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.15s ease, transform 0.1s ease;
+        }
+
+        .level-menu-item:active {
+            transform: scale(0.95);
+        }
+
+        .level-menu-item.current {
+            background: var(--color-primary-dark);
+            border-color: var(--color-primary-dark);
+            color: white;
+        }
+
+        /* Main card */
+        .game-card {
+            width: min(94vw, 380px);
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-card);
+            padding: 12px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+        }
+
+        /* The prompt, and the one line of feedback under it */
+        .instruction-box {
+            width: 100%;
+            background: #f8fafc;
+            border-radius: var(--radius-md);
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 78px;
+        }
+
+        .instruction-text {
+            font-size: clamp(14px, 3.8vw, 16px);
+            font-weight: 500;
+            text-align: center;
+            color: var(--color-text);
+            line-height: 1.35;
+        }
+
+        .instruction-hint {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--color-purple-text);
+            margin-top: 4px;
+            min-height: 17px;
+            text-align: center;
+        }
+
+        .instruction-hint.is-error {
+            color: var(--color-error);
+        }
+
+        .instruction-hint.is-correct {
+            color: var(--color-success);
+        }
+
+        /* The equation: a measurement, an equals sign, and the answer slot.
+           Fixed height so the number pad never jumps between questions. */
+        .convert-board {
+            width: 100%;
+            min-height: clamp(96px, 26vw, 118px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .value-chip {
+            font-size: clamp(24px, 7vw, 32px);
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            color: var(--color-purple-text);
+            background: var(--color-purple-light);
+            border-radius: 14px;
+            padding: 6px 14px;
+            white-space: nowrap;
+        }
+
+        .unit {
+            font-size: clamp(16px, 4.5vw, 20px);
+            font-weight: 700;
+            color: var(--color-text-secondary);
+        }
+
+        .equals {
+            font-size: clamp(22px, 6vw, 28px);
+            font-weight: 700;
+            color: var(--color-text-light);
+        }
+
+        .answer-box {
+            min-width: clamp(92px, 30vw, 128px);
+            min-height: 54px;
+            padding: 0 12px;
+            border: 2px solid #cbd5e1;
+            border-radius: 12px;
+            background: white;
+            color: var(--color-text);
+            font-size: clamp(24px, 7vw, 32px);
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .answer-box:empty::after {
+            content: '?';
+            color: #cbd5e1;
+        }
+
+        .answer-box.correct-flash {
+            animation: flashGreen 0.4s ease-out;
+        }
+
+        .answer-box.error-shake {
+            animation: shakeError 0.5s ease-in-out;
+        }
+
+        @keyframes flashGreen {
+            0% {
+                background-color: var(--color-success);
+                border-color: var(--color-success);
+                color: white;
+            }
+            100% { background-color: transparent; }
+        }
+
+        @keyframes shakeError {
+            0%, 100% { transform: translateX(0); background-color: transparent; }
+            20%, 60% { transform: translateX(-4px); background-color: #FEE2E2; color: var(--color-error); }
+            40%, 80% { transform: translateX(4px); background-color: #FEE2E2; color: var(--color-error); }
+        }
+
+        /* Number pad, with a decimal key and a backspace on the last row */
+        .numpad-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            width: 100%;
+            max-width: 310px;
+        }
+
+        .numpad-btn {
+            background: white;
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 12px;
+            height: clamp(42px, 10vw, 50px);
+            font-size: clamp(19px, 5vw, 23px);
+            font-weight: 600;
+            color: var(--color-text);
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            transition: all 0.1s ease;
+            user-select: none;
+        }
+
+        .numpad-btn:active {
+            transform: scale(0.96);
+            background: #f1f5f9;
+        }
+
+        .numpad-btn:disabled {
+            opacity: 0.45;
+            cursor: default;
+            transform: none;
+            background: white;
+        }
+
+        /* The check mark spans the pad, so a typed answer is submitted on purpose */
+        .check-btn {
+            width: 100%;
+            max-width: 310px;
+            min-height: 54px;
+            background: var(--color-primary-dark);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(77, 138, 152, 0.4);
+            transition: transform 0.15s ease, background-color 0.2s ease;
+        }
+
+        .check-btn:active {
+            transform: scale(0.97);
+        }
+
+        .check-btn:disabled {
+            opacity: 0.5;
+            cursor: default;
+            transform: none;
+            box-shadow: none;
+        }
+
+        @media (max-width: 360px) {
+            .value-chip {
+                padding: 6px 10px;
+            }
+
+            .answer-box {
+                min-width: 84px;
+                min-height: 50px;
+            }
+        }
+
+        @media (hover: hover) {
+            .nav-btn:hover {
+                background-color: #f8fafc;
+                color: var(--color-primary-dark);
+                transform: translateY(-1px);
+            }
+            .numpad-btn:hover:not(:disabled) {
+                background: #f8fafc;
+                border-color: rgba(0,0,0,0.15);
+            }
+            .check-btn:hover:not(:disabled) {
+                background: var(--color-primary);
+            }
+            .level-badge:hover {
+                background: rgba(0, 0, 0, 0.12);
+            }
+            .level-menu-item:hover:not(.current) {
+                background: #eef2f7;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="boot-loader" aria-hidden="true"></div>
+
+    <!-- Top navigation -->
+    <header class="top-nav">
+        <a id="backBtn" class="nav-btn icon-btn" href="./index.html" data-i18n-aria-label="nav_back" aria-label="Назад к играм"><svg class="back-arrow" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path d="M20 12H6M11.5 6 5.5 12 11.5 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <div data-lang-toggle></div>
+        <div class="level-picker">
+            <button type="button" id="levelDisplay" class="level-badge" aria-haspopup="listbox" aria-expanded="false">
+                <span id="levelText" aria-live="polite">Уровень 1</span>
+                <span class="level-caret" aria-hidden="true">▾</span>
+            </button>
+            <div class="level-menu" id="levelMenu" role="listbox" data-i18n-aria-label="uc_level_menu_aria" aria-label="Выберите уровень"></div>
+        </div>
+    </header>
+
+    <!-- Game card -->
+    <main class="game-card">
+        <!-- The prompt, and the feedback line below it -->
+        <div class="instruction-box">
+            <div class="instruction-text" id="instructionText"></div>
+            <div class="instruction-hint" id="instructionHint" role="status" aria-live="polite"></div>
+        </div>
+
+        <!-- The equation: value from-unit = answer to-unit -->
+        <div class="convert-board" id="convertBoard" role="group" aria-label="Пример">
+            <span class="value-chip" id="valueText"></span>
+            <span class="unit" id="fromUnit"></span>
+            <span class="equals" aria-hidden="true">=</span>
+            <div class="answer-box" id="answerBox" data-i18n-aria-label="uc_answer_aria" aria-label="Твой ответ"></div>
+            <span class="unit" id="toUnit"></span>
+        </div>
+
+        <!-- Number pad: digits, a decimal key and a backspace -->
+        <div class="numpad-grid" id="numpadGrid" role="group" data-i18n-aria-label="uc_numpad_aria" aria-label="Цифровая клавиатура">
+            <button type="button" class="numpad-btn" data-key="1">1</button>
+            <button type="button" class="numpad-btn" data-key="2">2</button>
+            <button type="button" class="numpad-btn" data-key="3">3</button>
+            <button type="button" class="numpad-btn" data-key="4">4</button>
+            <button type="button" class="numpad-btn" data-key="5">5</button>
+            <button type="button" class="numpad-btn" data-key="6">6</button>
+            <button type="button" class="numpad-btn" data-key="7">7</button>
+            <button type="button" class="numpad-btn" data-key="8">8</button>
+            <button type="button" class="numpad-btn" data-key="9">9</button>
+            <button type="button" class="numpad-btn" data-key="decimal" id="decimalKey" data-i18n-aria-label="uc_decimal_aria" aria-label="Десятичный разделитель">.</button>
+            <button type="button" class="numpad-btn" data-key="0">0</button>
+            <button type="button" class="numpad-btn" data-key="backspace" data-i18n-aria-label="uc_backspace_aria" aria-label="Удалить">⌫</button>
+        </div>
+
+        <!-- The answer has no fixed length, so it is submitted with an explicit check -->
+        <button type="button" class="check-btn" id="checkBtn" data-i18n-aria-label="uc_check_aria" aria-label="Проверить ответ">
+            <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" focusable="false"><path d="M4 13l5 5L20 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+    </main>
+
+    <!-- Game engine -->
+    <script>
+        class UnitConversionsGame {
+            #state;
+            #elements;
+            #config;
+
+            // Every unit code maps to the dictionary key that holds its symbol, so the
+            // page never builds a key by pasting strings together.
+            static #UNIT_KEYS = {
+                kg: 'uc_unit_kg',
+                g: 'uc_unit_g',
+                km: 'uc_unit_km',
+                m: 'uc_unit_m',
+                cm: 'uc_unit_cm',
+                mm: 'uc_unit_mm',
+                l: 'uc_unit_l',
+                ml: 'uc_unit_ml'
+            };
+
+            constructor() {
+                this.#initConfig();
+                this.#initElements();
+                this.#initState();
+                this.#bindEvents();
+                this.#startRound();
+            }
+
+            #initConfig() {
+                this.#config = {
+                    maxLevel: BrainWarsUnits.maxLevel,
+                    // How long the green "correct" beat stays before the next question
+                    advanceDelay: 900,
+                    // The answer is typed freely, so the pad stops at a sane length
+                    maxDigits: 9
+                };
+            }
+
+            #initElements() {
+                const byId = (id) => document.getElementById(id);
+                this.#elements = {
+                    instructionText: byId('instructionText'),
+                    instructionHint: byId('instructionHint'),
+                    board: byId('convertBoard'),
+                    valueText: byId('valueText'),
+                    fromUnit: byId('fromUnit'),
+                    answerBox: byId('answerBox'),
+                    toUnit: byId('toUnit'),
+                    numpadGrid: byId('numpadGrid'),
+                    decimalKey: byId('decimalKey'),
+                    checkBtn: byId('checkBtn'),
+                    levelDisplay: byId('levelDisplay'),
+                    levelText: byId('levelText'),
+                    levelMenu: byId('levelMenu')
+                };
+            }
+
+            #initState() {
+                this.#state = {
+                    level: Math.max(1, BrainWarsChallenge.startLevel()),
+                    question: null,
+                    previous: null,
+                    // The typed answer, kept canonical (a point, never the local comma)
+                    typed: '',
+                    // 'correct' | 'wrong' | 'fill' | null
+                    hint: null,
+                    hintTimer: null,
+                    advanceTimer: null,
+                    hadErrorThisRound: false,
+                    locked: false
+                };
+            }
+
+            #bindEvents() {
+                this.#elements.numpadGrid.addEventListener('click', (event) => {
+                    const button = event.target.closest('.numpad-btn');
+                    if (button) this.#handleKey(button.dataset.key);
+                });
+
+                this.#elements.checkBtn.addEventListener('click', () => this.#handleKey('check'));
+
+                this.#elements.levelDisplay.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    this.#toggleLevelMenu(!this.#elements.levelMenu.classList.contains('open'));
+                });
+
+                this.#elements.levelMenu.addEventListener('click', (event) => {
+                    const item = event.target.closest('.level-menu-item');
+                    if (item) this.#selectLevel(Number(item.dataset.level));
+                });
+
+                document.addEventListener('click', () => this.#toggleLevelMenu(false));
+
+                // A physical keyboard works like the number pad
+                window.addEventListener('keydown', (event) => {
+                    if (this.#elements.levelMenu.classList.contains('open')) {
+                        if (event.key === 'Escape') {
+                            this.#toggleLevelMenu(false);
+                            this.#elements.levelDisplay.focus();
+                        }
+                        return;
+                    }
+                    const isControlFocused = event.target instanceof HTMLElement &&
+                        (event.target.tagName === 'BUTTON' || event.target.tagName === 'A');
+                    if (isControlFocused && (event.key === 'Enter' || event.key === ' ')) return;
+
+                    if (event.key >= '0' && event.key <= '9') this.#handleKey(event.key);
+                    else if (event.key === '.' || event.key === ',') this.#handleKey('decimal');
+                    else if (event.key === 'Backspace') this.#handleKey('backspace');
+                    else if (event.key === 'Enter') this.#handleKey('check');
+                });
+
+                I18n.subscribe(() => this.#render());
+            }
+
+            /* ---------- rounds ---------- */
+
+            #startRound() {
+                this.#cancelTimers();
+                const question = BrainWarsUnits.build(this.#state.level, BrainWarsGames.random, this.#state.previous);
+                this.#state.question = question;
+                this.#state.previous = question;
+                this.#state.typed = '';
+                this.#state.hint = null;
+                this.#state.hadErrorThisRound = false;
+                this.#state.locked = false;
+                this.#render();
+            }
+
+            #cancelTimers() {
+                if (this.#state.hintTimer) {
+                    clearTimeout(this.#state.hintTimer);
+                    this.#state.hintTimer = null;
+                }
+                if (this.#state.advanceTimer) {
+                    clearTimeout(this.#state.advanceTimer);
+                    this.#state.advanceTimer = null;
+                }
+            }
+
+            /* ---------- rendering ---------- */
+
+            #render() {
+                this.#renderLevelBadge();
+                this.#renderLevelMenu();
+                this.#renderQuestion();
+                this.#renderHint();
+                this.#renderAnswer();
+                this.#renderKeypad();
+            }
+
+            #renderLevelBadge() {
+                this.#elements.levelText.textContent = I18n.t('level_label', { n: this.#state.level });
+            }
+
+            #renderLevelMenu() {
+                const menu = this.#elements.levelMenu;
+                menu.innerHTML = '';
+                for (let level = 1; level <= this.#config.maxLevel; level++) {
+                    const item = document.createElement('button');
+                    item.type = 'button';
+                    item.className = 'level-menu-item' + (level === this.#state.level ? ' current' : '');
+                    item.dataset.level = String(level);
+                    item.setAttribute('role', 'option');
+                    item.setAttribute('aria-selected', level === this.#state.level ? 'true' : 'false');
+                    item.setAttribute('aria-label', I18n.t('level_label', { n: level }));
+                    item.textContent = String(level);
+                    menu.appendChild(item);
+                }
+            }
+
+            #renderQuestion() {
+                const question = this.#state.question;
+                if (!question) return;
+                const value = this.#localize(question.value);
+                const from = this.#unitSymbol(question.from);
+                const to = this.#unitSymbol(question.to);
+                // The prompt names the direction of the step; the equation below is the task
+                this.#elements.instructionText.textContent =
+                    I18n.t(question.direction === 'down' ? 'uc_hint_down' : 'uc_hint_up');
+                this.#elements.valueText.textContent = value;
+                this.#elements.fromUnit.textContent = from;
+                this.#elements.toUnit.textContent = to;
+                this.#elements.board.setAttribute('aria-label', I18n.t('uc_convert', { value, from, to }));
+            }
+
+            #renderHint() {
+                const hint = this.#elements.instructionHint;
+                hint.classList.remove('is-correct', 'is-error');
+                hint.textContent = '';
+                const status = this.#state.hint;
+                if (status === 'correct') {
+                    hint.textContent = I18n.t('uc_correct');
+                    hint.classList.add('is-correct');
+                } else if (status === 'wrong') {
+                    hint.textContent = I18n.t('uc_wrong');
+                    hint.classList.add('is-error');
+                } else if (status === 'fill') {
+                    // 'fill': a nudge, not a mistake
+                    hint.textContent = I18n.t('uc_fill');
+                }
+            }
+
+            #renderAnswer() {
+                this.#elements.answerBox.textContent = this.#localize(this.#state.typed);
+            }
+
+            #renderKeypad() {
+                this.#elements.decimalKey.textContent = I18n.t('decimal_separator');
+                this.#elements.numpadGrid.querySelectorAll('.numpad-btn').forEach((button) => {
+                    button.disabled = this.#state.locked;
+                });
+                this.#elements.checkBtn.disabled = this.#state.locked;
+            }
+
+            // A canonical number as the child's language writes it: "1.5" becomes "1,5"
+            #localize(canonical) {
+                return canonical.replace('.', I18n.t('decimal_separator'));
+            }
+
+            #unitSymbol(unit) {
+                return I18n.t(UnitConversionsGame.#UNIT_KEYS[unit]);
+            }
+
+            /* ---------- input ---------- */
+
+            #handleKey(key) {
+                if (this.#state.locked) return;
+                if (key === 'check') {
+                    this.#checkAnswer();
+                    return;
+                }
+                if (key === 'backspace') {
+                    this.#backspace();
+                    return;
+                }
+                if (key === 'decimal') {
+                    this.#typeDecimal();
+                    return;
+                }
+                if (key >= '0' && key <= '9') this.#typeDigit(key);
+            }
+
+            #typeDigit(digit) {
+                if (this.#state.typed.replace('.', '').length >= this.#config.maxDigits) return;
+                this.#clearHint();
+                this.#state.typed += digit;
+                this.#renderAnswer();
+            }
+
+            #typeDecimal() {
+                if (this.#state.typed.includes('.')) return;
+                this.#clearHint();
+                this.#state.typed = this.#state.typed === '' ? '0.' : this.#state.typed + '.';
+                this.#renderAnswer();
+            }
+
+            #backspace() {
+                this.#clearHint();
+                this.#state.typed = this.#state.typed.slice(0, -1);
+                this.#renderAnswer();
+            }
+
+            #clearHint() {
+                if (!this.#state.hint || this.#state.hint === 'correct') return;
+                if (this.#state.hintTimer) {
+                    clearTimeout(this.#state.hintTimer);
+                    this.#state.hintTimer = null;
+                }
+                this.#state.hint = null;
+                this.#renderHint();
+            }
+
+            // Shows feedback, and (for mistakes) lets it fade by itself like the other games
+            #showHint(status, autoClearMs) {
+                if (this.#state.hintTimer) {
+                    clearTimeout(this.#state.hintTimer);
+                    this.#state.hintTimer = null;
+                }
+                this.#state.hint = status;
+                this.#renderHint();
+                if (!autoClearMs) return;
+                const shown = status;
+                this.#state.hintTimer = setTimeout(() => {
+                    this.#state.hintTimer = null;
+                    if (this.#state.hint === shown) {
+                        this.#state.hint = null;
+                        this.#renderHint();
+                    }
+                }, autoClearMs);
+            }
+
+            #checkAnswer() {
+                if (this.#state.locked) return;
+                const question = this.#state.question;
+                const status = BrainWarsUnits.check(question, this.#state.typed);
+                if (status === 'correct') {
+                    this.#handleCorrect();
+                    return;
+                }
+                if (status === 'incomplete') {
+                    this.#showHint('fill');
+                    return;
+                }
+                this.#handleWrong();
+            }
+
+            #handleWrong() {
+                this.#state.hadErrorThisRound = true;
+                this.#showHint('wrong', 1200);
+                const box = this.#elements.answerBox;
+                box.classList.remove('error-shake');
+                box.classList.add('error-shake');
+                setTimeout(() => box.classList.remove('error-shake'), 600);
+                // Clear the entry so it can be typed again; the answer itself stays hidden
+                this.#state.typed = '';
+                this.#renderAnswer();
+            }
+
+            #handleCorrect() {
+                this.#state.locked = true;
+                this.#showHint('correct');
+                // A clean first try moves the ladder up; a round with mistakes is repeated
+                if (!this.#state.hadErrorThisRound) {
+                    this.#state.level = Math.min(this.#config.maxLevel, this.#state.level + 1);
+                }
+                const box = this.#elements.answerBox;
+                box.classList.add('correct-flash');
+                setTimeout(() => box.classList.remove('correct-flash'), 450);
+                this.#render();
+                this.#state.advanceTimer = setTimeout(() => this.#startRound(), this.#config.advanceDelay);
+            }
+
+            /* ---------- level picker ---------- */
+
+            #selectLevel(level) {
+                this.#state.level = Math.min(Math.max(level, 1), this.#config.maxLevel);
+                this.#toggleLevelMenu(false);
+                this.#startRound();
+            }
+
+            #toggleLevelMenu(open) {
+                this.#elements.levelMenu.classList.toggle('open', open);
+                this.#elements.levelDisplay.setAttribute('aria-expanded', open ? 'true' : 'false');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            window.gameInstance = new UnitConversionsGame();
+        });
+    </script>
+</body>
+</html>

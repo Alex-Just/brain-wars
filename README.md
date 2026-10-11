@@ -5,7 +5,7 @@
 <h1 align="center">Brain Wars</h1>
 
 <p align="center">
-  <em>Math practice for children: ten games, a challenge mode, three languages, and offline play.</em>
+  <em>Math practice for children: eleven games, a challenge mode, three languages, and offline play.</em>
 </p>
 
 <p align="center">
@@ -37,6 +37,7 @@ Brain Wars is a set of small math games for primary-school children. The app is 
 | **Elapsed Time** | Find the end time, the start time, or the duration. Type hours and minutes. Story problems start at level 7. |
 | **Time Calculations** | Add and subtract hours and minutes in columns. Sixty minutes make one hour. |
 | **Money Calculations** | Add and subtract euros and cents in columns. One hundred cents make one euro. |
+| **Unit Conversions** | Convert between metric units: mass (kg, g), length (km, m, cm, mm), and capacity (l, ml). Type the converted number. |
 
 Follow the Leader and Unfollow the Leader stay in the repository. The hub and Challenge mode omit them. Open those pages by URL.
 
@@ -44,7 +45,7 @@ Follow the Leader and Unfollow the Leader stay in the repository. The hub and Ch
 
 - **Offline app.** The service worker precaches the pages, scripts, and icons. The app installs on a home screen. An unknown page opened offline falls back to the hub.
 - **Three languages.** English, Spanish, and Russian share one set of keys. Every page has a language toggle. The choice stays on the device, including in Challenge mode.
-- **Levels.** Eight games offer 20 levels. Mental Math and What Time Is It? raise the difficulty during play. Challenge mode uses one difficulty for the whole run.
+- **Levels.** Nine games offer 20 levels. Mental Math and What Time Is It? raise the difficulty during play. Challenge mode uses one difficulty for the whole run.
 - **Typed numbers.** The four column games accept numbers you type, including decimals. A result can have up to eight digits.
 - **Large targets.** The layout respects the phone safe area and `prefers-reduced-motion`. Controls have ARIA labels.
 
@@ -127,13 +128,14 @@ brain-wars/
 ├── elapsed-time.js       # Elapsed-time questions, shared with the tests
 ├── time-calculations.js  # Time add and subtract problems, shared with the tests
 ├── money-calculations.js # Money add and subtract problems, shared with the tests
+├── unit-conversions.js   # Unit conversion questions, shared with the tests
 ├── *.html                # One page per game: follow-the-leader, unfollow-the-leader,
 │                         #   operations, telling-time-es, long-division,
 │                         #   long-multiplication, long-addition, long-subtraction,
 │                         #   money-problems, elapsed-time, time-calculations,
-│                         #   money-calculations
+│                         #   money-calculations, unit-conversions
 ├── pwa.js                # Registers the service worker on http and https
-├── sw.js                 # Precache and fetch rules. VERSION is v14
+├── sw.js                 # Precache and fetch rules. VERSION is v16
 ├── manifest.json         # PWA name and icons
 ├── icons/                # App icons
 ├── analytics-worker/     # Worker, D1 schema, and Wrangler config

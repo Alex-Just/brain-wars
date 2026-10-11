@@ -54,6 +54,7 @@ dist/
 
 # ---- Local planning notes (kept on disk, not published) ----
 docs/superpowers/
+.superpowers/
 
 # ---- Logs ----
 *.log

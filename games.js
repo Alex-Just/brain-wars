@@ -295,6 +295,26 @@
                 </svg>
             `
         },
+        {
+            id: 'unit-conversions',
+            file: 'unit-conversions.html',
+            titleKey: 'game_units',
+            level: 'picker',
+            completion: { kind: 'class', selector: '#instructionHint', value: 'is-correct' },
+            mistake: { kind: 'class', selector: '#instructionHint', value: 'is-error' },
+            icon: `
+                <!-- One unit becoming another: kg turning into g -->
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" style="width: 80%; height: 80%;">
+                    <rect width="100" height="100" rx="14" fill="#F8FAFC"/>
+                    <rect x="6" y="36" width="30" height="28" rx="6" fill="#E3F2FD" stroke="#60ACBD" stroke-width="3.5"/>
+                    <text x="21" y="56" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#3B6D78" text-anchor="middle">kg</text>
+                    <rect x="64" y="36" width="30" height="28" rx="6" fill="#EDE9FE" stroke="#7B61FF" stroke-width="3.5"/>
+                    <text x="79" y="56" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#6D4FD8" text-anchor="middle">g</text>
+                    <path d="M40 50 H54" fill="none" stroke="#4CAF50" stroke-width="4" stroke-linecap="round"/>
+                    <polygon points="54,44 54,56 64,50" fill="#4CAF50"/>
+                </svg>
+            `
+        },
     ];
 
     const byId = new Map(games.map((game) => [game.id, game]));

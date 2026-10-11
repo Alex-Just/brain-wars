@@ -12,12 +12,13 @@ const MINUTES = Array.from({ length: 60 }, (_, minute) => minute);
 const FIVE_MINUTE_GRID = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
 
 // Pages wired for i18n and the shared checks.
-const INTEGRATED_PAGES = ['index.html', 'long-division.html', 'long-multiplication.html', 'long-addition.html', 'long-subtraction.html', 'operations.html', 'follow-the-leader.html', 'unfollow-the-leader.html', 'telling-time-es.html', 'money-problems.html', 'elapsed-time.html', 'time-calculations.html', 'money-calculations.html', 'challenge.html'];
+const INTEGRATED_PAGES = ['index.html', 'long-division.html', 'long-multiplication.html', 'long-addition.html', 'long-subtraction.html', 'operations.html', 'follow-the-leader.html', 'unfollow-the-leader.html', 'telling-time-es.html', 'money-problems.html', 'elapsed-time.html', 'time-calculations.html', 'money-calculations.html', 'unit-conversions.html', 'challenge.html'];
 const INTEGRATED_SCRIPTS = ['challenge.js'];
 const Games = require('./games.js');
 const Elapsed = require('./elapsed-time.js');
 const TimeCalc = require('./time-calculations.js');
 const MoneyCalc = require('./money-calculations.js');
+const Units = require('./unit-conversions.js');
 
 let passed = 0;
 function check(name, fn) {
@@ -861,6 +862,141 @@ check('the money calculations page uses only defined mc_ keys', () => {
     keys.forEach((key) => {
         LANGS.forEach((lang) => {
             assert.ok(I18n.translations[lang][key] !== undefined, 'money-calculations.html: key "' + key + '" missing in ' + lang);
+        });
+    });
+});
+
+console.log('unit conversions generator');
+
+// A canonical decimal string as an exact fraction: "1.25" -> 125 / 10^2.
+function parseDecimal(text) {
+    const [whole, fraction = ''] = text.split('.');
+    return { numerator: BigInt(whole + fraction), scale: fraction.length };
+}
+
+// Two fractions are equal when their numerators match over a common denominator.
+function sameFraction(a, b) {
+    const scale = Math.max(a.scale, b.scale);
+    return a.numerator * 10n ** BigInt(scale - a.scale) ===
+        b.numerator * 10n ** BigInt(scale - b.scale);
+}
+
+// value * 10^exp as an exact fraction: multiplying shifts the numerator, dividing
+// shifts the scale instead, so no binary float ever touches the check.
+function timesPowerOfTen(value, exp) {
+    const { numerator, scale } = parseDecimal(value);
+    return exp >= 0
+        ? { numerator: numerator * 10n ** BigInt(exp), scale }
+        : { numerator, scale: scale - exp };
+}
+
+function sampleConversions(level, count, seed) {
+    const rng = mulberry32(seed === undefined ? level * 104729 : seed);
+    const questions = [];
+    let previous = null;
+    for (let index = 0; index < count; index++) {
+        previous = Units.build(level, rng, previous);
+        questions.push(previous);
+    }
+    return questions;
+}
+
+check('the unit ladder has twenty levels', () => {
+    assert.strictEqual(Units.maxLevel, 20, 'expected twenty levels');
+});
+
+check('every generated conversion is mathematically sound', () => {
+    for (let level = 1; level <= Units.maxLevel; level++) {
+        sampleConversions(level, 150).forEach((question) => {
+            const from = Units.units[question.from];
+            const to = Units.units[question.to];
+            assert.ok(from && to, `unknown unit at level ${level}: ${JSON.stringify(question)}`);
+            assert.strictEqual(from.family, to.family, `a conversion must stay in one family: ${JSON.stringify(question)}`);
+            assert.strictEqual(question.family, from.family, `family mismatch: ${JSON.stringify(question)}`);
+            const exp = from.exp - to.exp;
+            assert.strictEqual(question.exp, exp, `wrong step: ${JSON.stringify(question)}`);
+            assert.strictEqual(question.direction, exp > 0 ? 'down' : 'up', `wrong direction: ${JSON.stringify(question)}`);
+            assert.ok(Number.isInteger(exp) && exp !== 0, `a conversion must move: ${JSON.stringify(question)}`);
+            // The answer is exactly the shown value times ten to the step.
+            assert.ok(
+                sameFraction(parseDecimal(question.answer), timesPowerOfTen(question.value, exp)),
+                `value * 10^exp is not the answer: ${JSON.stringify(question)}`
+            );
+            // Both numbers are canonical: they survive a normalise round trip.
+            assert.strictEqual(Units.normalize(question.value), question.value, `value is not canonical: ${JSON.stringify(question)}`);
+            assert.strictEqual(Units.normalize(question.answer), question.answer, `answer is not canonical: ${JSON.stringify(question)}`);
+            assert.ok(!question.value.startsWith('0') || question.value.startsWith('0.'), `value has a stray leading zero: ${question.value}`);
+            assert.ok(!question.answer.startsWith('0') || question.answer.startsWith('0.'), `answer has a stray leading zero: ${question.answer}`);
+        });
+    }
+});
+
+check('the early levels move one family at a time with whole numbers', () => {
+    sampleConversions(1, 80).forEach((question) => {
+        assert.strictEqual(question.family, 'mass', 'level 1 only weighs things');
+        assert.ok(!question.value.includes('.') && !question.answer.includes('.'), `level 1 stays whole: ${JSON.stringify(question)}`);
+    });
+    for (let level = 1; level <= 5; level++) {
+        sampleConversions(level, 80).forEach((question) => {
+            assert.strictEqual(question.direction, 'down', 'levels 1-5 only go to the smaller unit');
+            assert.ok(!question.value.includes('.') && !question.answer.includes('.'), `levels 1-5 stay whole: ${JSON.stringify(question)}`);
+        });
+    }
+});
+
+check('decimals arrive on the way down before the way up', () => {
+    // Level 11 is the first decimal level and it multiplies (down): the shown value
+    // carries the decimal. Level 12 is the first one that divides (up): the answer does.
+    assert.ok(sampleConversions(11, 120).some((question) => question.value.includes('.')), 'level 11 never showed a decimal');
+    sampleConversions(11, 120).forEach((question) => {
+        assert.strictEqual(question.direction, 'down', 'level 11 multiplies');
+    });
+    sampleConversions(12, 120).forEach((question) => {
+        assert.strictEqual(question.direction, 'up', 'level 12 divides');
+    });
+    assert.ok(sampleConversions(12, 120).some((question) => question.answer.includes('.')), 'level 12 never answered with a decimal');
+});
+
+check('the same conversion never comes twice in a row', () => {
+    const key = (question) => `${question.from}>${question.to}:${question.value}`;
+    for (let level = 1; level <= Units.maxLevel; level++) {
+        const rng = mulberry32(level * 31 + 7);
+        let previous = null;
+        for (let index = 0; index < 200; index++) {
+            const question = Units.build(level, rng, previous);
+            if (previous) assert.notStrictEqual(key(question), key(previous), `level ${level} repeated a conversion`);
+            previous = question;
+        }
+    }
+});
+
+check('check() grades a typed conversion', () => {
+    const whole = { answer: '2000' };
+    assert.strictEqual(Units.check(whole, '2000'), 'correct');
+    assert.strictEqual(Units.check(whole, ' 2000 '), 'correct');
+    assert.strictEqual(Units.check(whole, '2 000'), 'wrong');
+    assert.strictEqual(Units.check(whole, ''), 'incomplete');
+    assert.strictEqual(Units.check(whole, '   '), 'incomplete');
+    assert.strictEqual(Units.check(whole, null), 'incomplete');
+
+    // The decimal separator is the child's; the point and the comma both count, and
+    // trailing or leading zeros never change the value.
+    const decimal = { answer: '0.5' };
+    ['0.5', '0,5', ',5', '.5', '0.50', '0,500'].forEach((typed) => {
+        assert.strictEqual(Units.check(decimal, typed), 'correct', `${typed} should be correct`);
+    });
+    ['5', '0.05', '0.6', '1.5', '.'].forEach((typed) => {
+        assert.strictEqual(Units.check(decimal, typed), 'wrong', `${typed} should be wrong`);
+    });
+});
+
+check('the unit conversions page uses only defined uc_ keys', () => {
+    const source = fs.readFileSync(path.join(__dirname, 'unit-conversions.html'), 'utf8');
+    const keys = [...new Set([...source.matchAll(/'(uc_[a-z0-9_]+)'/g)].map((match) => match[1]))];
+    assert.ok(keys.length > 10, 'the page should use its own uc_ keys');
+    keys.forEach((key) => {
+        LANGS.forEach((lang) => {
+            assert.ok(I18n.translations[lang][key] !== undefined, `unit-conversions.html: key "${key}" missing in ${lang}`);
         });
     });
 });
