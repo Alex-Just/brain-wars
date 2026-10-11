@@ -883,6 +883,35 @@ check('every generated conversion is mathematically sound', () => {
     }
 });
 
+check('every conversion carries the general rule behind it', () => {
+    // 1 from = factor to, where the factor is exactly 10^exp: "1 kg = 1000 g"
+    // going down, "1 g = 0.001 kg" going up.
+    [
+        [{ from: 'kg', to: 'g', exp: 3 }, '1000'],
+        [{ from: 'g', to: 'kg', exp: -3 }, '0.001'],
+        [{ from: 'm', to: 'cm', exp: 2 }, '100'],
+        [{ from: 'cm', to: 'm', exp: -2 }, '0.01'],
+        [{ from: 'cm', to: 'mm', exp: 1 }, '10'],
+        [{ from: 'mm', to: 'cm', exp: -1 }, '0.1'],
+        [{ from: 'km', to: 'cm', exp: 5 }, '100000'],
+        [{ from: 'cm', to: 'km', exp: -5 }, '0.00001']
+    ].forEach(([question, factor]) => {
+        assert.deepStrictEqual(Units.rule(question), { from: question.from, factor, to: question.to });
+    });
+    for (let level = 1; level <= Units.maxLevel; level++) {
+        sampleConversions(level, 100).forEach((question) => {
+            const { from, factor, to } = Units.rule(question);
+            assert.strictEqual(from, question.from, 'the rule starts from the question unit');
+            assert.strictEqual(to, question.to, 'the rule ends at the question unit');
+            assert.ok(
+                sameFraction(parseDecimal(factor), timesPowerOfTen('1', question.exp)),
+                `the rule factor is not 10^exp: ${JSON.stringify(question)} -> ${factor}`
+            );
+            assert.strictEqual(Units.normalize(factor), factor, `the factor is not canonical: ${factor}`);
+        });
+    }
+});
+
 check('the early levels move one family at a time with whole numbers', () => {
     sampleConversions(1, 80).forEach((question) => {
         assert.strictEqual(question.family, 'mass', 'level 1 only weighs things');

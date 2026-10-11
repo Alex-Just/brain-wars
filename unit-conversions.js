@@ -159,6 +159,19 @@
         return `${question.from}>${question.to}:${question.value}`;
     }
 
+    // The general fact behind a question, shown after a mistake:
+    //   1 <from> = 10^exp <to>
+    // Going down reads "1 kg = 1000 g"; going up reads "1 g = 0.001 kg". The
+    // strings stay canonical, so the page only swaps in the unit symbols and the
+    // decimal separator.
+    function rule(question) {
+        const { exp } = question;
+        const factor = exp >= 0
+            ? `1${'0'.repeat(exp)}`
+            : `0.${'0'.repeat(-exp - 1)}1`;
+        return { from: question.from, factor, to: question.to };
+    }
+
     // A typed number as a canonical string, or null when it is not a number.
     // Accepts the point and the comma as the decimal separator and ignores any
     // trailing zeros, so "2,50" and "2.5" compare equal.
@@ -206,7 +219,8 @@
         units: UNITS,
         build,
         check,
-        normalize
+        normalize,
+        rule
     };
 
     if (typeof module !== 'undefined' && module.exports) {

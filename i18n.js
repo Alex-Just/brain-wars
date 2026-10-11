@@ -1757,6 +1757,12 @@
             'Сначала введи ответ'
         ],
         [
+            'uc_rule_hint',
+            '1 {from} = {factor} {to}',
+            '1 {from} = {factor} {to}',
+            '1 {from} = {factor} {to}'
+        ],
+        [
             'uc_unit_kg',
             'kg',
             'kg',

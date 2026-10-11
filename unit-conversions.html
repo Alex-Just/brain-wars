@@ -300,6 +300,20 @@
             color: var(--color-success);
         }
 
+        /* The general rule behind the current question, shown after a mistake */
+        .rule-hint {
+            display: inline-block;
+            margin-top: 6px;
+            padding: 3px 12px;
+            border-radius: 999px;
+            background: var(--color-purple-light);
+            color: var(--color-purple-text);
+            font-size: 14px;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+
         /* Fieldsets replace ARIA group containers; strip the browser defaults. */
         fieldset {
             margin: 0;
@@ -510,6 +524,7 @@
         <!-- The prompt, and the feedback line below it -->
         <div class="instruction-box">
             <div class="instruction-text" id="instructionText"></div>
+            <output class="rule-hint" id="ruleHint" hidden></output>
             <output class="instruction-hint" id="instructionHint"></output>
         </div>
 
@@ -587,6 +602,7 @@
                 this.#elements = {
                     instructionText: byId('instructionText'),
                     instructionHint: byId('instructionHint'),
+                    ruleHint: byId('ruleHint'),
                     board: byId('convertBoard'),
                     valueText: byId('valueText'),
                     fromUnit: byId('fromUnit'),
@@ -613,6 +629,8 @@
                     hintTimer: null,
                     advanceTimer: null,
                     hadErrorThisRound: false,
+                    // Whether the general conversion rule is revealed this round
+                    showRule: false,
                     locked: false
                 };
             }
@@ -669,6 +687,7 @@
                 this.#state.typed = '';
                 this.#state.hint = null;
                 this.#state.hadErrorThisRound = false;
+                this.#state.showRule = false;
                 this.#state.locked = false;
                 this.#render();
             }
@@ -691,6 +710,7 @@
                 this.#renderLevelMenu();
                 this.#renderQuestion();
                 this.#renderHint();
+                this.#renderRule();
                 this.#renderAnswer();
                 this.#renderKeypad();
             }
@@ -743,6 +763,25 @@
                     // 'fill': a nudge, not a mistake
                     hint.textContent = I18n.t('uc_fill');
                 }
+            }
+
+            // The general rule of the current question ("1 kg = 1000 g"). It appears
+            // from the first mistake on and stays for the rest of the round.
+            #renderRule() {
+                const ruleHint = this.#elements.ruleHint;
+                const question = this.#state.question;
+                if (!this.#state.showRule || !question) {
+                    ruleHint.hidden = true;
+                    ruleHint.textContent = '';
+                    return;
+                }
+                const rule = BrainWarsUnits.rule(question);
+                ruleHint.textContent = I18n.t('uc_rule_hint', {
+                    from: this.#unitSymbol(rule.from),
+                    factor: this.#localize(rule.factor),
+                    to: this.#unitSymbol(rule.to)
+                });
+                ruleHint.hidden = false;
             }
 
             #renderAnswer() {
@@ -851,6 +890,9 @@
 
             #handleWrong() {
                 this.#state.hadErrorThisRound = true;
+                // A mistake reveals the general rule for this question
+                this.#state.showRule = true;
+                this.#renderRule();
                 this.#showHint('wrong', 1200);
                 const box = this.#elements.answerBox;
                 box.classList.remove('error-shake');
