@@ -170,6 +170,30 @@
                 this.#startNewRound();
             }
 
+            // The context the shared column-game functions work on: this page's
+            // elements, state and config, plus the methods only this game has.
+            #ctx() {
+                return {
+                    elements: this.#elements,
+                    state: this.#state,
+                    config: this.#config,
+                    hooks: {
+                        initConfig: () => this.#initConfig(),
+                        initState: () => this.#initState(),
+                        beginRound: (problem, isCustom) => this.#beginRound(problem, isCustom),
+                        createProblem: (level) => this.#createProblem(level),
+                        promptCurrentStep: () => this.#promptCurrentStep(),
+                        renderCommas: () => this.#renderCommas(),
+                        renderCompletionEquation: () => this.#renderCompletionEquation(),
+                        handleCorrectInput: () => this.#handleCorrectInput(),
+                        handleWrongInput: () => this.#handleWrongInput(),
+                        highlightTerm: (term) => this.#highlightTerm(term),
+                        toggleCustomModal: (open) => this.#toggleCustomModal(open),
+                        submitCustomProblem: () => this.#submitCustomProblem(),
+                    }
+                };
+            }
+
             #initConfig() {
                 this.#config = {
                     maxLevel: 20,

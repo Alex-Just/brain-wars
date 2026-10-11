@@ -140,7 +140,7 @@ check('the worker guide documents the live ingest and the rate limit', () => {
     assert.ok(readme.includes('https://brain-wars-answers.alex-just.workers.dev/ingest'), 'the guide names the live ingest URL');
     assert.ok(readme.includes('received_at'), 'the count uses received_at');
     assert.ok(readme.includes('wrangler deploy'), 'deploy uses Wrangler');
-    assert.ok(readme.includes('v11'), 'the guide names the current service worker version');
+    assert.ok(readme.includes('v12'), 'the guide names the current service worker version');
     assert.ok(!readme.includes('"ts":0'), 'ts 0 is outside the validation window');
 });
 

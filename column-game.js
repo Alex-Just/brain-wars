@@ -160,6 +160,238 @@
         elements.customError.textContent = I18n.t(key);
             }
 
+    function bindEvents(ctx) {
+        const { elements, hooks } = ctx;
+                // Numpad clicks
+                elements.numpadGrid.addEventListener('click', (e) => {
+                    const btn = e.target.closest('.numpad-btn');
+                    if (!btn) return;
+                    BrainWarsColumnGame.handleKeyPress(btn.dataset.key, ctx);
+                });
+
+                // Physical keyboard support
+                window.addEventListener('keydown', (e) => {
+                    if (elements.customModal.classList.contains('open')) {
+                        if (e.key === 'Escape') hooks.toggleCustomModal(false);
+                        return;
+                    }
+                    if (elements.levelMenu.classList.contains('open')) {
+                        if (e.key === 'Escape') {
+                            BrainWarsColumnGame.toggleLevelMenu(false, ctx);
+                            elements.levelDisplay.focus();
+                        }
+                        return;
+                    }
+                    if (elements.completionOverlay.classList.contains('show')) {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            BrainWarsColumnGame.startNewRound(ctx);
+                        }
+                        return;
+                    }
+
+                    const isControlFocused = e.target instanceof HTMLElement &&
+                        (e.target.tagName === 'BUTTON' || e.target.tagName === 'A');
+                    if (isControlFocused && (e.key === 'Enter' || e.key === ' ')) {
+                        return; // Let the focused control handle its own activation
+                    }
+
+                    if (e.key >= '0' && e.key <= '9') {
+                        BrainWarsColumnGame.handleKeyPress(e.key, ctx);
+                    } else if (e.key === 'Backspace') {
+                        BrainWarsColumnGame.handleKeyPress('backspace', ctx);
+                    } else if (e.key === 'Enter') {
+                        BrainWarsColumnGame.handleKeyPress('enter', ctx);
+                    }
+                });
+
+                // Terminology badge interactive highlights
+                document.querySelectorAll('.term-badge').forEach(badge => {
+                    badge.addEventListener('click', () => {
+                        hooks.highlightTerm(badge.dataset.term);
+                    });
+                });
+
+                // Window resize for comma alignment
+                window.addEventListener('resize', () => {
+                    BrainWarsColumnGame.applyCellSize(elements, state);
+                    hooks.renderCommas();
+                });
+
+
+                // Completion next button
+                elements.nextProblemBtn.addEventListener('click', () => BrainWarsColumnGame.startNewRound(ctx));
+
+                // Custom equation modal
+                elements.customEqBtn.addEventListener('click', () => hooks.toggleCustomModal(true));
+                elements.customCloseBtn.addEventListener('click', () => hooks.toggleCustomModal(false));
+                elements.customCancelBtn.addEventListener('click', () => hooks.toggleCustomModal(false));
+                elements.customModal.addEventListener('click', (e) => {
+                    if (e.target === elements.customModal) hooks.toggleCustomModal(false);
+                });
+                elements.customForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    hooks.submitCustomProblem();
+                });
+
+                // Level picker
+                elements.levelDisplay.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    BrainWarsColumnGame.toggleLevelMenu(ctx);
+                });
+                elements.levelMenu.addEventListener('click', (e) => {
+                    const item = e.target.closest('.level-menu-item');
+                    if (!item) return;
+                    e.stopPropagation();
+                    BrainWarsColumnGame.selectLevel(Number(item.dataset.level), ctx);
+                });
+                elements.levelMenu.addEventListener('keydown', (e) => {
+                    const items = Array.from(elements.levelMenu.querySelectorAll('.level-menu-item'));
+                    const index = items.indexOf(document.activeElement);
+                    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        const next = items[Math.min(items.length - 1, index + 1)];
+                        if (next) next.focus();
+                    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        const prev = items[Math.max(0, index - 1)];
+                        if (prev) prev.focus();
+                    } else if (e.key === 'Home') {
+                        e.preventDefault();
+                        items[0].focus();
+                    } else if (e.key === 'End') {
+                        e.preventDefault();
+                        items[items.length - 1].focus();
+                    }
+                });
+                document.addEventListener('click', (e) => {
+                    if (!elements.levelMenu.classList.contains('open')) return;
+                    if (e.target.closest('.level-picker')) return;
+                    BrainWarsColumnGame.toggleLevelMenu(false, ctx);
+                });
+    }
+
+    function handleKeyPress(key, ctx) {
+        const { elements, state } = ctx;
+                if (key === 'backspace') {
+                    state.currentInput = state.currentInput.slice(0, -1);
+                    BrainWarsColumnGame.renderTypingPreview(state);
+                    return;
+                }
+
+                if (key === 'enter') {
+                    BrainWarsColumnGame.submitCurrentInput(ctx);
+                    return;
+                }
+
+                if (key >= '0' && key <= '9') {
+                    if (state.currentInput.length >= state.expectedAnswer.length) return;
+                    elements.instructionHint.classList.remove('is-error');
+                    state.currentInput += key;
+                    BrainWarsColumnGame.renderTypingPreview(state);
+
+                    if (state.currentInput.length === state.expectedAnswer.length) {
+                        setTimeout(() => BrainWarsColumnGame.submitCurrentInput(ctx), 80);
+                    }
+                }
+    }
+
+    function renderGridDOM(ctx) {
+        const { elements, state } = ctx;
+                const grid = elements.mathGrid;
+                grid.innerHTML = '';
+
+                BrainWarsColumnGame.applyCellSize(elements, state);
+
+                grid.style.gridTemplateColumns = `repeat(${state.numCols}, var(--cell-size))`;
+                grid.style.gridTemplateRows = `repeat(${state.numRows}, var(--cell-size))`;
+
+                for (let r = 0; r < state.numRows; r++) {
+                    for (let c = 0; c < state.numCols; c++) {
+                        const cellData = state.gridMatrix[r][c];
+                        const cellEl = document.createElement('div');
+                        cellEl.className = `grid-cell ${cellData.classes.join(' ')}`;
+                        cellEl.id = `cell-${r}-${c}`;
+                        cellEl.textContent = cellData.char;
+                        grid.appendChild(cellEl);
+                    }
+                }
+    }
+
+    function syncActiveCell(ctx) {
+        const { state } = ctx;
+                const step = state.steps[state.stepIndex];
+                const previous = state.activeTargetCells;
+                previous.forEach(({ r, c }) => {
+                    const cell = document.getElementById(`cell-${r}-${c}`);
+                    if (cell) {
+                        cell.classList.remove('active-input', 'typing-preview', 'multi');
+                        cell.textContent = state.gridMatrix[r][c].char;
+                    }
+                });
+
+                state.activeTargetCells = [{ r: step.row, c: step.col }];
+                const cell = document.getElementById(`cell-${step.row}-${step.col}`);
+                if (cell) {
+                    cell.classList.add('active-input');
+                    BrainWarsColumnGame.scrollCellIntoView(cell, elements);
+                }
+    }
+
+    function toggleLevelMenu(open, ctx) {
+        const { elements } = ctx;
+                const menu = elements.levelMenu;
+                const willOpen = (open !== undefined) ? open : !menu.classList.contains('open');
+                menu.classList.toggle('open', willOpen);
+                elements.levelDisplay.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+
+                if (willOpen) {
+                    BrainWarsColumnGame.renderLevelMenu(elements, state, config);
+                    BrainWarsColumnGame.positionLevelMenu(elements);
+                    const current = menu.querySelector('.level-menu-item.current');
+                    if (current) current.focus();
+                }
+    }
+
+    function handleLanguageChange(ctx) {
+        const { elements, hooks } = ctx;
+                BrainWarsColumnGame.renderLevelBadge(elements, state);
+                if (elements.levelMenu.classList.contains('open')) {
+                    BrainWarsColumnGame.renderLevelMenu(elements, state, config);
+                }
+                hooks.renderCommas();
+                hooks.renderCompletionEquation();
+                if (!elements.completionOverlay.classList.contains('show')) {
+                    hooks.promptCurrentStep();
+                }
+    }
+
+    function submitCurrentInput(ctx) {
+        const { state, hooks } = ctx;
+                const userVal = state.currentInput.trim();
+                if (!userVal) return;
+
+                if (userVal === state.expectedAnswer) {
+                    hooks.handleCorrectInput();
+                } else {
+                    hooks.handleWrongInput();
+                }
+    }
+
+    function selectLevel(level, ctx) {
+        const { state, config } = ctx;
+                state.level = Math.min(Math.max(level, 1), config.maxLevel);
+                BrainWarsColumnGame.toggleLevelMenu(false, ctx);
+                BrainWarsColumnGame.startNewRound(ctx);
+    }
+
+    function subscribeToLanguageChanges(ctx) {
+                I18n.subscribe(() => BrainWarsColumnGame.handleLanguageChange(ctx));
+    }
+
+    function startNewRound(ctx) {
+        const { state, hooks } = ctx;
+                hooks.beginRound(hooks.createProblem(state.level), false);
+    }
     global.BrainWarsColumnGame = {
         initElements,
         positionLevelMenu,
@@ -173,6 +405,16 @@
         randomInt,
         renderLevelBadge,
         showCustomError,
+        bindEvents,
+        handleKeyPress,
+        renderGridDOM,
+        syncActiveCell,
+        toggleLevelMenu,
+        handleLanguageChange,
+        submitCurrentInput,
+        selectLevel,
+        subscribeToLanguageChanges,
+        startNewRound,
     };
 
     if (typeof module !== 'undefined' && module.exports) {
