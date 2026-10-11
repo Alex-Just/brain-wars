@@ -168,6 +168,30 @@
 		elements.customError.textContent = I18n.t(key);
 	}
 
+	// While a modal or the completion banner is up the keyboard belongs to it,
+	// not to the notebook. Returns true when the key was consumed here.
+	function handleCapturedKeydown(e, ctx) {
+		const { elements, hooks } = ctx;
+		if (elements.customModal.classList.contains("open")) {
+			if (e.key === "Escape") hooks.toggleCustomModal(false);
+			return true;
+		}
+		if (elements.levelMenu.classList.contains("open")) {
+			if (e.key === "Escape") {
+				BrainWarsColumnGame.toggleLevelMenu(false, ctx);
+				elements.levelDisplay.focus();
+			}
+			return true;
+		}
+		if (elements.completionOverlay.classList.contains("show")) {
+			if (e.key === "Enter" || e.key === " ") {
+				BrainWarsColumnGame.startNewRound(ctx);
+			}
+			return true;
+		}
+		return false;
+	}
+
 	function bindEvents(ctx) {
 		const { elements, state, hooks } = ctx;
 		// Numpad clicks
@@ -179,23 +203,7 @@
 
 		// Physical keyboard support
 		window.addEventListener("keydown", (e) => {
-			if (elements.customModal.classList.contains("open")) {
-				if (e.key === "Escape") hooks.toggleCustomModal(false);
-				return;
-			}
-			if (elements.levelMenu.classList.contains("open")) {
-				if (e.key === "Escape") {
-					BrainWarsColumnGame.toggleLevelMenu(false, ctx);
-					elements.levelDisplay.focus();
-				}
-				return;
-			}
-			if (elements.completionOverlay.classList.contains("show")) {
-				if (e.key === "Enter" || e.key === " ") {
-					BrainWarsColumnGame.startNewRound(ctx);
-				}
-				return;
-			}
+			if (handleCapturedKeydown(e, ctx)) return;
 
 			const isControlFocused =
 				e.target instanceof HTMLElement &&

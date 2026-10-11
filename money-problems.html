@@ -1305,48 +1305,54 @@
                 if (!typing) return;
 
                 if (key === 'check') {
-                    const euroValue = this.#state.answers[`${prefix}-eur`];
-                    if (this.#state.activeBox.endsWith('eur') && euroValue) {
+                    this.#handleCheckKey(prefix);
+                } else if (key === 'backspace') {
+                    this.#handleBackspaceKey(prefix);
+                } else if (key >= '0' && key <= '9') {
+                    this.#handleDigitKey(key, step, prefix);
+                }
+            }
+
+            #handleCheckKey(prefix) {
+                const euroValue = this.#state.answers[`${prefix}-eur`];
+                if (this.#state.activeBox.endsWith('eur') && euroValue) {
+                    this.#state.activeBox = `${prefix}-cts`;
+                    this.#renderSteps();
+                    return;
+                }
+                if (!euroValue && !this.#state.answers[`${prefix}-cts`]) return;
+                this.#checkAmount();
+            }
+
+            #handleBackspaceKey(prefix) {
+                const current = this.#state.answers[this.#state.activeBox];
+                if (current) {
+                    this.#state.answers[this.#state.activeBox] = current.slice(0, -1);
+                } else if (this.#state.activeBox.endsWith('cts')) {
+                    this.#state.activeBox = `${prefix}-eur`;
+                }
+                this.#clearWrongHighlight();
+                this.#renderSteps();
+            }
+
+            #handleDigitKey(key, step, prefix) {
+                const box = this.#state.activeBox;
+                const isEuro = box.endsWith('eur');
+                const expectedLength = this.#expectedDigits(step)[isEuro ? 'eur' : 'cts'];
+                const current = this.#state.answers[box];
+                if (current.length >= expectedLength) return;
+
+                this.#state.answers[box] = current + key;
+                this.#clearWrongHighlight();
+                this.#renderSteps();
+
+                if (this.#state.answers[box].length === expectedLength) {
+                    if (isEuro) {
+                        // Same as the next cell in the column games: hand over to cents
                         this.#state.activeBox = `${prefix}-cts`;
                         this.#renderSteps();
-                        return;
-                    }
-                    if (!euroValue && !this.#state.answers[`${prefix}-cts`]) return;
-                    this.#checkAmount();
-                    return;
-                }
-
-                if (key === 'backspace') {
-                    const current = this.#state.answers[this.#state.activeBox];
-                    if (current) {
-                        this.#state.answers[this.#state.activeBox] = current.slice(0, -1);
-                    } else if (this.#state.activeBox.endsWith('cts')) {
-                        this.#state.activeBox = `${prefix}-eur`;
-                    }
-                    this.#clearWrongHighlight();
-                    this.#renderSteps();
-                    return;
-                }
-
-                if (key >= '0' && key <= '9') {
-                    const box = this.#state.activeBox;
-                    const isEuro = box.endsWith('eur');
-                    const expectedLength = this.#expectedDigits(step)[isEuro ? 'eur' : 'cts'];
-                    const current = this.#state.answers[box];
-                    if (current.length >= expectedLength) return;
-
-                    this.#state.answers[box] = current + key;
-                    this.#clearWrongHighlight();
-                    this.#renderSteps();
-
-                    if (this.#state.answers[box].length === expectedLength) {
-                        if (isEuro) {
-                            // Same as the next cell in the column games: hand over to cents
-                            this.#state.activeBox = `${prefix}-cts`;
-                            this.#renderSteps();
-                        } else {
-                            setTimeout(() => this.#checkAmount(), 80);
-                        }
+                    } else {
+                        setTimeout(() => this.#checkAmount(), 80);
                     }
                 }
             }

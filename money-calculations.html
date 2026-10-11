@@ -744,28 +744,36 @@
                     case 'borrow':
                         return I18n.t('mc_hint_borrow', { a: problem.a.cents, b: problem.b.cents });
                     case 'cents':
-                        if (sumsCarry) {
-                            return I18n.t('mc_hint_write_cents', { sum: problem.a.cents + problem.b.cents });
-                        }
-                        if (subtractsBorrow) {
-                            return I18n.t('mc_hint_cents_from', { total: problem.a.cents + 100, b: problem.b.cents });
-                        }
-                        if (problem.op === 'add') {
-                            return I18n.t('mc_hint_cents_sum', { a: problem.a.cents, b: problem.b.cents });
-                        }
-                        return I18n.t('mc_hint_subtract_cents', { a: problem.a.cents, b: problem.b.cents });
+                        return this.#centsHint(problem, sumsCarry, subtractsBorrow);
                     case 'carry':
                         return I18n.t('mc_hint_carry', { sum: problem.a.cents + problem.b.cents });
                     default:
-                        if (problem.op === 'add') {
-                            return sumsCarry
-                                ? I18n.t('mc_hint_add_euros_carry', { a: problem.a.euros, b: problem.b.euros })
-                                : I18n.t('mc_hint_add_euros', { a: problem.a.euros, b: problem.b.euros });
-                        }
-                        return subtractsBorrow
-                            ? I18n.t('mc_hint_subtract_euros_borrow', { a: problem.a.euros, b: problem.b.euros })
-                            : I18n.t('mc_hint_subtract_euros', { a: problem.a.euros, b: problem.b.euros });
+                        return this.#eurosHint(problem, sumsCarry, subtractsBorrow);
                 }
+            }
+
+            #centsHint(problem, sumsCarry, subtractsBorrow) {
+                if (sumsCarry) {
+                    return I18n.t('mc_hint_write_cents', { sum: problem.a.cents + problem.b.cents });
+                }
+                if (subtractsBorrow) {
+                    return I18n.t('mc_hint_cents_from', { total: problem.a.cents + 100, b: problem.b.cents });
+                }
+                if (problem.op === 'add') {
+                    return I18n.t('mc_hint_cents_sum', { a: problem.a.cents, b: problem.b.cents });
+                }
+                return I18n.t('mc_hint_subtract_cents', { a: problem.a.cents, b: problem.b.cents });
+            }
+
+            #eurosHint(problem, sumsCarry, subtractsBorrow) {
+                if (problem.op === 'add') {
+                    return sumsCarry
+                        ? I18n.t('mc_hint_add_euros_carry', { a: problem.a.euros, b: problem.b.euros })
+                        : I18n.t('mc_hint_add_euros', { a: problem.a.euros, b: problem.b.euros });
+                }
+                return subtractsBorrow
+                    ? I18n.t('mc_hint_subtract_euros_borrow', { a: problem.a.euros, b: problem.b.euros })
+                    : I18n.t('mc_hint_subtract_euros', { a: problem.a.euros, b: problem.b.euros });
             }
 
             #promptCurrentStep() {

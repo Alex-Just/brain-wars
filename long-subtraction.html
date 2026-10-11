@@ -209,25 +209,8 @@
                         const firstDigits = this.randomNumberString(firstIntegerDigits, k1, cfg.bigDigits);
                         const secondDigits = this.randomNumberString(secondIntegerDigits, k2, cfg.bigDigits);
 
-                        const scale = Math.max(k1, k2);
-                        const first = Number(this.scaledDigits(firstDigits, k1, scale));
-                        const second = Number(this.scaledDigits(secondDigits, k2, scale));
-                        if (first <= second) continue;
-
-                        const difference = String(first - second);
-                        if (difference.length > this.config.maxResultDigits) continue;
-
-                        // Keep the difference the same length as the minuend (no leading zeros)
-                        if (difference.length - scale !== firstDigits.length - k1) continue;
-
-                        const borrow = this.hasBorrow(firstDigits, k1, secondDigits, k2);
-                        if (cfg.noBorrow && borrow) continue;
-                        if (cfg.borrow && !borrow) continue;
-                        if (cfg.needZero && !this.hasInnerZero(firstDigits, k1)) continue;
-
-                        // Keep the notebook grid inside the column budget, otherwise the
-                        // cells get too small to read on a phone.
-                        if (this.geometry(firstDigits, k1, secondDigits, k2).numCols > this.config.maxGridColumns) continue;
+                        if (this.subtractionDifference(firstDigits, k1, secondDigits, k2) === null) continue;
+                        if (!this.acceptsDifference(firstDigits, k1, secondDigits, k2, cfg)) continue;
 
                         return {
                             firstDigits,
@@ -238,6 +221,31 @@
                     }
 
                     return { firstDigits: '12', firstDecimals: 0, secondDigits: '5', secondDecimals: 0 };
+                }
+
+                // The difference of the two scaled numbers, or null when the pair is
+                // not a clean subtraction lesson: minuend too small, result too long
+                // or with a leading zero in the notebook.
+                subtractionDifference(firstDigits, k1, secondDigits, k2) {
+                    const scale = Math.max(k1, k2);
+                    const first = Number(this.scaledDigits(firstDigits, k1, scale));
+                    const second = Number(this.scaledDigits(secondDigits, k2, scale));
+                    if (first <= second) return null;
+
+                    const difference = String(first - second);
+                    if (difference.length > this.config.maxResultDigits) return null;
+                    if (difference.length - scale !== firstDigits.length - k1) return null;
+                    return difference;
+                }
+
+                acceptsDifference(firstDigits, k1, secondDigits, k2, cfg) {
+                    const borrow = this.hasBorrow(firstDigits, k1, secondDigits, k2);
+                    if (cfg.noBorrow && borrow) return false;
+                    if (cfg.borrow && !borrow) return false;
+                    if (cfg.needZero && !this.hasInnerZero(firstDigits, k1)) return false;
+                    // Keep the notebook grid inside the column budget, otherwise the
+                    // cells get too small to read on a phone.
+                    return this.geometry(firstDigits, k1, secondDigits, k2).numCols <= this.config.maxGridColumns;
                 }
 
                 computePlan() {

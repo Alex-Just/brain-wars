@@ -744,28 +744,36 @@
                     case 'borrow':
                         return I18n.t('tc_hint_borrow', { a: problem.a.minutes, b: problem.b.minutes });
                     case 'minutes':
-                        if (sumsCarry) {
-                            return I18n.t('tc_hint_write_minutes', { sum: problem.a.minutes + problem.b.minutes });
-                        }
-                        if (subtractsBorrow) {
-                            return I18n.t('tc_hint_minutes_from', { total: problem.a.minutes + 60, b: problem.b.minutes });
-                        }
-                        if (problem.op === 'add') {
-                            return I18n.t('tc_hint_minutes_sum', { a: problem.a.minutes, b: problem.b.minutes });
-                        }
-                        return I18n.t('tc_hint_subtract_minutes', { a: problem.a.minutes, b: problem.b.minutes });
+                        return this.#minutesHint(problem, sumsCarry, subtractsBorrow);
                     case 'carry':
                         return I18n.t('tc_hint_carry', { sum: problem.a.minutes + problem.b.minutes });
                     default:
-                        if (problem.op === 'add') {
-                            return sumsCarry
-                                ? I18n.t('tc_hint_add_hours_carry', { a: problem.a.hours, b: problem.b.hours })
-                                : I18n.t('tc_hint_add_hours', { a: problem.a.hours, b: problem.b.hours });
-                        }
-                        return subtractsBorrow
-                            ? I18n.t('tc_hint_subtract_hours_borrow', { a: problem.a.hours, b: problem.b.hours })
-                            : I18n.t('tc_hint_subtract_hours', { a: problem.a.hours, b: problem.b.hours });
+                        return this.#hoursHint(problem, sumsCarry, subtractsBorrow);
                 }
+            }
+
+            #minutesHint(problem, sumsCarry, subtractsBorrow) {
+                if (sumsCarry) {
+                    return I18n.t('tc_hint_write_minutes', { sum: problem.a.minutes + problem.b.minutes });
+                }
+                if (subtractsBorrow) {
+                    return I18n.t('tc_hint_minutes_from', { total: problem.a.minutes + 60, b: problem.b.minutes });
+                }
+                if (problem.op === 'add') {
+                    return I18n.t('tc_hint_minutes_sum', { a: problem.a.minutes, b: problem.b.minutes });
+                }
+                return I18n.t('tc_hint_subtract_minutes', { a: problem.a.minutes, b: problem.b.minutes });
+            }
+
+            #hoursHint(problem, sumsCarry, subtractsBorrow) {
+                if (problem.op === 'add') {
+                    return sumsCarry
+                        ? I18n.t('tc_hint_add_hours_carry', { a: problem.a.hours, b: problem.b.hours })
+                        : I18n.t('tc_hint_add_hours', { a: problem.a.hours, b: problem.b.hours });
+                }
+                return subtractsBorrow
+                    ? I18n.t('tc_hint_subtract_hours_borrow', { a: problem.a.hours, b: problem.b.hours })
+                    : I18n.t('tc_hint_subtract_hours', { a: problem.a.hours, b: problem.b.hours });
             }
 
             #promptCurrentStep() {

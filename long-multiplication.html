@@ -231,30 +231,15 @@
 
                 createProblem(level) {
                     const cfg = this.getLevelConfig(level);
+                    const k1 = cfg.k1 || 0;
+                    const k2 = cfg.k2 || 0;
 
                     for (let attempt = 0; attempt < 600; attempt++) {
-                        let m = this.randomInt(cfg.mMin, cfg.mMax);
-                        let n = this.randomInt(cfg.nMin, cfg.nMax);
-                        if (n > m) {
-                            const swap = m;
-                            m = n;
-                            n = swap;
-                        }
-
-                        const k1 = cfg.k1 || 0;
-                        const k2 = cfg.k2 || 0;
+                        const { m, n } = this.randomSizes(cfg);
                         const multiplicand = this.randomDigits(m, cfg.bigDigits);
                         const multiplier = this.randomDigits(n, cfg.bigDigits);
 
-                        const product = String(Number(multiplicand) * Number(multiplier));
-                        if (product.length > this.config.maxProductDigits) continue;
-                        // Keep the notebook grid inside the column budget, otherwise the
-                        // cells get too small to read on a phone.
-                        if (this.geometry(multiplicand, k1, multiplier, k2).numCols > this.config.maxGridColumns) continue;
-                        if (cfg.noCarry && this.hasCarry(multiplicand, multiplier)) continue;
-                        if (n >= 2 && multiplier[multiplier.length - 1] === '0') continue;
-                        if (k1 > 0 && multiplicand[multiplicand.length - 1] === '0') continue;
-                        if (k2 > 0 && multiplier[multiplier.length - 1] === '0') continue;
+                        if (!this.acceptsFactors(multiplicand, k1, multiplier, k2, n, cfg)) continue;
 
                         return {
                             multiplicandDigits: multiplicand,
@@ -265,6 +250,27 @@
                     }
 
                     return { multiplicandDigits: '24', multiplicandDecimals: 0, multiplierDigits: '3', multiplierDecimals: 0 };
+                }
+
+                // The multiplicand is never shorter than the multiplier: that keeps
+                // the notebook rows wide enough to read on a phone.
+                randomSizes(cfg) {
+                    const m = this.randomInt(cfg.mMin, cfg.mMax);
+                    const n = this.randomInt(cfg.nMin, cfg.nMax);
+                    return n > m ? { m: n, n: m } : { m, n };
+                }
+
+                acceptsFactors(multiplicand, k1, multiplier, k2, n, cfg) {
+                    const product = String(Number(multiplicand) * Number(multiplier));
+                    if (product.length > this.config.maxProductDigits) return false;
+                    // Keep the notebook grid inside the column budget, otherwise the
+                    // cells get too small to read on a phone.
+                    if (this.geometry(multiplicand, k1, multiplier, k2).numCols > this.config.maxGridColumns) return false;
+                    if (cfg.noCarry && this.hasCarry(multiplicand, multiplier)) return false;
+                    if (n >= 2 && multiplier[multiplier.length - 1] === '0') return false;
+                    if (k1 > 0 && multiplicand[multiplicand.length - 1] === '0') return false;
+                    if (k2 > 0 && multiplier[multiplier.length - 1] === '0') return false;
+                    return true;
                 }
 
                 beginRound(problem, isCustomRound) {
@@ -333,13 +339,31 @@
                     const s = this.state;
                     const ad = Array.from(s.multiplicandDigits).map(Number);
                     const bd = Array.from(s.multiplierDigits).map(Number);
-                    const m = ad.length;
-                    const n = bd.length;
-                    const steps = [];
-                    const partialDigits = [];
-                    const partialLengths = [];
+                    const plan = {
+                        n: bd.length,
+                        steps: [],
+                        partialDigits: [],
+                        partialLengths: []
+                    };
 
-                    // Partial products, one row per multiplier digit (right to left)
+                    this.planPartialProducts(ad, bd, plan);
+
+                    // Column addition of the partial products (only when the
+                    // multiplier has more than one digit)
+                    if (plan.n > 1) {
+                        this.planPartialSum(plan);
+                    }
+
+                    s.steps = plan.steps;
+                    s.partialLengths = plan.partialLengths;
+                }
+
+                // Partial products, one row per multiplier digit (right to left)
+                planPartialProducts(ad, bd, plan) {
+                    const s = this.state;
+                    const m = ad.length;
+                    const n = plan.n;
+
                     for (let j = 0; j < n; j++) {
                         const b = bd[n - 1 - j];
                         const row = 2 + j;
@@ -353,7 +377,7 @@
                             const writeDigit = value % 10;
                             carry = Math.floor(value / 10);
                             digits.push(writeDigit);
-                            steps.push({
+                            plan.steps.push({
                                 type: 'MUL',
                                 a,
                                 b,
@@ -369,7 +393,7 @@
 
                         if (carry > 0) {
                             digits.push(carry);
-                            steps.push({
+                            plan.steps.push({
                                 type: 'CARRY',
                                 expected: carry,
                                 writeDigit: carry,
@@ -380,44 +404,41 @@
                             });
                         }
 
-                        partialDigits.push(digits);
-                        partialLengths.push(digits.length);
+                        plan.partialDigits.push(digits);
+                        plan.partialLengths.push(digits.length);
                     }
+                }
 
-                    // Column addition of the partial products (only when the
-                    // multiplier has more than one digit)
-                    if (n > 1) {
-                        const L = s.productDigits.length;
-                        let carry = 0;
+                planPartialSum(plan) {
+                    const s = this.state;
+                    const n = plan.n;
+                    const L = s.productDigits.length;
+                    let carry = 0;
 
-                        for (let c = 0; c < L; c++) {
-                            const addends = [];
-                            for (let j = 0; j < n; j++) {
-                                const index = c - j;
-                                if (index >= 0 && index < partialLengths[j]) {
-                                    addends.push(partialDigits[j][index]);
-                                }
+                    for (let c = 0; c < L; c++) {
+                        const addends = [];
+                        for (let j = 0; j < n; j++) {
+                            const index = c - j;
+                            if (index >= 0 && index < plan.partialLengths[j]) {
+                                addends.push(plan.partialDigits[j][index]);
                             }
-                            const carryBefore = carry;
-                            const value = addends.reduce((sum, digit) => sum + digit, 0) + carryBefore;
-                            const writeDigit = value % 10;
-                            carry = Math.floor(value / 10);
-                            steps.push({
-                                type: 'ADD',
-                                addends,
-                                carryBefore,
-                                expected: value,
-                                writeDigit,
-                                row: s.resultRow,
-                                col: s.baseCol - c,
-                                badge: carry > 0 ? { row: s.resultRow - 1, col: s.baseCol - c - 1 } : null,
-                                carryAfter: carry
-                            });
                         }
+                        const carryBefore = carry;
+                        const value = addends.reduce((sum, digit) => sum + digit, 0) + carryBefore;
+                        const writeDigit = value % 10;
+                        carry = Math.floor(value / 10);
+                        plan.steps.push({
+                            type: 'ADD',
+                            addends,
+                            carryBefore,
+                            expected: value,
+                            writeDigit,
+                            row: s.resultRow,
+                            col: s.baseCol - c,
+                            badge: carry > 0 ? { row: s.resultRow - 1, col: s.baseCol - c - 1 } : null,
+                            carryAfter: carry
+                        });
                     }
-
-                    s.steps = steps;
-                    s.partialLengths = partialLengths;
                 }
 
                 buildGrid() {
