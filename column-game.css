@@ -4,6 +4,14 @@
  * markup and its own wording.
  */
 
+        /* Fieldsets replace ARIA group containers; strip the browser defaults. */
+        fieldset {
+            margin: 0;
+            padding: 0;
+            border: 0;
+            min-width: 0;
+        }
+
         :root {
             /* Palette matching the other Brain Wars games */
             --color-primary: #60ACBD;
@@ -501,7 +509,7 @@
         }
 
         /* Modal */
-        .modal-backdrop {
+        dialog.modal-backdrop {
             position: fixed;
             top: 0;
             left: 0;
@@ -518,7 +526,7 @@
             transition: opacity 0.25s ease;
         }
 
-        .modal-backdrop.open {
+        dialog.modal-backdrop.open {
             opacity: 1;
             pointer-events: auto;
         }
@@ -538,7 +546,7 @@
             transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        .modal-backdrop.open .modal-content {
+        dialog.modal-backdrop.open .modal-content {
             transform: scale(1);
         }
 
@@ -671,7 +679,7 @@
         }
 
         /* Success Completion Overlay */
-        .completion-overlay {
+        dialog.completion-overlay {
             position: fixed;
             top: 0;
             left: 0;
@@ -690,7 +698,7 @@
             text-align: center;
         }
 
-        .completion-overlay.show {
+        dialog.completion-overlay.show {
             opacity: 1;
             pointer-events: auto;
         }

@@ -68,18 +68,18 @@
         <a id="backBtn" class="nav-btn icon-btn" href="./index.html" data-i18n-aria-label="nav_back" aria-label="Назад к играм"><svg class="back-arrow" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path d="M20 12H6M11.5 6 5.5 12 11.5 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
         <div data-lang-toggle></div>
         <div class="level-picker">
-            <button type="button" id="levelDisplay" class="level-badge" aria-haspopup="listbox" aria-expanded="false">
+            <button type="button" id="levelDisplay" class="level-badge" aria-expanded="false">
                 <span id="levelText" aria-live="polite">Уровень 1</span>
                 <span class="level-caret" aria-hidden="true">▾</span>
             </button>
-            <div class="level-menu" id="levelMenu" role="listbox" data-i18n-aria-label="lm_level_menu_aria" aria-label="Выберите уровень"></div>
+            <div class="level-menu" id="levelMenu"></div>
         </div>
     </header>
 
     <!-- Main Game Card -->
     <main class="game-card">
         <!-- Step instruction banner -->
-        <div class="instruction-box" id="instructionBox" role="status" aria-live="polite">
+        <div class="instruction-box" id="instructionBox" aria-live="polite">
             <div class="instruction-hint" id="instructionHint"></div>
         </div>
 
@@ -103,7 +103,7 @@
         </div>
 
         <!-- Touch Numpad -->
-        <div class="numpad-grid" id="numpadGrid" role="group" data-i18n-aria-label="lm_numpad_aria" aria-label="Цифровая клавиатура">
+        <fieldset class="numpad-grid" id="numpadGrid" data-i18n-aria-label="lm_numpad_aria" aria-label="Цифровая клавиатура">
             <button type="button" class="numpad-btn" data-key="1">1</button>
             <button type="button" class="numpad-btn" data-key="2">2</button>
             <button type="button" class="numpad-btn" data-key="3">3</button>
@@ -114,14 +114,14 @@
             <button type="button" class="numpad-btn" data-key="8">8</button>
             <button type="button" class="numpad-btn" data-key="9">9</button>
             <button type="button" class="numpad-btn" data-key="0">0</button>
-        </div>
+        </fieldset>
 
         <!-- Custom equation CTA -->
         <button type="button" class="custom-eq-btn" id="customEqBtn" data-i18n="lm_custom_btn">✏️ Своё выражение</button>
     </main>
 
     <!-- Custom Equation Modal -->
-    <div class="modal-backdrop" id="customModal" role="dialog" aria-modal="true" aria-labelledby="customModalTitle">
+    <dialog class="modal-backdrop" id="customModal" aria-labelledby="customModalTitle">
         <div class="modal-content">
             <div class="modal-header">
                 <div class="modal-title" id="customModalTitle" data-i18n="lm_custom_title">Своё выражение</div>
@@ -145,15 +145,15 @@
                 </form>
             </div>
         </div>
-    </div>
+    </dialog>
 
     <!-- Completion Overlay -->
-    <div class="completion-overlay" id="completionOverlay" role="dialog" aria-modal="true">
+    <dialog class="completion-overlay" id="completionOverlay">
         <div class="completion-icon">🌟</div>
         <div class="completion-title" data-i18n="lm_done_title">Отлично решено!</div>
         <div class="completion-equation" id="completionEquation">24 × 3 = 72</div>
         <button type="button" class="completion-next-btn" id="nextProblemBtn" data-i18n="lm_done_next">Следующий пример →</button>
-    </div>
+    </dialog>
 
     <!-- Game Engine -->
     <script>

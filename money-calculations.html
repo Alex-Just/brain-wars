@@ -274,6 +274,14 @@
             color: var(--color-success-dark);
         }
 
+        /* Fieldsets replace ARIA group containers; strip the browser defaults. */
+        fieldset {
+            margin: 0;
+            padding: 0;
+            border: 0;
+            min-width: 0;
+        }
+
         /* The column: annotations on top, then the operands, the rule and the result */
         .money-board {
             display: grid;
@@ -525,21 +533,21 @@
         <a id="backBtn" class="nav-btn icon-btn" href="./index.html" data-i18n-aria-label="nav_back" aria-label="Назад к играм"><svg class="back-arrow" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path d="M20 12H6M11.5 6 5.5 12 11.5 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
         <div data-lang-toggle></div>
         <div class="level-picker">
-            <button type="button" id="levelDisplay" class="level-badge" aria-haspopup="listbox" aria-expanded="false">
+            <button type="button" id="levelDisplay" class="level-badge" aria-expanded="false">
                 <span id="levelText" aria-live="polite">Уровень 1</span>
                 <span class="level-caret" aria-hidden="true">▾</span>
             </button>
-            <div class="level-menu" id="levelMenu" role="listbox" data-i18n-aria-label="mc_level_menu_aria" aria-label="Выберите уровень"></div>
+            <div class="level-menu" id="levelMenu"></div>
         </div>
     </header>
 
     <!-- Main Game Card -->
     <main class="game-card">
-        <div class="instruction-box" id="instructionBox" role="status" aria-live="polite">
+        <div class="instruction-box" id="instructionBox" aria-live="polite">
             <div class="instruction-hint" id="instructionHint"></div>
         </div>
 
-        <div class="money-board" id="moneyBoard" role="group" data-i18n-aria-label="mc_board_aria" aria-label="Пример">
+        <fieldset class="money-board" id="moneyBoard" data-i18n-aria-label="mc_board_aria" aria-label="Пример">
             <div class="money-cell input-cell" id="carryCell" data-i18n-aria-label="mc_carry_aria" aria-label="Перенос евро"></div>
             <div class="money-cell input-cell" id="scratchCell" data-i18n-aria-label="mc_scratch_aria" aria-label="Рабочие центы"></div>
 
@@ -560,10 +568,10 @@
             <span class="unit unit-re" data-i18n="mc_unit_euros">€</span>
             <div class="money-cell input-cell" id="centsResult" data-i18n-aria-label="mc_result_cents_aria" aria-label="Центы ответа"></div>
             <span class="unit unit-rc" data-i18n="mc_unit_cents">центов</span>
-        </div>
+        </fieldset>
 
         <!-- Number pad -->
-        <div class="numpad-grid" id="numpadGrid" role="group" data-i18n-aria-label="mc_numpad_aria" aria-label="Цифровая клавиатура">
+        <fieldset class="numpad-grid" id="numpadGrid" data-i18n-aria-label="mc_numpad_aria" aria-label="Цифровая клавиатура">
             <button type="button" class="numpad-btn" data-key="1">1</button>
             <button type="button" class="numpad-btn" data-key="2">2</button>
             <button type="button" class="numpad-btn" data-key="3">3</button>
@@ -574,7 +582,7 @@
             <button type="button" class="numpad-btn" data-key="8">8</button>
             <button type="button" class="numpad-btn" data-key="9">9</button>
             <button type="button" class="numpad-btn" data-key="0">0</button>
-        </div>
+        </fieldset>
 
         <button type="button" class="next-problem-btn" id="nextProblemBtn" data-i18n="mc_done_next" hidden>Следующая задача →</button>
     </main>
@@ -920,8 +928,6 @@
                     item.type = 'button';
                     item.className = 'level-menu-item' + (level === this.#state.level ? ' current' : '');
                     item.dataset.level = String(level);
-                    item.setAttribute('role', 'option');
-                    item.setAttribute('aria-selected', String(level === this.#state.level));
                     item.setAttribute('aria-label', I18n.t('level_label', { n: level }));
                     item.textContent = String(level);
                     menu.appendChild(item);

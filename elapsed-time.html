@@ -349,6 +349,14 @@
             color: var(--color-text-light);
         }
 
+        /* Fieldsets replace ARIA group containers; strip the browser defaults. */
+        fieldset {
+            margin: 0;
+            padding: 0;
+            border: 0;
+            min-width: 0;
+        }
+
         /* Answer boxes */
         .answer-row {
             display: flex;
@@ -523,11 +531,11 @@
         <a id="backBtn" class="nav-btn icon-btn" href="./index.html" data-i18n-aria-label="nav_back" aria-label="Назад к играм"><svg class="back-arrow" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path d="M20 12H6M11.5 6 5.5 12 11.5 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
         <div data-lang-toggle></div>
         <div class="level-picker">
-            <button type="button" id="levelDisplay" class="level-badge" aria-haspopup="listbox" aria-expanded="false">
+            <button type="button" id="levelDisplay" class="level-badge" aria-expanded="false">
                 <span id="levelText" aria-live="polite">Уровень 1</span>
                 <span class="level-caret" aria-hidden="true">▾</span>
             </button>
-            <div class="level-menu" id="levelMenu" role="listbox" data-i18n-aria-label="et_level_menu_aria" aria-label="Выберите уровень"></div>
+            <div class="level-menu" id="levelMenu"></div>
         </div>
     </header>
 
@@ -536,7 +544,7 @@
         <!-- The question, and the feedback line below it -->
         <div class="instruction-box">
             <div class="instruction-text" id="instructionText"></div>
-            <div class="instruction-hint" id="instructionHint" role="status" aria-live="polite"></div>
+            <output class="instruction-hint" id="instructionHint"></output>
         </div>
 
         <!-- The time(s) in play: a clock, or the two times of a "how long?" question -->
@@ -577,7 +585,7 @@
                     <line id="minuteHand" x1="50" y1="50" x2="50" y2="16" stroke="#60ACBD" stroke-width="3" stroke-linecap="round"/>
                 </svg>
             </div>
-            <div class="span" id="spanWrap" role="img">
+            <div class="span" id="spanWrap">
                 <span class="time-chip" id="spanStart"></span>
                 <span class="span-arrow" aria-hidden="true">→</span>
                 <span class="time-chip" id="spanEnd"></span>
@@ -585,7 +593,7 @@
         </div>
 
         <!-- The answer: a time, or a span -->
-        <div class="answer-row" id="answerRow" role="group" data-i18n-aria-label="et_answer_aria" aria-label="Твой ответ">
+        <fieldset class="answer-row" id="answerRow" data-i18n-aria-label="et_answer_aria" aria-label="Твой ответ">
             <div class="answer-line" id="answerTimes">
                 <button type="button" class="num-box" data-box="hours" data-i18n-aria-label="et_hours_aria" aria-label="Часы"><span class="box-value"></span></button>
                 <span class="colon" aria-hidden="true">:</span>
@@ -597,11 +605,11 @@
                 <button type="button" class="num-box" data-box="durMinutes" data-i18n-aria-label="et_minutes_aria" aria-label="Минуты"><span class="box-value"></span></button>
                 <span class="unit" data-i18n="et_box_minutes">мин</span>
             </div>
-        </div>
+        </fieldset>
         <div class="format-line" id="formatLine"></div>
 
         <!-- Number pad -->
-        <div class="numpad-grid" id="numpadGrid" role="group" data-i18n-aria-label="et_numpad_aria" aria-label="Цифровая клавиатура">
+        <fieldset class="numpad-grid" id="numpadGrid" data-i18n-aria-label="et_numpad_aria" aria-label="Цифровая клавиатура">
             <button type="button" class="numpad-btn" data-key="1">1</button>
             <button type="button" class="numpad-btn" data-key="2">2</button>
             <button type="button" class="numpad-btn" data-key="3">3</button>
@@ -612,7 +620,7 @@
             <button type="button" class="numpad-btn" data-key="8">8</button>
             <button type="button" class="numpad-btn" data-key="9">9</button>
             <button type="button" class="numpad-btn" data-key="0">0</button>
-        </div>
+        </fieldset>
     </main>
 
     <!-- Game engine -->
@@ -841,8 +849,6 @@
                     item.type = 'button';
                     item.className = 'level-menu-item' + (level === this.#state.level ? ' current' : '');
                     item.dataset.level = String(level);
-                    item.setAttribute('role', 'option');
-                    item.setAttribute('aria-selected', level === this.#state.level ? 'true' : 'false');
                     item.setAttribute('aria-label', I18n.t('level_label', { n: level }));
                     item.textContent = String(level);
                     menu.appendChild(item);

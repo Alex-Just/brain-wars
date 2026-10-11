@@ -167,6 +167,14 @@
             margin: 0 5px;
         }
 
+        /* Fieldsets replace ARIA group containers; strip the browser defaults. */
+        fieldset {
+            margin: 0;
+            padding: 0;
+            border: 0;
+            min-width: 0;
+        }
+
         /* Operators grid */
         #operators {
             margin-top: 40px;
@@ -670,21 +678,21 @@
         <div data-lang-toggle></div>
     </div>
     <main class="game" id="game">
-        <div class="level-display" id="levelDisplay" role="status" aria-live="polite">Уровень 1</div>
+        <output class="level-display" id="levelDisplay">Уровень 1</output>
         <div class="equation" id="equation" aria-live="polite">
             <span>2</span>
-            <div class="box" role="img" aria-label="пустое место для знака"></div>
+            <svg class="box" role="img" aria-label="пустое место для знака"></svg>
             <span>3</span>
             <span>=</span>
             <span>6</span>
         </div>
-        <div class="operators" id="operators" role="group" data-i18n-aria-label="ops_operators_aria" aria-label="математические операторы">
+        <fieldset class="operators" id="operators" data-i18n-aria-label="ops_operators_aria" aria-label="математические операторы">
             <button class="operator" data-operator="+" data-i18n-aria-label="ops_plus" aria-label="плюс"></button>
             <button class="operator" data-operator="−" data-i18n-aria-label="ops_minus" aria-label="минус"></button>
             <button class="operator" data-operator="×" data-i18n-aria-label="ops_times" aria-label="умножить"></button>
             <button class="operator" data-operator="÷" data-i18n-aria-label="ops_divide" aria-label="разделить"></button>
-        </div>
-        <div class="message" id="message" role="status" aria-live="polite" data-i18n="ops_choose_sign">Выбери правильный знак</div>
+        </fieldset>
+        <output class="message" id="message" data-i18n="ops_choose_sign">Выбери правильный знак</output>
     </main>
 
     <script>

@@ -158,6 +158,14 @@
             font-variant-numeric: tabular-nums; /* Ensure digits have same width */
         }
 
+        /* Fieldsets replace ARIA group containers; strip the browser defaults. */
+        fieldset {
+            margin: 0;
+            padding: 0;
+            border: 0;
+            min-width: 0;
+        }
+
         /* Time Choices grid */
         #timeChoices {
             margin-top: 40px;
@@ -468,7 +476,7 @@
         <div data-lang-toggle></div>
     </div>
     <main class="game" id="game">
-        <div class="level-display" id="levelDisplay" role="status" aria-live="polite">Nivel 1</div>
+        <output class="level-display" id="levelDisplay">Nivel 1</output>
         
         <!-- Analog Clock Display Area -->
         <div id="analogClockContainer" style="aspect-ratio: 1; margin-top: clamp(40px, 10vh, 120px); margin-bottom: 20px;">
@@ -532,15 +540,15 @@
         </div>
 
         <!-- Time Choices Area -->
-        <div id="timeChoices" role="group" data-i18n-aria-label="tt_choices_aria" aria-label="Opciones de hora">
+        <fieldset id="timeChoices" data-i18n-aria-label="tt_choices_aria" aria-label="Opciones de hora">
             <button class="choice-button" data-choice="1"></button>
             <button class="choice-button" data-choice="2"></button>
             <button class="choice-button" data-choice="3"></button>
             <button class="choice-button" data-choice="4"></button>
-        </div>
+        </fieldset>
 
         <!-- Message Area -->
-        <div class="message" id="message" role="status" aria-live="polite" data-i18n="tt_choose_time">Elige la hora correcta</div>
+        <output class="message" id="message" data-i18n="tt_choose_time">Elige la hora correcta</output>
 
         <!-- Instructions (Initially hidden) -->
         <div id="instructions" data-i18n="tt_tap_continue">¡Toca para continuar!</div>

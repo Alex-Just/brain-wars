@@ -84,11 +84,6 @@
 			item.type = "button";
 			item.className = `level-menu-item${level === state.level ? " current" : ""}`;
 			item.dataset.level = String(level);
-			item.setAttribute("role", "option");
-			item.setAttribute(
-				"aria-selected",
-				level === state.level ? "true" : "false",
-			);
 			item.setAttribute("aria-label", I18n.t("level_label", { n: level }));
 			item.textContent = String(level);
 			menu.appendChild(item);

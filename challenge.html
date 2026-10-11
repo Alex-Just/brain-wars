@@ -243,6 +243,7 @@
         }
 
         .stars {
+            display: block;
             font-size: 30px;
             letter-spacing: 4px;
             text-align: center;
@@ -298,7 +299,7 @@
     <main class="card" id="summary" hidden>
         <div class="summary-icon" aria-hidden="true">🏆</div>
         <div class="summary-title" data-i18n="ch_done_title">Челлендж пройден!</div>
-        <div class="stars" id="stars" role="img"></div>
+        <output class="stars" id="stars"></output>
         <div class="line" id="doneLine"></div>
         <div class="line" id="retriesLine"></div>
         <button type="button" class="primary" id="againBtn" data-i18n="ch_play_again">Играть снова</button>
