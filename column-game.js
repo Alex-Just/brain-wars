@@ -161,7 +161,7 @@
             }
 
     function bindEvents(ctx) {
-        const { elements, hooks } = ctx;
+        const { elements, state, hooks } = ctx;
                 // Numpad clicks
                 elements.numpadGrid.addEventListener('click', (e) => {
                     const btn = e.target.closest('.numpad-btn');
@@ -236,7 +236,7 @@
                 // Level picker
                 elements.levelDisplay.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    BrainWarsColumnGame.toggleLevelMenu(ctx);
+                    BrainWarsColumnGame.toggleLevelMenu(undefined, ctx);
                 });
                 elements.levelMenu.addEventListener('click', (e) => {
                     const item = e.target.closest('.level-menu-item');
@@ -318,7 +318,7 @@
     }
 
     function syncActiveCell(ctx) {
-        const { state } = ctx;
+        const { elements, state } = ctx;
                 const step = state.steps[state.stepIndex];
                 const previous = state.activeTargetCells;
                 previous.forEach(({ r, c }) => {
@@ -338,7 +338,7 @@
     }
 
     function toggleLevelMenu(open, ctx) {
-        const { elements } = ctx;
+        const { elements, state, config } = ctx;
                 const menu = elements.levelMenu;
                 const willOpen = (open !== undefined) ? open : !menu.classList.contains('open');
                 menu.classList.toggle('open', willOpen);
@@ -353,7 +353,7 @@
     }
 
     function handleLanguageChange(ctx) {
-        const { elements, hooks } = ctx;
+        const { elements, state, config, hooks } = ctx;
                 BrainWarsColumnGame.renderLevelBadge(elements, state);
                 if (elements.levelMenu.classList.contains('open')) {
                     BrainWarsColumnGame.renderLevelMenu(elements, state, config);

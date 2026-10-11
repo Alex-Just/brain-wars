@@ -233,128 +233,15 @@
             }
 
             #bindEvents() {
-                // Numpad clicks
-                this.#elements.numpadGrid.addEventListener('click', (e) => {
-                    const btn = e.target.closest('.numpad-btn');
-                    if (!btn) return;
-                    this.#handleKeyPress(btn.dataset.key);
-                });
-
-                // Physical keyboard support
-                window.addEventListener('keydown', (e) => {
-                    if (this.#elements.customModal.classList.contains('open')) {
-                        if (e.key === 'Escape') this.#toggleCustomModal(false);
-                        return;
-                    }
-                    if (this.#elements.levelMenu.classList.contains('open')) {
-                        if (e.key === 'Escape') {
-                            this.#toggleLevelMenu(false);
-                            this.#elements.levelDisplay.focus();
-                        }
-                        return;
-                    }
-                    if (this.#elements.completionOverlay.classList.contains('show')) {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                            this.#startNewRound();
-                        }
-                        return;
-                    }
-
-                    const isControlFocused = e.target instanceof HTMLElement &&
-                        (e.target.tagName === 'BUTTON' || e.target.tagName === 'A');
-                    if (isControlFocused && (e.key === 'Enter' || e.key === ' ')) {
-                        return; // Let the focused control handle its own activation
-                    }
-
-                    if (e.key >= '0' && e.key <= '9') {
-                        this.#handleKeyPress(e.key);
-                    } else if (e.key === 'Backspace') {
-                        this.#handleKeyPress('backspace');
-                    } else if (e.key === 'Enter') {
-                        this.#handleKeyPress('enter');
-                    }
-                });
-
-                // Terminology badge interactive highlights
-                document.querySelectorAll('.term-badge').forEach(badge => {
-                    badge.addEventListener('click', () => {
-                        this.#highlightTerm(badge.dataset.term);
-                    });
-                });
-
-                // Window resize for comma alignment
-                window.addEventListener('resize', () => {
-                    this.#applyCellSize();
-                    this.#renderCommas();
-                });
-
-
-                // Completion next button
-                this.#elements.nextProblemBtn.addEventListener('click', () => this.#startNewRound());
-
-                // Custom equation modal
-                this.#elements.customEqBtn.addEventListener('click', () => this.#toggleCustomModal(true));
-                this.#elements.customCloseBtn.addEventListener('click', () => this.#toggleCustomModal(false));
-                this.#elements.customCancelBtn.addEventListener('click', () => this.#toggleCustomModal(false));
-                this.#elements.customModal.addEventListener('click', (e) => {
-                    if (e.target === this.#elements.customModal) this.#toggleCustomModal(false);
-                });
-                this.#elements.customForm.addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    this.#submitCustomProblem();
-                });
-
-                // Level picker
-                this.#elements.levelDisplay.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    this.#toggleLevelMenu();
-                });
-                this.#elements.levelMenu.addEventListener('click', (e) => {
-                    const item = e.target.closest('.level-menu-item');
-                    if (!item) return;
-                    e.stopPropagation();
-                    this.#selectLevel(Number(item.dataset.level));
-                });
-                this.#elements.levelMenu.addEventListener('keydown', (e) => {
-                    const items = Array.from(this.#elements.levelMenu.querySelectorAll('.level-menu-item'));
-                    const index = items.indexOf(document.activeElement);
-                    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-                        e.preventDefault();
-                        const next = items[Math.min(items.length - 1, index + 1)];
-                        if (next) next.focus();
-                    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-                        e.preventDefault();
-                        const prev = items[Math.max(0, index - 1)];
-                        if (prev) prev.focus();
-                    } else if (e.key === 'Home') {
-                        e.preventDefault();
-                        items[0].focus();
-                    } else if (e.key === 'End') {
-                        e.preventDefault();
-                        items[items.length - 1].focus();
-                    }
-                });
-                document.addEventListener('click', (e) => {
-                    if (!this.#elements.levelMenu.classList.contains('open')) return;
-                    if (e.target.closest('.level-picker')) return;
-                    this.#toggleLevelMenu(false);
-                });
+                BrainWarsColumnGame.bindEvents(this.#ctx());
             }
 
             #subscribeToLanguageChanges() {
-                I18n.subscribe(() => this.#handleLanguageChange());
+                BrainWarsColumnGame.subscribeToLanguageChanges(this.#ctx());
             }
 
             #handleLanguageChange() {
-                this.#renderLevelBadge();
-                if (this.#elements.levelMenu.classList.contains('open')) {
-                    this.#renderLevelMenu();
-                }
-                this.#renderCommas();
-                this.#renderCompletionEquation();
-                if (!this.#elements.completionOverlay.classList.contains('show')) {
-                    this.#promptCurrentStep();
-                }
+                BrainWarsColumnGame.handleLanguageChange(this.#ctx());
             }
 
             // ---------------------------------------------------------------
@@ -464,7 +351,7 @@
             // ---------------------------------------------------------------
 
             #startNewRound() {
-                this.#beginRound(this.#createProblem(this.#state.level), false);
+                BrainWarsColumnGame.startNewRound(this.#ctx());
             }
 
             #beginRound(problem, isCustomRound) {
@@ -612,24 +499,7 @@
             }
 
             #renderGridDOM() {
-                const grid = this.#elements.mathGrid;
-                grid.innerHTML = '';
-
-                this.#applyCellSize();
-
-                grid.style.gridTemplateColumns = `repeat(${this.#state.numCols}, var(--cell-size))`;
-                grid.style.gridTemplateRows = `repeat(${this.#state.numRows}, var(--cell-size))`;
-
-                for (let r = 0; r < this.#state.numRows; r++) {
-                    for (let c = 0; c < this.#state.numCols; c++) {
-                        const cellData = this.#state.gridMatrix[r][c];
-                        const cellEl = document.createElement('div');
-                        cellEl.className = 'grid-cell ' + cellData.classes.join(' ');
-                        cellEl.id = `cell-${r}-${c}`;
-                        cellEl.textContent = cellData.char;
-                        grid.appendChild(cellEl);
-                    }
-                }
+                BrainWarsColumnGame.renderGridDOM(this.#ctx());
             }
 
             // The notebook grid is the main content, so cells grow to fill the free
@@ -703,22 +573,7 @@
             }
 
             #syncActiveCell() {
-                const step = this.#state.steps[this.#state.stepIndex];
-                const previous = this.#state.activeTargetCells;
-                previous.forEach(({ r, c }) => {
-                    const cell = document.getElementById(`cell-${r}-${c}`);
-                    if (cell) {
-                        cell.classList.remove('active-input', 'typing-preview', 'multi');
-                        cell.textContent = this.#state.gridMatrix[r][c].char;
-                    }
-                });
-
-                this.#state.activeTargetCells = [{ r: step.row, c: step.col }];
-                const cell = document.getElementById(`cell-${step.row}-${step.col}`);
-                if (cell) {
-                    cell.classList.add('active-input');
-                    this.#scrollCellIntoView(cell);
-                }
+                BrainWarsColumnGame.syncActiveCell(this.#ctx());
             }
 
             #scrollCellIntoView(cell) {
@@ -726,27 +581,7 @@
             }
 
             #handleKeyPress(key) {
-                if (key === 'backspace') {
-                    this.#state.currentInput = this.#state.currentInput.slice(0, -1);
-                    this.#renderTypingPreview();
-                    return;
-                }
-
-                if (key === 'enter') {
-                    this.#submitCurrentInput();
-                    return;
-                }
-
-                if (key >= '0' && key <= '9') {
-                    if (this.#state.currentInput.length >= this.#state.expectedAnswer.length) return;
-                    this.#elements.instructionHint.classList.remove('is-error');
-                    this.#state.currentInput += key;
-                    this.#renderTypingPreview();
-
-                    if (this.#state.currentInput.length === this.#state.expectedAnswer.length) {
-                        setTimeout(() => this.#submitCurrentInput(), 80);
-                    }
-                }
+                BrainWarsColumnGame.handleKeyPress(key, this.#ctx());
             }
 
             #renderTypingPreview() {
@@ -754,14 +589,7 @@
             }
 
             #submitCurrentInput() {
-                const userVal = this.#state.currentInput.trim();
-                if (!userVal) return;
-
-                if (userVal === this.#state.expectedAnswer) {
-                    this.#handleCorrectInput();
-                } else {
-                    this.#handleWrongInput();
-                }
+                BrainWarsColumnGame.submitCurrentInput(this.#ctx());
             }
 
             #handleCorrectInput() {
@@ -900,17 +728,7 @@
             }
 
             #toggleLevelMenu(open) {
-                const menu = this.#elements.levelMenu;
-                const willOpen = (open !== undefined) ? open : !menu.classList.contains('open');
-                menu.classList.toggle('open', willOpen);
-                this.#elements.levelDisplay.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
-
-                if (willOpen) {
-                    this.#renderLevelMenu();
-                    this.#positionLevelMenu();
-                    const current = menu.querySelector('.level-menu-item.current');
-                    if (current) current.focus();
-                }
+                BrainWarsColumnGame.toggleLevelMenu(open, this.#ctx());
             }
 
             #positionLevelMenu() {
@@ -918,9 +736,7 @@
             }
 
             #selectLevel(level) {
-                this.#state.level = Math.min(Math.max(level, 1), this.#config.maxLevel);
-                this.#toggleLevelMenu(false);
-                this.#startNewRound();
+                BrainWarsColumnGame.selectLevel(level, this.#ctx());
             }
 
             // ---------------------------------------------------------------
