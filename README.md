@@ -121,6 +121,7 @@ brain-wars/
 ├── memory-game.js        # Follow / Unfollow the Leader behaviour (both pages share it)
 ├── memory-game.css       # Their shared styling; each page sets its own palette
 ├── column-game.css       # Shared styling for the four column games
+├── column-game.js        # Shared half of those pages (grid, keypad, menus)
 ├── elapsed-time.js       # Elapsed-time questions, shared with the tests
 ├── time-calculations.js  # Time add and subtract problems, shared with the tests
 ├── money-calculations.js # Money add and subtract problems, shared with the tests
@@ -130,7 +131,7 @@ brain-wars/
 │                         #   money-problems, elapsed-time, time-calculations,
 │                         #   money-calculations
 ├── pwa.js                # Registers the service worker on http and https
-├── sw.js                 # Precache and fetch rules. VERSION is v10
+├── sw.js                 # Precache and fetch rules. VERSION is v11
 ├── manifest.json         # PWA name and icons
 ├── icons/                # App icons
 ├── analytics-worker/     # Worker, D1 schema, and Wrangler config

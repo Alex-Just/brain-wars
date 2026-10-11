@@ -56,7 +56,8 @@
     <script src="i18n.js" defer></script>
     <script src="games.js" defer></script>
     <script src="analytics.js" defer></script>
-    <script src="challenge.js" defer></script>
+    <script src="column-game.js" defer></script>
+  <script src="challenge.js" defer></script>
   <link rel="stylesheet" href="./column-game.css">
 </head>
 <body>
@@ -180,27 +181,7 @@
             }
 
             #initElements() {
-                this.#elements = {
-                    levelDisplay: document.getElementById('levelDisplay'),
-                    levelText: document.getElementById('levelText'),
-                    levelMenu: document.getElementById('levelMenu'),
-                    boardContainer: document.querySelector('.board-container'),
-                    instructionHint: document.getElementById('instructionHint'),
-                    mathGrid: document.getElementById('mathGrid'),
-                    commaLayer: document.getElementById('commaLayer'),
-                    numpadGrid: document.getElementById('numpadGrid'),
-                    completionOverlay: document.getElementById('completionOverlay'),
-                    completionEquation: document.getElementById('completionEquation'),
-                    nextProblemBtn: document.getElementById('nextProblemBtn'),
-                    customEqBtn: document.getElementById('customEqBtn'),
-                    customModal: document.getElementById('customModal'),
-                    customCloseBtn: document.getElementById('customCloseBtn'),
-                    customCancelBtn: document.getElementById('customCancelBtn'),
-                    customForm: document.getElementById('customForm'),
-                    customFactor1: document.getElementById('customFactor1'),
-                    customFactor2: document.getElementById('customFactor2'),
-                    customError: document.getElementById('customError')
-                };
+                this.#elements = BrainWarsColumnGame.initElements();
             }
 
             #initState() {
@@ -357,7 +338,7 @@
             // ---------------------------------------------------------------
 
             #randomInt(min, max) {
-                return Math.floor(BrainWarsGames.random() * (max - min + 1)) + min;
+                return BrainWarsColumnGame.randomInt(min, max);
             }
 
             #randomNumberString(integerDigits, decimals, big) {
@@ -631,15 +612,7 @@
             // width. They only shrink (down to a readable floor) when a long problem
             // needs more columns than fit on screen.
             #applyCellSize() {
-                const grid = this.#elements.mathGrid;
-                const board = this.#elements.boardContainer;
-                const cols = this.#state.numCols || 1;
-                // 6px reserve for the grid border (1px) + padding (1px) plus slack,
-                // so the board never needs a horizontal scrollbar.
-                const available = (board ? board.clientWidth : 360) - 6;
-                const cell = Math.max(20, Math.min(48, Math.floor(available / cols)));
-                grid.style.setProperty('--cell-size', `${cell}px`);
-                grid.style.setProperty('--cell-font-size', `${Math.max(14, Math.min(26, Math.round(cell * 0.58)))}px`);
+                BrainWarsColumnGame.applyCellSize(this.#elements, this.#state);
             }
 
             // All decimal separators sit on the same boundary (decimal points
@@ -725,16 +698,7 @@
             }
 
             #scrollCellIntoView(cell) {
-                const container = this.#elements.boardContainer;
-                if (!cell || !container) return;
-                const cellRect = cell.getBoundingClientRect();
-                const containerRect = container.getBoundingClientRect();
-                const margin = 24;
-                if (cellRect.left < containerRect.left + margin) {
-                    container.scrollLeft -= (containerRect.left + margin - cellRect.left);
-                } else if (cellRect.right > containerRect.right - margin) {
-                    container.scrollLeft += (cellRect.right - containerRect.right + margin);
-                }
+                BrainWarsColumnGame.scrollCellIntoView(cell, this.#elements);
             }
 
             #handleKeyPress(key) {
@@ -762,22 +726,7 @@
             }
 
             #renderTypingPreview() {
-                const input = this.#state.currentInput;
-                const cells = this.#state.activeTargetCells;
-                if (!cells || cells.length === 0) return;
-
-                cells.forEach((pos) => {
-                    const cell = document.getElementById(`cell-${pos.r}-${pos.c}`);
-                    if (!cell) return;
-                    if (input.length > 0) {
-                        cell.textContent = input;
-                        cell.classList.add('typing-preview');
-                        cell.classList.toggle('multi', input.length > 1);
-                    } else {
-                        cell.textContent = this.#state.gridMatrix[pos.r][pos.c].char;
-                        cell.classList.remove('typing-preview', 'multi');
-                    }
-                });
+                BrainWarsColumnGame.renderTypingPreview(this.#state);
             }
 
             #submitCurrentInput() {
@@ -821,13 +770,7 @@
             }
 
             #setCellValue(r, c, char, additionalClasses = []) {
-                this.#state.gridMatrix[r][c].char = String(char);
-                const cell = document.getElementById(`cell-${r}-${c}`);
-                if (cell) {
-                    cell.textContent = String(char);
-                    cell.classList.remove('active-input', 'typing-preview', 'multi');
-                    additionalClasses.forEach(cls => cell.classList.add(cls));
-                }
+                BrainWarsColumnGame.setCellValue(r, c, char, additionalClasses, this.#state);
             }
 
             #setCarryBadge(r, c, value) {
@@ -849,12 +792,7 @@
 
             // Paint every element `collect` returns, then drop the paint again.
             #paint(cls, collect) {
-                const clear = () => {
-                    document.querySelectorAll('.' + cls).forEach((el) => el.classList.remove(cls));
-                };
-                clear();
-                collect().forEach((el) => el.classList.add(cls));
-                setTimeout(clear, 1000);
+                BrainWarsColumnGame.paint(cls, collect);
             }
 
             #addendCells() {
@@ -895,9 +833,7 @@
             // ---------------------------------------------------------------
 
             #formatNumberText(digits, decimals) {
-                if (!decimals) return digits;
-                const cut = digits.length - decimals;
-                return digits.slice(0, cut) + I18n.t('decimal_separator') + digits.slice(cut);
+                return BrainWarsColumnGame.formatNumberText(digits, decimals);
             }
 
             #renderCompletionEquation() {
@@ -932,23 +868,11 @@
             // ---------------------------------------------------------------
 
             #renderLevelBadge() {
-                this.#elements.levelText.textContent = I18n.t('level_label', { n: this.#state.level });
+                BrainWarsColumnGame.renderLevelBadge(this.#elements, this.#state);
             }
 
             #renderLevelMenu() {
-                const menu = this.#elements.levelMenu;
-                menu.innerHTML = '';
-                for (let level = 1; level <= this.#config.maxLevel; level++) {
-                    const item = document.createElement('button');
-                    item.type = 'button';
-                    item.className = 'level-menu-item' + (level === this.#state.level ? ' current' : '');
-                    item.dataset.level = String(level);
-                    item.setAttribute('role', 'option');
-                    item.setAttribute('aria-selected', level === this.#state.level ? 'true' : 'false');
-                    item.setAttribute('aria-label', I18n.t('level_label', { n: level }));
-                    item.textContent = String(level);
-                    menu.appendChild(item);
-                }
+                BrainWarsColumnGame.renderLevelMenu(this.#elements, this.#state, this.#config);
             }
 
             #toggleLevelMenu(open) {
@@ -966,23 +890,7 @@
             }
 
             #positionLevelMenu() {
-                const menu = this.#elements.levelMenu;
-                const triggerRect = this.#elements.levelDisplay.getBoundingClientRect();
-                const menuWidth = menu.offsetWidth;
-                const viewportWidth = document.documentElement.clientWidth;
-                const margin = 8;
-
-                menu.style.maxWidth = '';
-                if (triggerRect.right - menuWidth >= margin) {
-                    menu.style.left = 'auto';
-                    menu.style.right = '0';
-                } else {
-                    menu.style.left = '0';
-                    menu.style.right = 'auto';
-                    if (triggerRect.left + menuWidth > viewportWidth - margin) {
-                        menu.style.maxWidth = (viewportWidth - margin * 2) + 'px';
-                    }
-                }
+                BrainWarsColumnGame.positionLevelMenu(this.#elements);
             }
 
             #selectLevel(level) {
@@ -1010,7 +918,7 @@
             }
 
             #showCustomError(key) {
-                this.#elements.customError.textContent = I18n.t(key);
+                BrainWarsColumnGame.showCustomError(key, this.#elements);
             }
 
             #parseAddend(raw) {
