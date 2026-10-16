@@ -161,14 +161,13 @@
 
     // The general fact behind a question, shown after a mistake:
     //   1 <from> = 10^exp <to>
-    // Going down reads "1 kg = 1000 g"; going up reads "1 g = 0.001 kg". The
-    // strings stay canonical, so the page only swaps in the unit symbols and the
-    // decimal separator.
+    // Going down reads "1 kg = 1000 g"; going up reads "1 g = 1/1000 kg", the
+    // power as a unit fraction rather than a decimal. The strings stay canonical,
+    // so the page only swaps in the unit symbols and the decimal separator.
     function rule(question) {
         const { exp } = question;
-        const factor = exp >= 0
-            ? `1${'0'.repeat(exp)}`
-            : `0.${'0'.repeat(-exp - 1)}1`;
+        const power = `1${'0'.repeat(Math.abs(exp))}`;
+        const factor = exp >= 0 ? power : `1/${power}`;
         return { from: question.from, factor, to: question.to };
     }
 

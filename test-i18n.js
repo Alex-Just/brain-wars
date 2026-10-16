@@ -842,6 +842,15 @@ function timesPowerOfTen(value, exp) {
         : { numerator, scale: scale - exp };
 }
 
+// A rule factor as an exact fraction: "1000" -> 1000, "1/1000" -> 1 / 10^3,
+// where the digits after the slash count the denominator's zeros.
+function parseRuleFactor(text) {
+    const [numerator, denominator] = text.split('/');
+    return denominator === undefined
+        ? parseDecimal(numerator)
+        : { numerator: BigInt(numerator), scale: denominator.length - 1 };
+}
+
 function sampleConversions(level, count, seed) {
     const rng = mulberry32(seed === undefined ? level * 104729 : seed);
     const questions = [];
@@ -885,16 +894,17 @@ check('every generated conversion is mathematically sound', () => {
 
 check('every conversion carries the general rule behind it', () => {
     // 1 from = factor to, where the factor is exactly 10^exp: "1 kg = 1000 g"
-    // going down, "1 g = 0.001 kg" going up.
+    // going down, "1 g = 1/1000 kg" going up. The up conversions show the power
+    // as a fraction, never as a decimal.
     [
         [{ from: 'kg', to: 'g', exp: 3 }, '1000'],
-        [{ from: 'g', to: 'kg', exp: -3 }, '0.001'],
+        [{ from: 'g', to: 'kg', exp: -3 }, '1/1000'],
         [{ from: 'm', to: 'cm', exp: 2 }, '100'],
-        [{ from: 'cm', to: 'm', exp: -2 }, '0.01'],
+        [{ from: 'cm', to: 'm', exp: -2 }, '1/100'],
         [{ from: 'cm', to: 'mm', exp: 1 }, '10'],
-        [{ from: 'mm', to: 'cm', exp: -1 }, '0.1'],
+        [{ from: 'mm', to: 'cm', exp: -1 }, '1/10'],
         [{ from: 'km', to: 'cm', exp: 5 }, '100000'],
-        [{ from: 'cm', to: 'km', exp: -5 }, '0.00001']
+        [{ from: 'cm', to: 'km', exp: -5 }, '1/100000']
     ].forEach(([question, factor]) => {
         assert.deepStrictEqual(Units.rule(question), { from: question.from, factor, to: question.to });
     });
@@ -903,11 +913,15 @@ check('every conversion carries the general rule behind it', () => {
             const { from, factor, to } = Units.rule(question);
             assert.strictEqual(from, question.from, 'the rule starts from the question unit');
             assert.strictEqual(to, question.to, 'the rule ends at the question unit');
+            // Down reads "1000", up reads "1/1000": a whole power of ten either
+            // way, and never a decimal point.
+            const power = `1${'0'.repeat(Math.abs(question.exp))}`;
+            const expected = question.exp >= 0 ? power : `1/${power}`;
+            assert.strictEqual(factor, expected, `unexpected rule factor: ${JSON.stringify(question)} -> ${factor}`);
             assert.ok(
-                sameFraction(parseDecimal(factor), timesPowerOfTen('1', question.exp)),
+                sameFraction(parseRuleFactor(factor), timesPowerOfTen('1', question.exp)),
                 `the rule factor is not 10^exp: ${JSON.stringify(question)} -> ${factor}`
             );
-            assert.strictEqual(Units.normalize(factor), factor, `the factor is not canonical: ${factor}`);
         });
     }
 });
