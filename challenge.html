@@ -55,6 +55,7 @@
     <title data-i18n="ch_title">Челлендж</title>
     <script src="i18n.js" defer></script>
     <script src="games.js" defer></script>
+    <script src="analytics.js" defer></script>
     <script src="challenge.js" defer></script>
     <style>
         :root {
@@ -327,6 +328,17 @@
             let games = Challenge.defaults.games;
             let level = Challenge.defaults.level;
 
+            const historyPromise = Challenge.loadPracticeHistory();
+            const START_WAIT_MS = 1500;
+
+            // The run must not wait on the network: take the history if it is ready in time.
+            function historyOrNull() {
+                return Promise.race([
+                    historyPromise,
+                    new Promise((resolve) => setTimeout(() => resolve(null), START_WAIT_MS))
+                ]);
+            }
+
             function renderSetup() {
                 gamesOut.textContent = games;
                 levelOut.textContent = level;
@@ -345,8 +357,11 @@
             levelDown.addEventListener('click', () => { level = step(level, -1, levelLimits); renderSetup(); });
             levelUp.addEventListener('click', () => { level = step(level, 1, levelLimits); renderSetup(); });
 
-            document.getElementById('startBtn').addEventListener('click', () => {
-                Challenge.createRun(games, level);
+            document.getElementById('startBtn').addEventListener('click', async () => {
+                const button = document.getElementById('startBtn');
+                button.disabled = true;
+                const history = await historyOrNull();
+                Challenge.createRun(games, level, history);
                 // Replace the setup entry: the run's steps own the history, so Back
                 // exits the challenge instead of returning to the setup or a round.
                 window.location.replace(Challenge.stepUrl(Challenge.loadRun()));

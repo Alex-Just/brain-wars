@@ -663,6 +663,48 @@ async function runAsyncTests() {
         }
     });
 
+    console.log('challenge practice history');
+
+    const Challenge = require('./challenge.js');
+    const PRACTICE_PAYLOAD = { games: [{ game: 'money-problems', total: 28, wrong: 20 }] };
+
+    await checkAsync('loadPracticeHistory parses a successful response', async () => {
+        let calledUrl = '';
+        const history = await Challenge.loadPracticeHistory({
+            fetch: async (url) => { calledUrl = url; return { ok: true, json: async () => PRACTICE_PAYLOAD }; },
+            device: 'dev-1',
+            endpoint: 'https://worker.example/ingest'
+        });
+        assert.strictEqual(calledUrl, 'https://worker.example/practice?days=3&device=dev-1');
+        assert.deepStrictEqual(history, { 'money-problems': { total: 28, wrong: 20 } });
+    });
+
+    await checkAsync('loadPracticeHistory returns null for every failure', async () => {
+        const failures = [
+            async () => ({ ok: false, status: 500, json: async () => ({}) }),
+            async () => { throw new Error('offline'); },
+            async () => ({ ok: true, json: async () => { throw new Error('bad json'); } })
+        ];
+        for (const fetchFn of failures) {
+            const history = await Challenge.loadPracticeHistory({
+                fetch: fetchFn, device: 'dev-1', endpoint: 'https://worker.example/ingest'
+            });
+            assert.strictEqual(history, null);
+        }
+        assert.strictEqual(await Challenge.loadPracticeHistory({ fetch: async () => ({ ok: true }), device: null }), null);
+        assert.strictEqual(await Challenge.loadPracticeHistory({ fetch: async () => ({ ok: true }), device: 'dev-1', endpoint: '' }), null);
+    });
+
+    await checkAsync('loadPracticeHistory gives up after its timeout', async () => {
+        const hangingFetch = (url, options) => new Promise((resolve, reject) => {
+            options.signal?.addEventListener('abort', () => reject(new Error('aborted')));
+        });
+        const history = await Challenge.loadPracticeHistory({
+            fetch: hangingFetch, device: 'dev-1', endpoint: 'https://worker.example/ingest', timeoutMs: 10
+        });
+        assert.strictEqual(history, null);
+    });
+
     console.log('\nAll ' + passed + ' checks passed.');
 }
 

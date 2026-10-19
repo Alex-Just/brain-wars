@@ -294,7 +294,7 @@ check('every game page loads the analytics module', () => {
 
 check('the challenge page loads its scripts', () => {
     const html = fs.readFileSync(path.join(__dirname, 'challenge.html'), 'utf8');
-    ['i18n.js', 'games.js', 'challenge.js'].forEach((script) => {
+    ['i18n.js', 'games.js', 'analytics.js', 'challenge.js'].forEach((script) => {
         assert.ok(html.includes('src="' + script + '"'), 'challenge.html must load ' + script);
     });
 });

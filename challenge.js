@@ -145,6 +145,37 @@
         return queue;
     }
 
+    const PRACTICE_DAYS = 3;
+    const PRACTICE_TIMEOUT_MS = 3000;
+
+    function practiceUrl(device, endpoint) {
+        const ingest = typeof endpoint === 'string' ? endpoint : global.BrainWarsAnalytics?.ENDPOINT;
+        if (!device || !ingest) return null;
+        return ingest.replace(/\/ingest\/?$/, '') +
+            '/practice?days=' + PRACTICE_DAYS + '&device=' + encodeURIComponent(device);
+    }
+
+    // Never rejects: the setup page races this against a short timer and starts with
+    // the uniform queue when the worker is unreachable or has no history.
+    function loadPracticeHistory(options = {}) {
+        const Analytics = global.BrainWarsAnalytics;
+        const fetchFn = options.fetch || global.fetch;
+        const device = typeof options.device === 'string' ? options.device : Analytics?.getDeviceId?.();
+        const url = practiceUrl(device, options.endpoint);
+        if (!device || !url || typeof fetchFn !== 'function') return Promise.resolve(null);
+
+        const timeoutMs = options.timeoutMs || PRACTICE_TIMEOUT_MS;
+        const controller = typeof AbortController === 'function' ? new AbortController() : null;
+        const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+
+        return Promise.resolve()
+            .then(() => fetchFn(url, { headers: { Accept: 'application/json' }, signal: controller?.signal }))
+            .then((response) => (response && response.ok ? response.json() : null))
+            .then(parsePracticeHistory)
+            .catch(() => null)
+            .finally(() => { if (timer) clearTimeout(timer); });
+    }
+
     function createRun(games, level, history) {
         const queue = buildQueue(clamp(games, LIMITS.games), history);
         const run = {
@@ -180,6 +211,8 @@
         weightFor: weightFor,
         parsePracticeHistory: parsePracticeHistory,
         buildQueue: buildQueue,
+        practiceUrl: practiceUrl,
+        loadPracticeHistory: loadPracticeHistory,
         // Starting level for games that read it while setting up their round
         startLevel: () => (active ? run.level : 1)
     };
