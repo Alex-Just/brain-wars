@@ -24,7 +24,7 @@ Brain Wars is a set of small math games for primary-school children. The app is 
 
 | Game | What it does |
 | --- | --- |
-| **Challenge** | A mixed run of 1–50 games at one difficulty from 1 to 20. Each game type appears once before any repeat. A mistake sends that game to the end of the queue. The results screen awards up to three stars. |
+| **Challenge** | A mixed run of 1–50 games at one difficulty from 1 to 20. Every game appears once when the run is long enough, then the mix is biased by the last three days of accuracy: games with more mistakes return and games solved cleanly appear less. A mistake sends that game to the end of the queue. The results screen awards up to three stars. |
 | **Follow the Leader** | Watch squares light up, then tap them in the same order. The sequence grows and speeds up. |
 | **Unfollow the Leader** | The same game in reverse: tap the last square first. |
 | **Mental Math** | Choose the missing operator (`+`, `−`, `×`, `÷`). |
@@ -52,6 +52,8 @@ Follow the Leader and Unfollow the Leader stay in the repository. The hub and Ch
 ## Analytics
 
 The live app sends one row per answer attempt to its own Cloudflare Worker. The row stores the game, the result (`1` right or `0` wrong), the device time, a random device id, and the request IP and country. The worker clears the IP after 90 days. The other columns stay. The app sets no cookies and creates no accounts.
+
+Challenge mode also reads `GET /practice` for this device's per-game counts over the last three days. That route takes no token, and it returns only game ids and aggregate counts, with no IP, country, timestamps, or event ids.
 
 Telling-time stores a wrong tap and skips the completion that follows that same tap. Every other game stores the wrong attempt and the solved attempt as two rows.
 
@@ -159,7 +161,7 @@ flowchart LR
 
 **Registry.** `games.js` is the list of games. The hub draws its tiles from that list. Challenge mode builds its queue from the same list. `picker` means the page has a level menu. `startup` means the page reads the challenge level when a round starts. Each game names the DOM signal for a finished round and the signal for a mistake.
 
-**Challenge.** `challenge.js` saves the run for `challenge.html`. The same file runs inside a game opened with `?challenge=1`. It draws the progress bar, pins the level, and reads the game signals four times a second. Each step replaces the history entry, so Back returns to the hub. A solved game that had mistakes returns later in the queue and marks the run with ⚠. The results screen awards 1–3 stars.
+**Challenge.** `challenge.js` saves the run for `challenge.html`. The same file runs inside a game opened with `?challenge=1`. It draws the progress bar, pins the level, and reads the game signals four times a second. Each step replaces the history entry, so Back returns to the hub. Challenge fetches the device's three-day per-game totals from the answers worker and weighs the queue toward recently missed games; if the fetch fails it falls back to the uniform deal, so offline play is unchanged. A solved game that had mistakes returns later in the queue and marks the run with ⚠. The results screen awards 1–3 stars.
 
 **Languages.** `i18n.js` holds three dictionaries with the same keys. A new device starts in Spanish. The chosen language stays in `localStorage`.
 
