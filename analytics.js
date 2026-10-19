@@ -113,9 +113,15 @@
         return { queue, backoff, nextTryAt: now + backoff, permanentTries: 0 };
     }
 
+    // The random device id the uploader uses, exposed so Challenge mode can ask the
+    // worker for this device's practice history.
+    function getDeviceId() {
+        return deviceId(safeStorage());
+    }
+
     const core = {
         buildEvent, enqueue, takeBatch, ack, reconcileQueue, risingEdges, captureEvent,
-        classifyResponse, nextBackoff, flushOnce,
+        classifyResponse, nextBackoff, flushOnce, getDeviceId,
         ENDPOINT, QUEUE_MAX, BATCH_MAX, MIN_FLUSH_GAP_MS, MAX_PERMANENT_TRIES
     };
     global.BrainWarsAnalytics = core;

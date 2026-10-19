@@ -29,6 +29,22 @@ check('buildEvent shapes an event', () => {
     assert.ok(typeof event.id === 'string' && event.id.length >= 8);
 });
 
+check('getDeviceId persists one id and returns the same value', () => {
+    const store = new Map();
+    globalThis.localStorage = {
+        getItem: (key) => (store.has(key) ? store.get(key) : null),
+        setItem: (key, value) => store.set(key, String(value))
+    };
+    try {
+        const first = Analytics.getDeviceId();
+        assert.ok(typeof first === 'string' && first.length > 0);
+        assert.strictEqual(Analytics.getDeviceId(), first);
+        assert.strictEqual(store.get('brain_wars_device'), first);
+    } finally {
+        delete globalThis.localStorage;
+    }
+});
+
 check('enqueue appends and drops the oldest beyond the cap', () => {
     let queue = [];
     for (let i = 0; i < 5; i++) queue = Analytics.enqueue(queue, { id: 'e' + i }, 3);
