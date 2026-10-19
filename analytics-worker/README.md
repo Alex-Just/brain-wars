@@ -66,6 +66,18 @@ curl -X POST https://brain-wars-answers.alex-just.workers.dev/report/send
 
 When `REPORT_TOKEN` is set, pass `-H 'Authorization: Bearer <token>'` or `?token=<token>`.
 
+### Practice endpoint
+
+Challenge mode reads the last three days of per-game accuracy from:
+
+```bash
+curl 'https://brain-wars-answers.alex-just.workers.dev/practice?device=<id>&days=3'
+```
+
+The response is `{ "period": { "since", "now", "days" }, "games": [{ "game", "total", "correct", "wrong", "accuracyPct" }] }`. It returns aggregates for one device and contains no IP, country, timestamps, event ids, names, or tips.
+
+This route is intentionally token-free so the static app can call it. The device id is the random `brain_wars_device` value stored on that device; it is not an account or a personal identifier.
+
 ## Deploy
 
 A push to `master` that touches `analytics-worker/`, `test-analytics.js`, or the deploy workflow runs [`.github/workflows/deploy-analytics-worker.yml`](../.github/workflows/deploy-analytics-worker.yml). The job runs the analytics tests, deploys with Wrangler, then smoke-checks the live preview.

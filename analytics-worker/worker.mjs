@@ -4,7 +4,7 @@
  * Deploy from the Cloudflare dashboard; keep the pasted copy in sync with this file.
  */
 
-import { DEFAULT_REPORT_DAYS, generateWeeklySummary, renderReportHtml, sendReportEmail } from './report.mjs';
+import { DEFAULT_REPORT_DAYS, generatePracticeStats, generateWeeklySummary, renderReportHtml, sendReportEmail } from './report.mjs';
 
 export const GAME_IDS = [
     'follow-the-leader', 'unfollow-the-leader', 'operations', 'telling-time',
@@ -129,6 +129,18 @@ async function handleSend(url, env, cors) {
     return json(result, result.ok ? 200 : 500, cors);
 }
 
+// The narrow read path Challenge mode uses: aggregate counts for one device,
+// no report token and no personal data. The device id is the random local value.
+async function handlePractice(url, env, cors) {
+    const device = url.searchParams.get('device');
+    if (!device || device.length > 64) {
+        return json({ error: 'invalid_device' }, 400, cors);
+    }
+    const days = Math.min(resolveDays(url.searchParams.get('days'), 3), 30);
+    const stats = await generatePracticeStats(env.DB, { days, device });
+    return json(stats, 200, { ...cors, 'Cache-Control': 'no-store' });
+}
+
 async function handleIngest(request, env, cors) {
     const body = await request.text();
     if (body.length > BODY_MAX_BYTES) {
@@ -183,6 +195,10 @@ export default {
 
         if (request.method === 'OPTIONS') {
             return new Response(null, { status: 204, headers: cors });
+        }
+
+        if (route === 'GET /practice') {
+            return handlePractice(url, env, cors);
         }
 
         if (route === 'GET /report/preview') {

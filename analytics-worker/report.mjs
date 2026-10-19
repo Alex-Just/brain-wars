@@ -185,6 +185,39 @@ export async function generateWeeklySummary(db, options = {}) {
     };
 }
 
+/**
+ * Queries D1 for the per-game totals Challenge mode weighs its queue with.
+ * One device only; no event details leave the database.
+ */
+export async function generatePracticeStats(db, options = {}) {
+    const now = typeof options.now === 'number' ? options.now : Date.now();
+    const days = Number.isInteger(options.days) && options.days > 0 ? options.days : 3;
+    const device = options.device || null;
+    const period = { since: now - days * DAY_MS, now, days };
+    if (!device) return { period, games: [] };
+
+    const result = await db.prepare(`
+        SELECT game,
+               COUNT(*) AS total,
+               COALESCE(SUM(correct), 0) AS correct_count,
+               COALESCE(SUM(CASE WHEN correct = 0 THEN 1 ELSE 0 END), 0) AS wrong_count,
+               ROUND(COALESCE(SUM(correct), 0) * 100.0 / COUNT(*), 1) AS accuracy_pct
+        FROM answers
+        WHERE ts >= ? AND ts <= ? AND device = ?
+        GROUP BY game
+        ORDER BY wrong_count DESC, accuracy_pct ASC, total DESC
+    `).bind(period.since, now, device).all();
+
+    const games = (result?.results || []).map((row) => ({
+        game: row.game,
+        total: row.total,
+        correct: row.correct_count,
+        wrong: row.wrong_count,
+        accuracyPct: row.accuracy_pct
+    }));
+    return { period, games };
+}
+
 // The range tabs for the browser preview. Plain links: a GET keeps the page simple
 // and works before any script runs.
 function renderRangeNav(nav) {

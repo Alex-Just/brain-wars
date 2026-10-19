@@ -576,6 +576,58 @@ async function runAsyncTests() {
         assert.ok(rangeHtml.includes('device=dev-9'), 'tabs keep the device filter');
     });
 
+    console.log('practice read endpoint');
+
+    await checkAsync('generatePracticeStats groups by game for one device', async () => {
+        const stats = await Report.generatePracticeStats(
+            stubDB({ gamesRows: [{ game: 'money-problems', total: 28, correct_count: 8, wrong_count: 20, accuracy_pct: 28.6 }] }),
+            { days: 3, device: 'd-1', now: NOW }
+        );
+        assert.strictEqual(stats.period.days, 3);
+        assert.strictEqual(stats.period.now, NOW);
+        assert.deepStrictEqual(stats.games, [
+            { game: 'money-problems', total: 28, correct: 8, wrong: 20, accuracyPct: 28.6 }
+        ]);
+    });
+
+    await checkAsync('generatePracticeStats without a device returns no rows', async () => {
+        const db = stubDB();
+        const stats = await Report.generatePracticeStats(db, { days: 3, device: null, now: NOW });
+        assert.deepStrictEqual(stats.games, []);
+        assert.strictEqual(db.log.inserts.length, 0);
+    });
+
+    await checkAsync('GET /practice returns per-game aggregates without a token', async () => {
+        const db = stubDB({ gamesRows: [{ game: 'money-problems', total: 28, correct_count: 8, wrong_count: 20, accuracy_pct: 28.6 }] });
+        const response = await Worker.default.fetch(
+            stubRequest({ method: 'GET', path: '/practice?device=d-1&days=3', origin: 'https://alex-just.github.io' }),
+            { DB: db, REPORT_TOKEN: 'secret' }
+        );
+        assert.strictEqual(response.status, 200);
+        assert.strictEqual(response.headers.get('Cache-Control'), 'no-store');
+        assert.strictEqual(response.headers.get('Access-Control-Allow-Origin'), 'https://alex-just.github.io');
+        const body = await response.json();
+        assert.deepStrictEqual(body.games, [
+            { game: 'money-problems', total: 28, correct: 8, wrong: 20, accuracyPct: 28.6 }
+        ]);
+    });
+
+    await checkAsync('GET /practice rejects a bad device and clamps days', async () => {
+        const missing = await Worker.default.fetch(stubRequest({ method: 'GET', path: '/practice' }), { DB: stubDB() });
+        assert.strictEqual(missing.status, 400);
+        const long = await Worker.default.fetch(
+            stubRequest({ method: 'GET', path: '/practice?device=' + 'x'.repeat(65) }),
+            { DB: stubDB() }
+        );
+        assert.strictEqual(long.status, 400);
+        const clamped = await Worker.default.fetch(
+            stubRequest({ method: 'GET', path: '/practice?device=d-1&days=90' }),
+            { DB: stubDB() }
+        );
+        assert.strictEqual(clamped.status, 200);
+        assert.strictEqual((await clamped.json()).period.days, 30);
+    });
+
     await checkAsync('scheduled triggers weekly report on Sunday cron', async () => {
         const originalFetch = globalThis.fetch;
         let emailSent = false;
