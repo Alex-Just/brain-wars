@@ -54,31 +54,99 @@
         }
     }
 
-    function shuffle(list) {
+    function shuffle(list, randomFn = () => global.BrainWarsGames.random()) {
         const copy = list.slice();
         for (let i = copy.length - 1; i > 0; i--) {
-            const j = Math.floor(global.BrainWarsGames.random() * (i + 1));
+            const j = Math.floor(randomFn() * (i + 1));
             [copy[i], copy[j]] = [copy[j], copy[i]];
         }
         return copy;
     }
 
-    // Game order is dealt like cards: every game type is played once before any of
-    // them comes back, so similar games never pile up.
-    function buildQueue(total) {
+    // Smoothed recent-error rate: 2.0 with no history, near 1.0 for a clean record,
+    // near 3.0 for an all-wrong record.
+    function weightFor(row) {
+        const total = row ? Math.max(0, Number(row.total) || 0) : 0;
+        const wrong = row ? Math.min(total, Math.max(0, Number(row.wrong) || 0)) : 0;
+        return 1 + 2 * ((wrong + 1) / (total + 2));
+    }
+
+    function parsePracticeHistory(payload) {
+        const rows = payload && Array.isArray(payload.games) ? payload.games : null;
+        if (!rows) return null;
+        const history = {};
+        rows.forEach((row) => {
+            if (!row || typeof row.game !== 'string' || !row.game) return;
+            const total = Math.max(0, Number(row.total) || 0);
+            history[row.game] = { total, wrong: Math.min(total, Math.max(0, Number(row.wrong) || 0)) };
+        });
+        return Object.keys(history).length ? history : null;
+    }
+
+    function weightedPick(items, weights, randomFn) {
+        const total = weights.reduce((sum, weight) => sum + weight, 0);
+        let roll = randomFn() * total;
+        for (let i = 0; i < items.length; i++) {
+            roll -= weights[i];
+            if (roll <= 0) return items[i];
+        }
+        return items[items.length - 1];
+    }
+
+    // Efraimidis-Spirakis: a weighted draw without replacement.
+    function weightedSample(items, weights, count, randomFn) {
+        return items
+            .map((item, index) => ({ item, key: Math.pow(Math.max(randomFn(), Number.MIN_VALUE), 1 / weights[index]) }))
+            .sort((a, b) => b.key - a.key)
+            .slice(0, count)
+            .map((entry) => entry.item);
+    }
+
+    // The original deal: every game type is played once before any of them comes
+    // back. Used when no recent practice history is available.
+    function buildUniformQueue(total, randomFn) {
         const ids = global.BrainWarsGames.all().map((game) => game.id);
         const queue = [];
         let last = null;
         while (queue.length < total) {
-            const round = shuffle(ids.filter((id) => id !== last));
+            const round = shuffle(ids.filter((id) => id !== last), randomFn);
             queue.push(...round);
             last = round[round.length - 1];
         }
         return queue.slice(0, total);
     }
 
-    function createRun(games, level) {
-        const queue = buildQueue(clamp(games, LIMITS.games));
+    function buildQueue(total, history, randomFn = () => global.BrainWarsGames.random()) {
+        const ids = global.BrainWarsGames.all().map((game) => game.id);
+        const known = ids.some((id) => history && history[id]);
+        if (!known) return buildUniformQueue(total, randomFn);
+
+        const weightOf = (id) => weightFor(history[id]);
+        const first = Math.min(total, ids.length);
+        // Every game gets one turn when the run is long enough; the weighted draw
+        // decides which strongest game is left out when the run is shorter.
+        const queue = shuffle(weightedSample(ids, ids.map(weightOf), first, randomFn), randomFn);
+
+        const appearances = new Map();
+        queue.forEach((id) => appearances.set(id, (appearances.get(id) || 0) + 1));
+        const cap = Math.max(2, Math.ceil(total / ids.length) + 1);
+
+        // Practice turns: weighted repeats, never back-to-back, with a cap so one
+        // weak game cannot crowd out the rest of a long run.
+        while (queue.length < total) {
+            const last = queue[queue.length - 1];
+            let candidates = ids.filter((id) => id !== last && (appearances.get(id) || 0) < cap);
+            if (!candidates.length) candidates = ids.filter((id) => id !== last);
+            if (!candidates.length) candidates = ids;
+            const pick = weightedPick(candidates, candidates.map(weightOf), randomFn);
+            queue.push(pick);
+            appearances.set(pick, (appearances.get(pick) || 0) + 1);
+        }
+        return queue;
+    }
+
+    function createRun(games, level, history) {
+        const queue = buildQueue(clamp(games, LIMITS.games), history);
         const run = {
             total: queue.length,
             level: clamp(level, LIMITS.level),
@@ -109,6 +177,9 @@
         clearRun: clearRun,
         createRun: createRun,
         stepUrl: stepUrl,
+        weightFor: weightFor,
+        parsePracticeHistory: parsePracticeHistory,
+        buildQueue: buildQueue,
         // Starting level for games that read it while setting up their round
         startLevel: () => (active ? run.level : 1)
     };

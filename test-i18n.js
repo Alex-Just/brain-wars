@@ -32,6 +32,15 @@ function check(name, fn) {
     }
 }
 
+// Deterministic stand-in for BrainWarsGames.random in queue tests.
+function seededRandom(seed) {
+    let state = seed >>> 0;
+    return () => {
+        state = (state * 1664525 + 1013904223) >>> 0;
+        return state / 4294967296;
+    };
+}
+
 console.log('i18n dictionaries');
 check('all language dictionaries are present', () => {
     LANGS.forEach((lang) => {
@@ -360,6 +369,97 @@ check('the challenge keeps the device language instead of rotating it', () => {
     assert.ok(!challenge.includes('watchLanguageChoice'), 'no language watching is left');
     const page = fs.readFileSync(path.join(__dirname, 'challenge.html'), 'utf8');
     assert.ok(!page.includes('watchLanguageChoice'), 'challenge.html must not pin languages');
+});
+
+console.log('challenge practice weights');
+check('weightFor smooths by volume and clamps bad rows', () => {
+    const challenge = require('./challenge.js');
+    assert.strictEqual(challenge.weightFor(null), 2);
+    assert.strictEqual(challenge.weightFor({ total: 0, wrong: 0 }), 2);
+    assert.strictEqual(challenge.weightFor({ total: 1, wrong: 1 }), 1 + 2 * (2 / 3));
+    assert.strictEqual(challenge.weightFor({ total: 20, wrong: 20 }), 1 + 2 * (21 / 22));
+    assert.strictEqual(challenge.weightFor({ total: 11, wrong: 0 }), 1 + 2 * (1 / 13));
+    assert.strictEqual(challenge.weightFor({ total: 'x', wrong: 'y' }), 2);
+    assert.strictEqual(challenge.weightFor({ total: 5, wrong: 99 }), 1 + 2 * (6 / 7));
+});
+
+check('parsePracticeHistory keeps totals and drops junk', () => {
+    const challenge = require('./challenge.js');
+    assert.deepStrictEqual(
+        challenge.parsePracticeHistory({ games: [{ game: 'money-problems', total: 28, wrong: 20 }] }),
+        { 'money-problems': { total: 28, wrong: 20 } }
+    );
+    assert.deepStrictEqual(
+        challenge.parsePracticeHistory({ games: [{ game: 'x', total: 5, wrong: 99 }] }),
+        { x: { total: 5, wrong: 5 } }
+    );
+    assert.strictEqual(challenge.parsePracticeHistory(null), null);
+    assert.strictEqual(challenge.parsePracticeHistory({ games: [] }), null);
+    assert.strictEqual(challenge.parsePracticeHistory({ games: ['junk'] }), null);
+});
+
+check('an empty history keeps the old round-robin queue', () => {
+    const challenge = require('./challenge.js');
+    const ids = Games.all().map((game) => game.id);
+    for (let seed = 1; seed <= 20; seed++) {
+        const random = seededRandom(seed);
+        const plan = challenge.buildQueue(ids.length * 2 + 3, null, random);
+        const firstRound = plan.slice(0, ids.length);
+        assert.strictEqual(new Set(firstRound).size, ids.length, 'first round repeats a game');
+        plan.forEach((id, index) => assert.notStrictEqual(plan[index + 1], id, 'back-to-back ' + id));
+    }
+});
+
+check('weak games are preferred in a short run', () => {
+    const challenge = require('./challenge.js');
+    const history = {
+        'money-problems': { total: 28, wrong: 20 },
+        'elapsed-time': { total: 11, wrong: 0 }
+    };
+    let weakOmitted = 0;
+    let strongOmitted = 0;
+    for (let seed = 1; seed <= 400; seed++) {
+        const plan = challenge.buildQueue(10, history, seededRandom(seed));
+        assert.strictEqual(plan.length, 10);
+        if (!plan.includes('money-problems')) weakOmitted++;
+        if (!plan.includes('elapsed-time')) strongOmitted++;
+    }
+    assert.ok(
+        strongOmitted > weakOmitted * 2,
+        'the strongest game should be left out much more often than the weakest'
+    );
+    assert.ok(strongOmitted > 50, 'the strongest game should sometimes be left out');
+});
+
+check('a long run covers every game once and repeats weak games more', () => {
+    const challenge = require('./challenge.js');
+    const ids = Games.all().map((game) => game.id);
+    const history = {
+        'money-problems': { total: 28, wrong: 20 },
+        'elapsed-time': { total: 11, wrong: 0 }
+    };
+    const totals = new Map(ids.map((id) => [id, 0]));
+    for (let seed = 1; seed <= 100; seed++) {
+        const plan = challenge.buildQueue(30, history, seededRandom(seed));
+        assert.strictEqual(plan.length, 30);
+        assert.strictEqual(new Set(plan.slice(0, ids.length)).size, ids.length, 'the first round must cover every game');
+        plan.forEach((id, index) => {
+            assert.notStrictEqual(plan[index + 1], id, 'back-to-back ' + id);
+            totals.set(id, totals.get(id) + 1);
+        });
+    }
+    assert.ok(totals.get('money-problems') > totals.get('elapsed-time'), 'the weak game should appear more often');
+    assert.ok(totals.get('money-problems') <= 400, 'the cap should limit the weak game');
+});
+
+check('tiny runs stay tiny and distinct', () => {
+    const challenge = require('./challenge.js');
+    const history = { 'elapsed-time': { total: 11, wrong: 0 } };
+    [1, 2].forEach((total) => {
+        const plan = challenge.buildQueue(total, history, seededRandom(7));
+        assert.strictEqual(plan.length, total);
+        assert.strictEqual(new Set(plan).size, total, 'no repeat inside a tiny run');
+    });
 });
 
 console.log('elapsed time');
