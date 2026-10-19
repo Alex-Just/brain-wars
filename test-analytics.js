@@ -632,7 +632,7 @@ async function runAsyncTests() {
         const missing = await Worker.default.fetch(stubRequest({ method: 'GET', path: '/practice' }), { DB: stubDB() });
         assert.strictEqual(missing.status, 400);
         const long = await Worker.default.fetch(
-            stubRequest({ method: 'GET', path: '/practice?device=' + 'x'.repeat(65) }),
+            stubRequest({ method: 'GET', path: `/practice?device=${'x'.repeat(65)}` }),
             { DB: stubDB() }
         );
         assert.strictEqual(long.status, 400);
@@ -696,7 +696,7 @@ async function runAsyncTests() {
     });
 
     await checkAsync('loadPracticeHistory gives up after its timeout', async () => {
-        const hangingFetch = (url, options) => new Promise((resolve, reject) => {
+        const hangingFetch = (_url, options) => new Promise((_resolve, reject) => {
             options.signal?.addEventListener('abort', () => reject(new Error('aborted')));
         });
         const history = await Challenge.loadPracticeHistory({

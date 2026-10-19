@@ -406,7 +406,9 @@ check('an empty history keeps the old round-robin queue', () => {
         const plan = challenge.buildQueue(ids.length * 2 + 3, null, random);
         const firstRound = plan.slice(0, ids.length);
         assert.strictEqual(new Set(firstRound).size, ids.length, 'first round repeats a game');
-        plan.forEach((id, index) => assert.notStrictEqual(plan[index + 1], id, 'back-to-back ' + id));
+        plan.forEach((id, index) => {
+            assert.notStrictEqual(plan[index + 1], id, `back-to-back ${id}`);
+        });
     }
 });
 
@@ -444,7 +446,7 @@ check('a long run covers every game once and repeats weak games more', () => {
         assert.strictEqual(plan.length, 30);
         assert.strictEqual(new Set(plan.slice(0, ids.length)).size, ids.length, 'the first round must cover every game');
         plan.forEach((id, index) => {
-            assert.notStrictEqual(plan[index + 1], id, 'back-to-back ' + id);
+            assert.notStrictEqual(plan[index + 1], id, `back-to-back ${id}`);
             totals.set(id, totals.get(id) + 1);
         });
     }

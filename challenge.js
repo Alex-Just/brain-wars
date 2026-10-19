@@ -96,7 +96,7 @@
     // Efraimidis-Spirakis: a weighted draw without replacement.
     function weightedSample(items, weights, count, randomFn) {
         return items
-            .map((item, index) => ({ item, key: Math.pow(Math.max(randomFn(), Number.MIN_VALUE), 1 / weights[index]) }))
+            .map((item, index) => ({ item, key: Math.max(randomFn(), Number.MIN_VALUE) ** (1 / weights[index]) }))
             .sort((a, b) => b.key - a.key)
             .slice(0, count)
             .map((entry) => entry.item);
@@ -118,7 +118,7 @@
 
     function buildQueue(total, history, randomFn = () => global.BrainWarsGames.random()) {
         const ids = global.BrainWarsGames.all().map((game) => game.id);
-        const known = ids.some((id) => history && history[id]);
+        const known = ids.some((id) => history?.[id]);
         if (!known) return buildUniformQueue(total, randomFn);
 
         const weightOf = (id) => weightFor(history[id]);
@@ -128,7 +128,9 @@
         const queue = shuffle(weightedSample(ids, ids.map(weightOf), first, randomFn), randomFn);
 
         const appearances = new Map();
-        queue.forEach((id) => appearances.set(id, (appearances.get(id) || 0) + 1));
+        queue.forEach((id) => {
+            appearances.set(id, (appearances.get(id) || 0) + 1);
+        });
         const cap = Math.max(2, Math.ceil(total / ids.length) + 1);
 
         // Practice turns: weighted repeats, never back-to-back, with a cap so one
@@ -170,7 +172,7 @@
 
         return Promise.resolve()
             .then(() => fetchFn(url, { headers: { Accept: 'application/json' }, signal: controller?.signal }))
-            .then((response) => (response && response.ok ? response.json() : null))
+            .then((response) => (response?.ok ? response.json() : null))
             .then(parsePracticeHistory)
             .catch(() => null)
             .finally(() => { if (timer) clearTimeout(timer); });
