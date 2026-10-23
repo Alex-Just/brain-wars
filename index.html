@@ -77,10 +77,21 @@
 
         .hub-shell {
             box-sizing: border-box;
-            width: 100%;
+            /* Some preview tools lay the page out for a wider emulated viewport
+               than the real window (innerWidth > outerWidth), which clips the
+               right edge. --visible-width is that real width; browsers without
+               the mismatch leave it at 100%. */
+            width: min(100%, var(--visible-width, 100%));
             max-width: 1200px;
             margin: 0 auto;
             padding: clamp(16px, 3vw, 32px) clamp(12px, 3vw, 32px);
+        }
+
+        /* In that clipped preview, centre against the visible width, not the
+           emulated one, so nothing important lands off-screen. */
+        html.is-clipped .hub-shell {
+            margin-left: 0;
+            margin-right: 0;
         }
 
         /* Header: the title stays centred and the language toggle sits at the end
@@ -120,8 +131,9 @@
             max-width: 100%;
         }
 
-        /* Fluid grid: three columns on phones, then four, five and six as the
-           viewport grows. The shell's max width keeps the tiles from becoming huge. */
+        /* Fluid grid: three compact columns on phones, then as many columns as
+           the shell can hold (four to six on desktop). Intrinsic sizing keeps the
+           tiles small without hard-coding a column count per breakpoint. */
         .game-grid {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -212,19 +224,7 @@
         /* Desktop: add columns instead of stretching the tiles */
         @media (min-width: 700px) {
             .game-grid {
-                grid-template-columns: repeat(4, minmax(0, 1fr));
-            }
-        }
-
-        @media (min-width: 980px) {
-            .game-grid {
-                grid-template-columns: repeat(5, minmax(0, 1fr));
-            }
-        }
-
-        @media (min-width: 1180px) {
-            .game-grid {
-                grid-template-columns: repeat(6, minmax(0, 1fr));
+                grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
             }
         }
 
@@ -306,6 +306,21 @@
         }
 
     </style>
+    <script>
+        // Preview tools can lay the page out for a wider emulated viewport than
+        // the real window (innerWidth > outerWidth), which clips the right edge.
+        // Keep the hub inside the width the user can actually see; normal
+        // browsers report the same width for both, so nothing changes there.
+        (() => {
+            const sync = () => {
+                const visible = Math.min(window.innerWidth, window.outerWidth || window.innerWidth);
+                document.documentElement.style.setProperty('--visible-width', visible + 'px');
+                document.documentElement.classList.toggle('is-clipped', window.innerWidth - visible > 80);
+            };
+            sync();
+            window.addEventListener('resize', sync);
+        })();
+    </script>
 </head>
 <body>
     <div id="boot-loader" aria-hidden="true"></div>
