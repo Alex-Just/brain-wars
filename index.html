@@ -56,40 +56,76 @@
     <script src="i18n.js" defer></script>
     <script src="games.js" defer></script>
     <style>
-        /* Basic reset and centering */
+        /* Page shell: one centred column with a fluid max width. The language
+           toggle lives inside this shell, so it cannot be pushed off-screen. */
         body {
             font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background-color: #f5f5f5;
+            color: #333;
             margin: 0;
             box-sizing: border-box;
             min-height: 100vh;
             min-height: 100svh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            justify-content: safe center;
-            padding: 20px;
+            padding: 0;
+            overflow-x: hidden;
+            overflow-x: clip;
             touch-action: manipulation;
             -webkit-text-size-adjust: 100%;
             text-size-adjust: 100%;
             -webkit-tap-highlight-color: transparent;
         }
 
+        .hub-shell {
+            box-sizing: border-box;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: clamp(16px, 3vw, 32px) clamp(12px, 3vw, 32px);
+        }
+
+        /* Header: the title stays centred and the language toggle sits at the end
+           of the same content column, so both share one padded width. */
+        .hub-header {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 52px;
+            margin-bottom: clamp(20px, 3vw, 36px);
+        }
+
         h1 {
             color: #333;
             text-align: center;
-            margin-bottom: 40px;
-            font-size: clamp(28px, 6vw, 42px);
+            margin: 0;
+            font-size: clamp(26px, 4vw, 38px);
             font-weight: 400;
         }
 
-        /* Three columns everywhere: the tiles stay small even on a wide desktop */
+        .lang-bar {
+            position: absolute;
+            inset-inline-end: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 100;
+            max-width: 100%;
+        }
+
+        /* The shared toggle has a fixed height; let it wrap at high zoom instead
+           of overflowing the header. */
+        .hub-header .lang-toggle-group {
+            flex-wrap: wrap;
+            justify-content: center;
+            height: auto;
+            max-width: 100%;
+        }
+
+        /* Fluid grid: three columns on phones, then four, five and six as the
+           viewport grows. The shell's max width keeps the tiles from becoming huge. */
         .game-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: clamp(12px, 2vw, 18px);
-            max-width: 720px;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: clamp(10px, 1.4vw, 16px);
             width: 100%;
         }
 
@@ -105,7 +141,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 14px;
+            padding: clamp(10px, 1.2vw, 16px);
             position: relative;
         }
 
@@ -123,17 +159,17 @@
         }
 
         .game-icon {
-            width: 58%;
+            width: 50%;
             height: auto;
             aspect-ratio: 1;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 10px;
+            margin-bottom: clamp(6px, 0.8vw, 10px);
         }
 
         .game-title {
-            font-size: clamp(13px, 1.5vw, 16px);
+            font-size: clamp(12px, 1.2vw, 15px);
             line-height: 1.25;
             font-weight: 400;
             color: #666;
@@ -173,18 +209,41 @@
             background-color: #E63485; /* Deep pink */
         }
 
-        /* Responsive adjustments: compact 3-column icon grid on phones */
-        @media (max-width: 560px) {
+        /* Desktop: add columns instead of stretching the tiles */
+        @media (min-width: 700px) {
             .game-grid {
-                grid-template-columns: repeat(3, 1fr);
-                grid-auto-rows: 1fr;
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+            }
+        }
+
+        @media (min-width: 980px) {
+            .game-grid {
+                grid-template-columns: repeat(5, minmax(0, 1fr));
+            }
+        }
+
+        @media (min-width: 1180px) {
+            .game-grid {
+                grid-template-columns: repeat(6, minmax(0, 1fr));
+            }
+        }
+
+        /* Phones: three compact columns, and the toggle sits above the title */
+        @media (max-width: 699px) {
+            .hub-header {
+                flex-direction: column;
                 gap: 10px;
-                max-width: none;
-                width: 100%;
             }
 
-            h1 {
-                margin-bottom: 20px;
+            .lang-bar {
+                position: static;
+                transform: none;
+                align-self: flex-end;
+            }
+
+            .game-grid {
+                grid-auto-rows: 1fr;
+                gap: 10px;
             }
 
             .game-card {
@@ -195,15 +254,12 @@
 
             .game-icon {
                 width: 58%;
-                height: auto;
-                aspect-ratio: 1;
                 margin-bottom: 6px;
             }
 
             .game-title {
                 font-size: 12px;
                 line-height: 1.2;
-                overflow-wrap: break-word;
             }
 
             .follow-leader-icon {
@@ -218,29 +274,28 @@
             }
         }
 
+        /* High zoom on a small screen: the three flags wrap or shrink rather
+           than spill out of the viewport. */
+        @media (max-width: 380px) {
+            .hub-header .lang-toggle-group {
+                padding: 3px;
+                gap: 2px;
+            }
+
+            .hub-header .lang-btn {
+                width: 36px;
+                height: 36px;
+            }
+        }
+
         /* Safe area insets for notched phones */
         @supports (padding: max(0px)) {
-            body {
-                padding: max(20px, env(safe-area-inset-top))
-                         max(20px, env(safe-area-inset-right))
-                         max(20px, env(safe-area-inset-bottom))
-                         max(20px, env(safe-area-inset-left));
+            .hub-shell {
+                padding-top: max(clamp(16px, 3vw, 32px), env(safe-area-inset-top));
+                padding-right: max(clamp(12px, 3vw, 32px), env(safe-area-inset-right));
+                padding-bottom: max(clamp(16px, 3vw, 32px), env(safe-area-inset-bottom));
+                padding-left: max(clamp(12px, 3vw, 32px), env(safe-area-inset-left));
             }
-        }
-
-        /* Phone layout: top-aligned content, with room for the fixed language toggle */
-        @media (max-width: 560px) {
-            body {
-                justify-content: flex-start;
-                padding-top: max(88px, env(safe-area-inset-top));
-            }
-        }
-
-        .lang-bar {
-            position: fixed;
-            top: max(12px, env(safe-area-inset-top));
-            right: max(12px, env(safe-area-inset-right));
-            z-index: 100;
         }
 
         @media (hover: hover) {
@@ -255,21 +310,26 @@
 <body>
     <div id="boot-loader" aria-hidden="true"></div>
 
-    <div class="lang-bar" data-lang-toggle></div>
-    <h1 data-i18n="hub_title">Выбор игры</h1>
-    <div class="game-grid" id="gameGrid">
-        <a href="./challenge.html" class="game-card">
-            <div class="game-icon">
-                <!-- Challenge icon: progress bar and star -->
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" style="width: 80%; height: 80%;">
-                    <rect width="100" height="100" rx="14" fill="#F8FAFC"/>
-                    <rect x="14" y="52" width="56" height="14" rx="7" fill="#E2E8F0"/>
-                    <rect x="14" y="52" width="36" height="14" rx="7" fill="#F59E0B"/>
-                    <path d="M75 20 L78.23 28.55 L87.36 28.98 L80.23 34.7 L82.64 43.52 L75 38.5 L67.36 43.52 L69.77 34.7 L62.64 28.98 L71.77 28.55 Z" fill="#F59E0B"/>
-                </svg>
-            </div>
-            <div class="game-title" data-i18n="ch_title">Челлендж</div>
-        </a>
+    <div class="hub-shell">
+        <header class="hub-header">
+            <div class="lang-bar" data-lang-toggle></div>
+            <h1 data-i18n="hub_title">Выбор игры</h1>
+        </header>
+
+        <main class="game-grid" id="gameGrid">
+            <a href="./challenge.html" class="game-card">
+                <div class="game-icon">
+                    <!-- Challenge icon: progress bar and star -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" style="width: 80%; height: 80%;">
+                        <rect width="100" height="100" rx="14" fill="#F8FAFC"/>
+                        <rect x="14" y="52" width="56" height="14" rx="7" fill="#E2E8F0"/>
+                        <rect x="14" y="52" width="36" height="14" rx="7" fill="#F59E0B"/>
+                        <path d="M75 20 L78.23 28.55 L87.36 28.98 L80.23 34.7 L82.64 43.52 L75 38.5 L67.36 43.52 L69.77 34.7 L62.64 28.98 L71.77 28.55 Z" fill="#F59E0B"/>
+                    </svg>
+                </div>
+                <div class="game-title" data-i18n="ch_title">Челлендж</div>
+            </a>
+        </main>
     </div>
 
     <script>
