@@ -387,6 +387,84 @@
             animation: shakeError 0.5s ease-in-out;
         }
 
+        /* Level 1: the reference table, one equation per unit step. The active row
+           receives the number pad; the check button grades every row at once. */
+        .table-board {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .table-row {
+            width: 100%;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 3px 8px;
+            background: #f8fafc;
+            border: 2px solid transparent;
+            border-radius: 12px;
+            font-family: inherit;
+            color: var(--color-text);
+            cursor: pointer;
+            transition: background-color 0.15s ease, border-color 0.15s ease;
+        }
+
+        .table-row.active {
+            background: white;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(96, 172, 189, 0.18);
+        }
+
+        .table-row.is-correct {
+            background: #E8F5E9;
+            border-color: var(--color-success);
+        }
+
+        .table-row.is-wrong {
+            border-color: var(--color-error);
+            background: #FEE2E2;
+            animation: shakeError 0.5s ease-in-out;
+        }
+
+        .table-value {
+            font-size: clamp(19px, 5.4vw, 24px);
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            color: var(--color-purple-text);
+        }
+
+        .table-answer {
+            min-width: 78px;
+            min-height: 38px;
+            padding: 0 8px;
+            border: 2px solid #cbd5e1;
+            border-radius: 10px;
+            background: white;
+            color: var(--color-text);
+            font-size: clamp(19px, 5.4vw, 24px);
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .table-answer.is-empty {
+            color: #cbd5e1;
+        }
+
+        .table-row.is-correct .table-answer {
+            border-color: var(--color-success);
+        }
+
+        .table-row.is-wrong .table-answer {
+            border-color: var(--color-error);
+        }
+
         @keyframes flashGreen {
             0% {
                 background-color: var(--color-success);
@@ -500,6 +578,9 @@
             .level-menu-item:hover:not(.current) {
                 background: #eef2f7;
             }
+            .table-row:hover:not(.active) {
+                background: #eef2f7;
+            }
         }
     </style>
 </head>
@@ -536,6 +617,9 @@
             <div class="answer-box" id="answerBox" data-i18n-aria-label="uc_answer_aria" aria-label="Твой ответ"></div>
             <span class="unit" id="toUnit"></span>
         </fieldset>
+
+        <!-- Level 1: the whole reference table, one row per unit step -->
+        <fieldset class="table-board" id="tableBoard" data-i18n-aria-label="uc_table_aria" aria-label="Таблица перевода" hidden></fieldset>
 
         <!-- Number pad: digits, a decimal key and a backspace -->
         <fieldset class="numpad-grid" id="numpadGrid" data-i18n-aria-label="uc_numpad_aria" aria-label="Цифровая клавиатура">
@@ -604,6 +688,7 @@
                     instructionHint: byId('instructionHint'),
                     ruleHint: byId('ruleHint'),
                     board: byId('convertBoard'),
+                    tableBoard: byId('tableBoard'),
                     valueText: byId('valueText'),
                     fromUnit: byId('fromUnit'),
                     answerBox: byId('answerBox'),
@@ -624,6 +709,11 @@
                     previous: null,
                     // The typed answer, kept canonical (a point, never the local comma)
                     typed: '',
+                    // Level 1 is a table: one typed answer per row, plus which row
+                    // receives the number pad and the mark left by the last check
+                    typedRows: [],
+                    rowStatus: [],
+                    activeRow: 0,
                     // 'correct' | 'wrong' | 'fill' | null
                     hint: null,
                     hintTimer: null,
@@ -642,6 +732,11 @@
                 });
 
                 this.#elements.checkBtn.addEventListener('click', () => this.#handleKey('check'));
+
+                this.#elements.tableBoard.addEventListener('click', (event) => {
+                    const row = event.target.closest('.table-row');
+                    if (row) this.#setActiveRow(Number(row.dataset.row));
+                });
 
                 this.#elements.levelDisplay.addEventListener('click', (event) => {
                     event.stopPropagation();
@@ -664,8 +759,21 @@
                         }
                         return;
                     }
+                    const isTable = Boolean(this.#state.question && this.#state.question.table);
+                    if (isTable && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
+                        event.preventDefault();
+                        this.#moveActiveRow(event.key === 'ArrowDown' ? 1 : -1);
+                        return;
+                    }
                     const isControlFocused = event.target instanceof HTMLElement &&
                         (event.target.tagName === 'BUTTON' || event.target.tagName === 'A');
+                    // Enter on a table row checks the whole table instead of re-selecting it
+                    const isTableRow = isControlFocused && event.target.classList.contains('table-row');
+                    if (isTableRow && event.key === 'Enter') {
+                        event.preventDefault();
+                        this.#handleKey('check');
+                        return;
+                    }
                     if (isControlFocused && (event.key === 'Enter' || event.key === ' ')) return;
 
                     if (event.key >= '0' && event.key <= '9') this.#handleKey(event.key);
@@ -685,6 +793,9 @@
                 this.#state.question = question;
                 this.#state.previous = question;
                 this.#state.typed = '';
+                this.#state.typedRows = question.table ? question.rows.map(() => '') : [];
+                this.#state.rowStatus = question.table ? question.rows.map(() => null) : [];
+                this.#state.activeRow = 0;
                 this.#state.hint = null;
                 this.#state.hadErrorThisRound = false;
                 this.#state.showRule = false;
@@ -736,6 +847,16 @@
             #renderQuestion() {
                 const question = this.#state.question;
                 if (!question) return;
+                const isTable = Boolean(question.table);
+                this.#elements.board.hidden = isTable;
+                this.#elements.tableBoard.hidden = !isTable;
+                if (isTable) {
+                    // The table is the whole task: the prompt only explains it
+                    this.#elements.instructionText.textContent = I18n.t('uc_table_hint');
+                    this.#elements.tableBoard.setAttribute('aria-label', I18n.t('uc_table_aria'));
+                    this.#renderTable();
+                    return;
+                }
                 const value = this.#localize(question.value);
                 const from = this.#unitSymbol(question.from);
                 const to = this.#unitSymbol(question.to);
@@ -746,6 +867,47 @@
                 this.#elements.fromUnit.textContent = from;
                 this.#elements.toUnit.textContent = to;
                 this.#elements.board.setAttribute('aria-label', I18n.t('uc_convert', { value, from, to }));
+            }
+
+            // One tappable row per conversion. The active row is the one the number
+            // pad types into; the last check leaves a correct/wrong mark on a row.
+            #renderTable() {
+                const board = this.#elements.tableBoard;
+                const question = this.#state.question;
+                board.innerHTML = '';
+                if (!question || !question.table) return;
+                question.rows.forEach((row, index) => {
+                    const item = document.createElement('button');
+                    item.type = 'button';
+                    item.className = 'table-row';
+                    item.dataset.row = String(index);
+                    if (index === this.#state.activeRow) item.classList.add('active');
+                    const status = this.#state.rowStatus[index];
+                    if (status) item.classList.add(`is-${status}`);
+
+                    const value = document.createElement('span');
+                    value.className = 'table-value';
+                    value.textContent = '1';
+                    const from = document.createElement('span');
+                    from.className = 'unit';
+                    from.textContent = this.#unitSymbol(row.from);
+                    const equals = document.createElement('span');
+                    equals.className = 'equals';
+                    equals.textContent = '=';
+                    equals.setAttribute('aria-hidden', 'true');
+                    const answer = document.createElement('span');
+                    answer.className = 'table-answer';
+                    answer.dataset.row = String(index);
+                    const typed = this.#state.typedRows[index] || '';
+                    answer.textContent = typed ? this.#localize(typed) : '?';
+                    if (!typed) answer.classList.add('is-empty');
+                    const to = document.createElement('span');
+                    to.className = 'unit';
+                    to.textContent = this.#unitSymbol(row.to);
+
+                    item.append(value, from, equals, answer, to);
+                    board.appendChild(item);
+                });
             }
 
             #renderHint() {
@@ -766,16 +928,18 @@
             }
 
             // The general rule of the current question ("1 kg = 1000 g"). It appears
-            // from the first mistake on and stays for the rest of the round.
+            // from the first mistake on and stays for the rest of the round. On the
+            // level-1 table it follows the row the player is working on.
             #renderRule() {
                 const ruleHint = this.#elements.ruleHint;
                 const question = this.#state.question;
-                if (!this.#state.showRule || !question) {
+                const source = question && question.table ? question.rows[this.#state.activeRow] : question;
+                if (!this.#state.showRule || !source) {
                     ruleHint.hidden = true;
                     ruleHint.textContent = '';
                     return;
                 }
-                const rule = BrainWarsUnits.rule(question);
+                const rule = BrainWarsUnits.rule(source);
                 ruleHint.textContent = I18n.t('uc_rule_hint', {
                     from: this.#unitSymbol(rule.from),
                     factor: this.#localize(rule.factor),
@@ -785,6 +949,16 @@
             }
 
             #renderAnswer() {
+                const question = this.#state.question;
+                if (question && question.table) {
+                    this.#elements.tableBoard.querySelectorAll('.table-answer').forEach((cell) => {
+                        const index = Number(cell.dataset.row);
+                        const typed = this.#state.typedRows[index] || '';
+                        cell.textContent = typed ? this.#localize(typed) : '?';
+                        cell.classList.toggle('is-empty', !typed);
+                    });
+                    return;
+                }
                 this.#elements.answerBox.textContent = this.#localize(this.#state.typed);
             }
 
@@ -803,6 +977,49 @@
 
             #unitSymbol(unit) {
                 return I18n.t(UnitConversionsGame.#UNIT_KEYS[unit]);
+            }
+
+            /* ---------- table ---------- */
+
+            #setActiveRow(index) {
+                const question = this.#state.question;
+                if (!question || !question.table || this.#state.locked) return;
+                const clamped = Math.min(Math.max(index, 0), question.rows.length - 1);
+                if (clamped === this.#state.activeRow) return;
+                this.#state.activeRow = clamped;
+                this.#renderTable();
+                this.#renderRule();
+            }
+
+            #moveActiveRow(delta) {
+                const question = this.#state.question;
+                if (!question || !question.table) return;
+                const count = question.rows.length;
+                this.#setActiveRow((this.#state.activeRow + delta + count) % count);
+            }
+
+            #currentTyped() {
+                const question = this.#state.question;
+                if (question && question.table) return this.#state.typedRows[this.#state.activeRow] || '';
+                return this.#state.typed;
+            }
+
+            #setCurrentTyped(value) {
+                const question = this.#state.question;
+                if (question && question.table) {
+                    this.#state.typedRows[this.#state.activeRow] = value;
+                    this.#clearRowStatus(this.#state.activeRow);
+                    return;
+                }
+                this.#state.typed = value;
+            }
+
+            // Editing a row takes back its mark from the previous check
+            #clearRowStatus(index) {
+                if (!this.#state.rowStatus[index]) return;
+                this.#state.rowStatus[index] = null;
+                const row = this.#elements.tableBoard.querySelector(`.table-row[data-row="${index}"]`);
+                if (row) row.classList.remove('is-correct', 'is-wrong');
             }
 
             /* ---------- input ---------- */
@@ -825,22 +1042,25 @@
             }
 
             #typeDigit(digit) {
-                if (this.#state.typed.replace('.', '').length >= this.#config.maxDigits) return;
+                const typed = this.#currentTyped();
+                if (typed.replace('.', '').length >= this.#config.maxDigits) return;
                 this.#clearHint();
-                this.#state.typed += digit;
+                this.#setCurrentTyped(typed + digit);
                 this.#renderAnswer();
             }
 
             #typeDecimal() {
-                if (this.#state.typed.includes('.')) return;
+                const typed = this.#currentTyped();
+                if (typed.includes('.')) return;
                 this.#clearHint();
-                this.#state.typed = this.#state.typed === '' ? '0.' : this.#state.typed + '.';
+                this.#setCurrentTyped(typed === '' ? '0.' : typed + '.');
                 this.#renderAnswer();
             }
 
             #backspace() {
+                const typed = this.#currentTyped();
                 this.#clearHint();
-                this.#state.typed = this.#state.typed.slice(0, -1);
+                this.#setCurrentTyped(typed.slice(0, -1));
                 this.#renderAnswer();
             }
 
@@ -876,6 +1096,10 @@
             #checkAnswer() {
                 if (this.#state.locked) return;
                 const question = this.#state.question;
+                if (question.table) {
+                    this.#checkTable(question);
+                    return;
+                }
                 const status = BrainWarsUnits.check(question, this.#state.typed);
                 if (status === 'correct') {
                     this.#handleCorrect();
@@ -886,6 +1110,37 @@
                     return;
                 }
                 this.#handleWrong();
+            }
+
+            // Every row is graded at once. A wrong row is marked, cleared and made
+            // active, so the next attempt starts on the row that needs work.
+            #checkTable(question) {
+                const statuses = question.rows.map((row, index) =>
+                    BrainWarsUnits.check(row, this.#state.typedRows[index] || ''));
+                if (statuses.every((status) => status === 'correct')) {
+                    this.#handleCorrect();
+                    return;
+                }
+                if (statuses.includes('wrong')) {
+                    this.#handleTableWrong(statuses);
+                    return;
+                }
+                this.#setActiveRow(statuses.indexOf('incomplete'));
+                this.#showHint('fill');
+            }
+
+            #handleTableWrong(statuses) {
+                this.#state.hadErrorThisRound = true;
+                // A mistake reveals the rule of the row being worked on
+                this.#state.showRule = true;
+                this.#state.rowStatus = statuses.map((status) => (status === 'incomplete' ? null : status));
+                this.#state.activeRow = statuses.indexOf('wrong');
+                statuses.forEach((status, index) => {
+                    if (status === 'wrong') this.#state.typedRows[index] = '';
+                });
+                this.#renderTable();
+                this.#renderRule();
+                this.#showHint('wrong', 1200);
             }
 
             #handleWrong() {
@@ -910,9 +1165,14 @@
                 if (!this.#state.hadErrorThisRound) {
                     this.#state.level = Math.min(this.#config.maxLevel, this.#state.level + 1);
                 }
-                const box = this.#elements.answerBox;
-                box.classList.add('correct-flash');
-                setTimeout(() => box.classList.remove('correct-flash'), 450);
+                const question = this.#state.question;
+                if (question && question.table) {
+                    this.#state.rowStatus = question.rows.map(() => 'correct');
+                } else {
+                    const box = this.#elements.answerBox;
+                    box.classList.add('correct-flash');
+                    setTimeout(() => box.classList.remove('correct-flash'), 450);
+                }
                 this.#render();
                 this.#state.advanceTimer = setTimeout(() => this.#startRound(), this.#config.advanceDelay);
             }

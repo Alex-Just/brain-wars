@@ -964,32 +964,59 @@ function sampleConversions(level, count, seed) {
     return questions;
 }
 
+// A level-1 table holds several conversions; every other level holds one.
+function eachConversion(question) {
+    return question.table ? question.rows : [question];
+}
+
 check('the unit ladder has twenty levels', () => {
     assert.strictEqual(Units.maxLevel, 20, 'expected twenty levels');
+});
+
+check('level one asks for the whole unit table', () => {
+    const question = Units.build(1, mulberry32(2468), null);
+    assert.strictEqual(question.table, true, 'level 1 should be the unit table');
+    assert.deepStrictEqual(
+        question.rows.map((row) => `${row.from}>${row.to}`),
+        ['km>m', 'm>cm', 'cm>mm', 'kg>g', 'l>ml'],
+        'the table should ladder through the units the game uses'
+    );
+    question.rows.forEach((row) => {
+        assert.strictEqual(row.value, '1', `a table row starts at one unit: ${JSON.stringify(row)}`);
+        assert.strictEqual(Units.check(row, row.answer), 'correct', `the table answer should grade as correct: ${JSON.stringify(row)}`);
+    });
+    const units = new Set(question.rows.flatMap((row) => [row.from, row.to]));
+    assert.deepStrictEqual(
+        [...units].sort(),
+        Object.keys(Units.units).sort(),
+        'the table should name every unit in the game'
+    );
 });
 
 check('every generated conversion is mathematically sound', () => {
     for (let level = 1; level <= Units.maxLevel; level++) {
         sampleConversions(level, 150).forEach((question) => {
-            const from = Units.units[question.from];
-            const to = Units.units[question.to];
-            assert.ok(from && to, `unknown unit at level ${level}: ${JSON.stringify(question)}`);
-            assert.strictEqual(from.family, to.family, `a conversion must stay in one family: ${JSON.stringify(question)}`);
-            assert.strictEqual(question.family, from.family, `family mismatch: ${JSON.stringify(question)}`);
-            const exp = from.exp - to.exp;
-            assert.strictEqual(question.exp, exp, `wrong step: ${JSON.stringify(question)}`);
-            assert.strictEqual(question.direction, exp > 0 ? 'down' : 'up', `wrong direction: ${JSON.stringify(question)}`);
-            assert.ok(Number.isInteger(exp) && exp !== 0, `a conversion must move: ${JSON.stringify(question)}`);
-            // The answer is exactly the shown value times ten to the step.
-            assert.ok(
-                sameFraction(parseDecimal(question.answer), timesPowerOfTen(question.value, exp)),
-                `value * 10^exp is not the answer: ${JSON.stringify(question)}`
-            );
-            // Both numbers are canonical: they survive a normalise round trip.
-            assert.strictEqual(Units.normalize(question.value), question.value, `value is not canonical: ${JSON.stringify(question)}`);
-            assert.strictEqual(Units.normalize(question.answer), question.answer, `answer is not canonical: ${JSON.stringify(question)}`);
-            assert.ok(!question.value.startsWith('0') || question.value.startsWith('0.'), `value has a stray leading zero: ${question.value}`);
-            assert.ok(!question.answer.startsWith('0') || question.answer.startsWith('0.'), `answer has a stray leading zero: ${question.answer}`);
+            eachConversion(question).forEach((conversion) => {
+                const from = Units.units[conversion.from];
+                const to = Units.units[conversion.to];
+                assert.ok(from && to, `unknown unit at level ${level}: ${JSON.stringify(conversion)}`);
+                assert.strictEqual(from.family, to.family, `a conversion must stay in one family: ${JSON.stringify(conversion)}`);
+                assert.strictEqual(conversion.family, from.family, `family mismatch: ${JSON.stringify(conversion)}`);
+                const exp = from.exp - to.exp;
+                assert.strictEqual(conversion.exp, exp, `wrong step: ${JSON.stringify(conversion)}`);
+                assert.strictEqual(conversion.direction, exp > 0 ? 'down' : 'up', `wrong direction: ${JSON.stringify(conversion)}`);
+                assert.ok(Number.isInteger(exp) && exp !== 0, `a conversion must move: ${JSON.stringify(conversion)}`);
+                // The answer is exactly the shown value times ten to the step.
+                assert.ok(
+                    sameFraction(parseDecimal(conversion.answer), timesPowerOfTen(conversion.value, exp)),
+                    `value * 10^exp is not the answer: ${JSON.stringify(conversion)}`
+                );
+                // Both numbers are canonical: they survive a normalise round trip.
+                assert.strictEqual(Units.normalize(conversion.value), conversion.value, `value is not canonical: ${JSON.stringify(conversion)}`);
+                assert.strictEqual(Units.normalize(conversion.answer), conversion.answer, `answer is not canonical: ${JSON.stringify(conversion)}`);
+                assert.ok(!conversion.value.startsWith('0') || conversion.value.startsWith('0.'), `value has a stray leading zero: ${conversion.value}`);
+                assert.ok(!conversion.answer.startsWith('0') || conversion.answer.startsWith('0.'), `answer has a stray leading zero: ${conversion.answer}`);
+            });
         });
     }
 });
@@ -1012,31 +1039,36 @@ check('every conversion carries the general rule behind it', () => {
     });
     for (let level = 1; level <= Units.maxLevel; level++) {
         sampleConversions(level, 100).forEach((question) => {
-            const { from, factor, to } = Units.rule(question);
-            assert.strictEqual(from, question.from, 'the rule starts from the question unit');
-            assert.strictEqual(to, question.to, 'the rule ends at the question unit');
-            // Down reads "1000", up reads "1/1000": a whole power of ten either
-            // way, and never a decimal point.
-            const power = `1${'0'.repeat(Math.abs(question.exp))}`;
-            const expected = question.exp >= 0 ? power : `1/${power}`;
-            assert.strictEqual(factor, expected, `unexpected rule factor: ${JSON.stringify(question)} -> ${factor}`);
-            assert.ok(
-                sameFraction(parseRuleFactor(factor), timesPowerOfTen('1', question.exp)),
-                `the rule factor is not 10^exp: ${JSON.stringify(question)} -> ${factor}`
-            );
+            eachConversion(question).forEach((conversion) => {
+                const { from, factor, to } = Units.rule(conversion);
+                assert.strictEqual(from, conversion.from, 'the rule starts from the question unit');
+                assert.strictEqual(to, conversion.to, 'the rule ends at the question unit');
+                // Down reads "1000", up reads "1/1000": a whole power of ten either
+                // way, and never a decimal point.
+                const power = `1${'0'.repeat(Math.abs(conversion.exp))}`;
+                const expected = conversion.exp >= 0 ? power : `1/${power}`;
+                assert.strictEqual(factor, expected, `unexpected rule factor: ${JSON.stringify(conversion)} -> ${factor}`);
+                assert.ok(
+                    sameFraction(parseRuleFactor(factor), timesPowerOfTen('1', conversion.exp)),
+                    `the rule factor is not 10^exp: ${JSON.stringify(conversion)} -> ${factor}`
+                );
+            });
         });
     }
 });
 
 check('the early levels move one family at a time with whole numbers', () => {
-    sampleConversions(1, 80).forEach((question) => {
-        assert.strictEqual(question.family, 'mass', 'level 1 only weighs things');
-        assert.ok(!question.value.includes('.') && !question.answer.includes('.'), `level 1 stays whole: ${JSON.stringify(question)}`);
+    const table = sampleConversions(1, 3)[0];
+    assert.strictEqual(table.table, true, 'level 1 should be the unit table');
+    const families = new Set(table.rows.map((row) => row.family));
+    assert.deepStrictEqual([...families].sort(), ['capacity', 'length', 'mass'], 'the table should introduce every family');
+    table.rows.forEach((row) => {
+        assert.ok(!row.value.includes('.') && !row.answer.includes('.'), `level 1 stays whole: ${JSON.stringify(row)}`);
     });
-    for (let level = 1; level <= 5; level++) {
+    for (let level = 2; level <= 5; level++) {
         sampleConversions(level, 80).forEach((question) => {
-            assert.strictEqual(question.direction, 'down', 'levels 1-5 only go to the smaller unit');
-            assert.ok(!question.value.includes('.') && !question.answer.includes('.'), `levels 1-5 stay whole: ${JSON.stringify(question)}`);
+            assert.strictEqual(question.direction, 'down', 'levels 2-5 only go to the smaller unit');
+            assert.ok(!question.value.includes('.') && !question.answer.includes('.'), `levels 2-5 stay whole: ${JSON.stringify(question)}`);
         });
     }
 });
@@ -1056,7 +1088,8 @@ check('decimals arrive on the way down before the way up', () => {
 
 check('the same conversion never comes twice in a row', () => {
     const key = (question) => `${question.from}>${question.to}:${question.value}`;
-    for (let level = 1; level <= Units.maxLevel; level++) {
+    // Level 1 is a fixed table, so it repeats by design; levels 2-20 re-roll.
+    for (let level = 2; level <= Units.maxLevel; level++) {
         const rng = mulberry32(level * 31 + 7);
         let previous = null;
         for (let index = 0; index < 200; index++) {

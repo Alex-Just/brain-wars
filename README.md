@@ -37,7 +37,7 @@ Brain Wars is a set of small math games for primary-school children. The app is 
 | **Elapsed Time** | Find the end time, the start time, or the duration. Type hours and minutes. Story problems start at level 7. |
 | **Time Calculations** | Add and subtract hours and minutes in columns. Sixty minutes make one hour. |
 | **Money Calculations** | Add and subtract euros and cents in columns. One hundred cents make one euro. |
-| **Unit Conversions** | Convert between metric units: mass (kg, g), length (km, m, cm, mm), and capacity (l, ml). Type the converted number. |
+| **Unit Conversions** | Convert between metric units: mass (kg, g), length (km, m, cm, mm), and capacity (l, ml). Level 1 fills in the whole unit table; later levels type the converted number. |
 
 Follow the Leader and Unfollow the Leader stay in the repository. The hub and Challenge mode omit them. Open those pages by URL.
 
@@ -137,7 +137,7 @@ brain-wars/
 │                         #   money-problems, elapsed-time, time-calculations,
 │                         #   money-calculations, unit-conversions
 ├── pwa.js                # Registers the service worker on http and https
-├── sw.js                 # Precache and fetch rules. VERSION is v16
+├── sw.js                 # Precache and fetch rules. VERSION is v19
 ├── manifest.json         # PWA name and icons
 ├── icons/                # App icons
 ├── analytics-worker/     # Worker, D1 schema, and Wrangler config

@@ -4,7 +4,8 @@
  * Pure, language-free question generator for the everyday metric units of Europe:
  * mass (kg, g), length (km, m, cm, mm) and capacity (l, ml). One question turns a
  * measurement into another unit of the same family — bigger to smaller multiplies
- * by a power of ten, smaller to bigger divides by one.
+ * by a power of ten, smaller to bigger divides by one. Level 1 is the reference
+ * table: one "1 <unit> = ? <smaller unit>" row for every unit step in the game.
  *
  * Every unit is stored as its power of ten against the family's base unit (gram,
  * metre, litre), so a conversion is always the integer step `exp = from - to` and
@@ -41,12 +42,23 @@
     //   inputPlaces  decimal places on the shown measurement (down conversions)
     //   answerPlaces decimal places on the answer (up conversions)
     //   maxMantissa  cap on the significant digits, so sizes stay readable
-    // The early levels move one family at a time, whole numbers only; decimals
-    // arrive on the way down (11), then on the way up (12-13), then on both sides
-    // (14), and the two-step jumps close the ladder.
+    // The first level is the reference table: every unit the game uses, once, as
+    // "1 <unit> = ? <smaller unit>". The early levels then move one family at a
+    // time, whole numbers only; decimals arrive on the way down (11), then on the
+    // way up (12-13), then on both sides (14), and the two-step jumps close the
+    // ladder.
+    const TABLE_ROWS = [
+        ['km', 'm'],
+        ['m', 'cm'],
+        ['cm', 'mm'],
+        ['kg', 'g'],
+        ['l', 'ml']
+    ];
+
     const LEVELS = [
-        // 1-4: bigger to smaller, whole numbers, one family at a time
-        { pairs: ['kg>g'], inputPlaces: 0, answerPlaces: 0, maxMantissa: 9 },
+        // 1: the whole unit table, one conversion per unit step
+        { table: true },
+        // 2-4: bigger to smaller, whole numbers, one family at a time
         { pairs: ['l>ml'], inputPlaces: 0, answerPlaces: 0, maxMantissa: 9 },
         { pairs: ['m>cm'], inputPlaces: 0, answerPlaces: 0, maxMantissa: 9 },
         { pairs: ['km>m'], inputPlaces: 0, answerPlaces: 0, maxMantissa: 9 },
@@ -155,7 +167,30 @@
         };
     }
 
+    // The level-1 table: one row per unit step, always "1 <from> = ? <to>".
+    // Every row is a full question, so the page can grade and hint each row with
+    // the same rule and check helpers as a single conversion.
+    function buildTable() {
+        return {
+            table: true,
+            family: 'mixed',
+            rows: TABLE_ROWS.map(([from, to]) => {
+                const exp = UNITS[from].exp - UNITS[to].exp;
+                return {
+                    family: UNITS[from].family,
+                    from,
+                    to,
+                    direction: 'down',
+                    exp,
+                    value: '1',
+                    answer: `1${'0'.repeat(exp)}`
+                };
+            })
+        };
+    }
+
     function questionKey(question) {
+        if (question.table) return 'table';
         return `${question.from}>${question.to}:${question.value}`;
     }
 
@@ -201,6 +236,7 @@
      */
     function build(level, rng, avoid) {
         const config = LEVELS[clampLevel(level) - 1];
+        if (config.table) return buildTable();
         const random = typeof rng === 'function' ? rng : Math.random;
         const avoidKey = avoid ? questionKey(avoid) : null;
 

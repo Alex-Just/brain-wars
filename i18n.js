@@ -1727,6 +1727,18 @@
             'Переведи {value} {from} в {to}'
         ],
         [
+            'uc_table_hint',
+            'Fill in the table: how many of each smaller unit make one bigger unit?',
+            'Completa la tabla: ¿cuántas unidades pequeñas forman una unidad grande?',
+            'Заполни таблицу: сколько меньших единиц в одной большей?'
+        ],
+        [
+            'uc_table_aria',
+            'Unit conversion table',
+            'Tabla de conversión de unidades',
+            'Таблица перевода единиц'
+        ],
+        [
             'uc_hint_down',
             'Going to a smaller unit: the number gets bigger.',
             'Vas a una unidad más pequeña: el número se hace más grande.',
