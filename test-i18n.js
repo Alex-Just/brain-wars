@@ -976,6 +976,7 @@ check('the unit ladder has twenty levels', () => {
 check('level one asks for the whole unit table', () => {
     const question = Units.build(1, mulberry32(2468), null);
     assert.strictEqual(question.table, true, 'level 1 should be the unit table');
+    assert.strictEqual(question.kind, 'table', 'level 1 should be the reference table');
     assert.deepStrictEqual(
         question.rows.map((row) => `${row.from}>${row.to}`),
         ['km>m', 'm>cm', 'cm>mm', 'kg>g', 'l>ml'],
@@ -990,6 +991,31 @@ check('level one asks for the whole unit table', () => {
         [...units].sort(),
         Object.keys(Units.units).sort(),
         'the table should name every unit in the game'
+    );
+});
+
+check('level two converts in two connected steps', () => {
+    for (let seed = 1; seed <= 20; seed++) {
+        const question = Units.build(2, mulberry32(seed), null);
+        assert.strictEqual(question.table, true, 'level 2 should use the step table');
+        assert.strictEqual(question.kind, 'chain', 'level 2 should be a two-step chain');
+        assert.strictEqual(question.rows.length, 2, 'a chain has two steps');
+        assert.strictEqual(question.rows[1].from, question.rows[0].to, 'the second step starts where the first ended');
+        assert.strictEqual(question.rows[1].value, question.rows[0].answer, 'the second step starts from the first answer');
+        question.rows.forEach((row) => {
+            assert.ok(!row.value.includes('.') && !row.answer.includes('.'), `level 2 stays whole: ${JSON.stringify(row)}`);
+            assert.strictEqual(Units.check(row, row.answer), 'correct', `the step answer should grade as correct: ${JSON.stringify(row)}`);
+        });
+    }
+    const chains = new Set();
+    for (let seed = 1; seed <= 60; seed++) {
+        const question = Units.build(2, mulberry32(seed), null);
+        chains.add(question.rows.map((row) => `${row.from}>${row.to}`).join('|'));
+    }
+    assert.deepStrictEqual(
+        [...chains].sort(),
+        ['km>m|m>cm', 'm>cm|cm>mm'],
+        'level 2 should mix both length chains'
     );
 });
 
@@ -1067,8 +1093,10 @@ check('the early levels move one family at a time with whole numbers', () => {
     });
     for (let level = 2; level <= 5; level++) {
         sampleConversions(level, 80).forEach((question) => {
-            assert.strictEqual(question.direction, 'down', 'levels 2-5 only go to the smaller unit');
-            assert.ok(!question.value.includes('.') && !question.answer.includes('.'), `levels 2-5 stay whole: ${JSON.stringify(question)}`);
+            eachConversion(question).forEach((conversion) => {
+                assert.strictEqual(conversion.direction, 'down', 'levels 2-5 only go to the smaller unit');
+                assert.ok(!conversion.value.includes('.') && !conversion.answer.includes('.'), `levels 2-5 stay whole: ${JSON.stringify(conversion)}`);
+            });
         });
     }
 });
@@ -1087,7 +1115,9 @@ check('decimals arrive on the way down before the way up', () => {
 });
 
 check('the same conversion never comes twice in a row', () => {
-    const key = (question) => `${question.from}>${question.to}:${question.value}`;
+    const key = (question) => (question.kind === 'chain'
+        ? question.rows.map((row) => `${row.from}>${row.to}:${row.value}`).join('|')
+        : `${question.from}>${question.to}:${question.value}`);
     // Level 1 is a fixed table, so it repeats by design; levels 2-20 re-roll.
     for (let level = 2; level <= Units.maxLevel; level++) {
         const rng = mulberry32(level * 31 + 7);

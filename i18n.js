@@ -1733,6 +1733,12 @@
             'Заполни таблицу: сколько меньших единиц в одной большей?'
         ],
         [
+            'uc_chain_hint',
+            'Two steps: the first answer becomes the next measurement.',
+            'Dos pasos: el primer resultado pasa a la siguiente medida.',
+            'Два шага: первый ответ становится следующим числом.'
+        ],
+        [
             'uc_table_aria',
             'Unit conversion table',
             'Tabla de conversión de unidades',

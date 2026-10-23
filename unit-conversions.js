@@ -6,6 +6,8 @@
  * measurement into another unit of the same family — bigger to smaller multiplies
  * by a power of ten, smaller to bigger divides by one. Level 1 is the reference
  * table: one "1 <unit> = ? <smaller unit>" row for every unit step in the game.
+ * Level 2 chains two steps, so the answer of the first conversion becomes the
+ * measurement of the second (km > m > cm, or m > cm > mm).
  *
  * Every unit is stored as its power of ten against the family's base unit (gram,
  * metre, litre), so a conversion is always the integer step `exp = from - to` and
@@ -43,10 +45,11 @@
     //   answerPlaces decimal places on the answer (up conversions)
     //   maxMantissa  cap on the significant digits, so sizes stay readable
     // The first level is the reference table: every unit the game uses, once, as
-    // "1 <unit> = ? <smaller unit>". The early levels then move one family at a
-    // time, whole numbers only; decimals arrive on the way down (11), then on the
-    // way up (12-13), then on both sides (14), and the two-step jumps close the
-    // ladder.
+    // "1 <unit> = ? <smaller unit>". Level 2 chains two length steps, so the first
+    // answer is the measurement of the second. The early levels then move one
+    // family at a time, whole numbers only; decimals arrive on the way down (11),
+    // then on the way up (12-13), then on both sides (14), and the two-step jumps
+    // close the ladder.
     const TABLE_ROWS = [
         ['km', 'm'],
         ['m', 'cm'],
@@ -55,11 +58,19 @@
         ['l', 'ml']
     ];
 
+    // Two connected length steps. Both chains go down, so every value stays a
+    // whole number and the second row starts from the first row's answer.
+    const CHAINS = [
+        ['km>m', 'm>cm'],
+        ['m>cm', 'cm>mm']
+    ];
+
     const LEVELS = [
         // 1: the whole unit table, one conversion per unit step
         { table: true },
-        // 2-4: bigger to smaller, whole numbers, one family at a time
-        { pairs: ['l>ml'], inputPlaces: 0, answerPlaces: 0, maxMantissa: 9 },
+        // 2: two connected steps, the first answer feeding the second question
+        { chain: true },
+        // 3-4: bigger to smaller, whole numbers, one family at a time
         { pairs: ['m>cm'], inputPlaces: 0, answerPlaces: 0, maxMantissa: 9 },
         { pairs: ['km>m'], inputPlaces: 0, answerPlaces: 0, maxMantissa: 9 },
         // 5: the shorter jumps within length
@@ -167,29 +178,58 @@
         };
     }
 
+    // A down conversion as a row: a whole `value` of `from` becomes the same
+    // number with `exp` zeros appended in `to`. Shared by the table and the chain,
+    // where every step goes to a smaller unit.
+    function downRow(from, to, value) {
+        const exp = UNITS[from].exp - UNITS[to].exp;
+        return {
+            family: UNITS[from].family,
+            from,
+            to,
+            direction: 'down',
+            exp,
+            value,
+            answer: `${value}${'0'.repeat(exp)}`
+        };
+    }
+
     // The level-1 table: one row per unit step, always "1 <from> = ? <to>".
     // Every row is a full question, so the page can grade and hint each row with
     // the same rule and check helpers as a single conversion.
     function buildTable() {
         return {
             table: true,
+            kind: 'table',
             family: 'mixed',
-            rows: TABLE_ROWS.map(([from, to]) => {
-                const exp = UNITS[from].exp - UNITS[to].exp;
-                return {
-                    family: UNITS[from].family,
-                    from,
-                    to,
-                    direction: 'down',
-                    exp,
-                    value: '1',
-                    answer: `1${'0'.repeat(exp)}`
-                };
-            })
+            rows: TABLE_ROWS.map(([from, to]) => downRow(from, to, '1'))
+        };
+    }
+
+    // The level-2 chain: a random single-digit start (2..9) runs through two
+    // connected steps. Row two's measurement is row one's answer, so the child has
+    // to carry the intermediate result forward instead of starting over.
+    function buildChain(rng) {
+        const pairs = pick(rng, CHAINS);
+        let value = String(randomInt(rng, 2, 9));
+        const rows = pairs.map((pair) => {
+            const [from, to] = pair.split('>');
+            const row = downRow(from, to, value);
+            value = row.answer;
+            return row;
+        });
+        return {
+            table: true,
+            kind: 'chain',
+            family: 'length',
+            rows
         };
     }
 
     function questionKey(question) {
+        if (question.kind === 'chain') {
+            return `chain:${question.rows.map((row) => `${row.from}>${row.to}`).join('|')}:${question.rows[0].value}`;
+        }
         if (question.table) return 'table';
         return `${question.from}>${question.to}:${question.value}`;
     }
@@ -242,7 +282,9 @@
 
         let question = null;
         for (let attempt = 0; attempt < ATTEMPTS; attempt++) {
-            question = makeQuestion(random, pick(random, config.pairs), config);
+            question = config.chain
+                ? buildChain(random)
+                : makeQuestion(random, pick(random, config.pairs), config);
             if (!avoidKey || questionKey(question) !== avoidKey) return question;
         }
         // A tiny pool may leave no other question; repeat rather than loop forever

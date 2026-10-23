@@ -387,8 +387,9 @@
             animation: shakeError 0.5s ease-in-out;
         }
 
-        /* Level 1: the reference table, one equation per unit step. The active row
-           receives the number pad; the check button grades every row at once. */
+        /* Level 1: the reference table, one equation per unit step. Level 2 reuses
+           it as a two-step chain. Future rows stay hidden until the previous row is
+           correct; the check button grades only the row the child is working on. */
         .table-board {
             width: 100%;
             display: flex;
@@ -407,9 +408,7 @@
             background: #f8fafc;
             border: 2px solid transparent;
             border-radius: 12px;
-            font-family: inherit;
             color: var(--color-text);
-            cursor: pointer;
             transition: background-color 0.15s ease, border-color 0.15s ease;
         }
 
@@ -428,6 +427,13 @@
             border-color: var(--color-error);
             background: #FEE2E2;
             animation: shakeError 0.5s ease-in-out;
+        }
+
+        .table-check {
+            color: var(--color-success);
+            font-size: clamp(16px, 4.4vw, 20px);
+            font-weight: 800;
+            line-height: 1;
         }
 
         .table-value {
@@ -578,9 +584,6 @@
             .level-menu-item:hover:not(.current) {
                 background: #eef2f7;
             }
-            .table-row:hover:not(.active) {
-                background: #eef2f7;
-            }
         }
     </style>
 </head>
@@ -709,8 +712,8 @@
                     previous: null,
                     // The typed answer, kept canonical (a point, never the local comma)
                     typed: '',
-                    // Level 1 is a table: one typed answer per row, plus which row
-                    // receives the number pad and the mark left by the last check
+                    // The table and chain levels: one typed answer per row, plus which
+                    // row receives the number pad and the mark left by the last check
                     typedRows: [],
                     rowStatus: [],
                     activeRow: 0,
@@ -733,11 +736,6 @@
 
                 this.#elements.checkBtn.addEventListener('click', () => this.#handleKey('check'));
 
-                this.#elements.tableBoard.addEventListener('click', (event) => {
-                    const row = event.target.closest('.table-row');
-                    if (row) this.#setActiveRow(Number(row.dataset.row));
-                });
-
                 this.#elements.levelDisplay.addEventListener('click', (event) => {
                     event.stopPropagation();
                     this.#toggleLevelMenu(!this.#elements.levelMenu.classList.contains('open'));
@@ -759,21 +757,8 @@
                         }
                         return;
                     }
-                    const isTable = Boolean(this.#state.question && this.#state.question.table);
-                    if (isTable && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
-                        event.preventDefault();
-                        this.#moveActiveRow(event.key === 'ArrowDown' ? 1 : -1);
-                        return;
-                    }
                     const isControlFocused = event.target instanceof HTMLElement &&
                         (event.target.tagName === 'BUTTON' || event.target.tagName === 'A');
-                    // Enter on a table row checks the whole table instead of re-selecting it
-                    const isTableRow = isControlFocused && event.target.classList.contains('table-row');
-                    if (isTableRow && event.key === 'Enter') {
-                        event.preventDefault();
-                        this.#handleKey('check');
-                        return;
-                    }
                     if (isControlFocused && (event.key === 'Enter' || event.key === ' ')) return;
 
                     if (event.key >= '0' && event.key <= '9') this.#handleKey(event.key);
@@ -852,7 +837,8 @@
                 this.#elements.tableBoard.hidden = !isTable;
                 if (isTable) {
                     // The table is the whole task: the prompt only explains it
-                    this.#elements.instructionText.textContent = I18n.t('uc_table_hint');
+                    this.#elements.instructionText.textContent =
+                        I18n.t(question.kind === 'chain' ? 'uc_chain_hint' : 'uc_table_hint');
                     this.#elements.tableBoard.setAttribute('aria-label', I18n.t('uc_table_aria'));
                     this.#renderTable();
                     return;
@@ -869,25 +855,26 @@
                 this.#elements.board.setAttribute('aria-label', I18n.t('uc_convert', { value, from, to }));
             }
 
-            // One tappable row per conversion. The active row is the one the number
-            // pad types into; the last check leaves a correct/wrong mark on a row.
+            // One row per conversion, revealed as the child works down the ladder.
+            // The active row is the only one that accepts typing; earlier rows stay
+            // on screen, green, with their canonical answer and a check mark.
             #renderTable() {
                 const board = this.#elements.tableBoard;
                 const question = this.#state.question;
                 board.innerHTML = '';
                 if (!question || !question.table) return;
                 question.rows.forEach((row, index) => {
-                    const item = document.createElement('button');
-                    item.type = 'button';
+                    if (index > this.#state.activeRow) return;
+                    const item = document.createElement('div');
                     item.className = 'table-row';
                     item.dataset.row = String(index);
-                    if (index === this.#state.activeRow) item.classList.add('active');
                     const status = this.#state.rowStatus[index];
+                    if (index === this.#state.activeRow && status !== 'correct') item.classList.add('active');
                     if (status) item.classList.add(`is-${status}`);
 
                     const value = document.createElement('span');
                     value.className = 'table-value';
-                    value.textContent = '1';
+                    value.textContent = this.#localize(row.value);
                     const from = document.createElement('span');
                     from.className = 'unit';
                     from.textContent = this.#unitSymbol(row.from);
@@ -906,6 +893,13 @@
                     to.textContent = this.#unitSymbol(row.to);
 
                     item.append(value, from, equals, answer, to);
+                    if (status === 'correct') {
+                        const check = document.createElement('span');
+                        check.className = 'table-check';
+                        check.textContent = '✓';
+                        check.setAttribute('aria-hidden', 'true');
+                        item.appendChild(check);
+                    }
                     board.appendChild(item);
                 });
             }
@@ -980,23 +974,6 @@
             }
 
             /* ---------- table ---------- */
-
-            #setActiveRow(index) {
-                const question = this.#state.question;
-                if (!question || !question.table || this.#state.locked) return;
-                const clamped = Math.min(Math.max(index, 0), question.rows.length - 1);
-                if (clamped === this.#state.activeRow) return;
-                this.#state.activeRow = clamped;
-                this.#renderTable();
-                this.#renderRule();
-            }
-
-            #moveActiveRow(delta) {
-                const question = this.#state.question;
-                if (!question || !question.table) return;
-                const count = question.rows.length;
-                this.#setActiveRow((this.#state.activeRow + delta + count) % count);
-            }
 
             #currentTyped() {
                 const question = this.#state.question;
@@ -1112,32 +1089,46 @@
                 this.#handleWrong();
             }
 
-            // Every row is graded at once. A wrong row is marked, cleared and made
-            // active, so the next attempt starts on the row that needs work.
+            // Only the active row is graded. A correct row reveals the next one; the
+            // last one finishes the round. Intermediate rows never show the global
+            // "correct" hint, so a challenge run does not end before the chain does.
             #checkTable(question) {
-                const statuses = question.rows.map((row, index) =>
-                    BrainWarsUnits.check(row, this.#state.typedRows[index] || ''));
-                if (statuses.every((status) => status === 'correct')) {
+                const index = this.#state.activeRow;
+                const row = question.rows[index];
+                const status = BrainWarsUnits.check(row, this.#state.typedRows[index] || '');
+                if (status === 'incomplete') {
+                    this.#showHint('fill');
+                    return;
+                }
+                if (status === 'wrong') {
+                    this.#handleTableWrong();
+                    return;
+                }
+                this.#handleTableRowCorrect(question, row);
+            }
+
+            #handleTableRowCorrect(question, row) {
+                const index = this.#state.activeRow;
+                // Show the canonical answer, even if the child typed extra zeros
+                this.#state.typedRows[index] = row.answer;
+                this.#state.rowStatus[index] = 'correct';
+                this.#clearHint();
+                if (index === question.rows.length - 1) {
                     this.#handleCorrect();
                     return;
                 }
-                if (statuses.includes('wrong')) {
-                    this.#handleTableWrong(statuses);
-                    return;
-                }
-                this.#setActiveRow(statuses.indexOf('incomplete'));
-                this.#showHint('fill');
+                this.#state.activeRow = index + 1;
+                this.#renderTable();
+                this.#renderRule();
             }
 
-            #handleTableWrong(statuses) {
+            #handleTableWrong() {
+                const index = this.#state.activeRow;
                 this.#state.hadErrorThisRound = true;
                 // A mistake reveals the rule of the row being worked on
                 this.#state.showRule = true;
-                this.#state.rowStatus = statuses.map((status) => (status === 'incomplete' ? null : status));
-                this.#state.activeRow = statuses.indexOf('wrong');
-                statuses.forEach((status, index) => {
-                    if (status === 'wrong') this.#state.typedRows[index] = '';
-                });
+                this.#state.rowStatus[index] = 'wrong';
+                this.#state.typedRows[index] = '';
                 this.#renderTable();
                 this.#renderRule();
                 this.#showHint('wrong', 1200);
