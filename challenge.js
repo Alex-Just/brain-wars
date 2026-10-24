@@ -332,10 +332,11 @@
             .ch-flag { flex: 0 0 auto; font-size: 14px; line-height: 1; }
             .ch-stats { flex: 0 0 auto; display: flex; gap: 4px; }
             .ch-stat { display: inline-flex; align-items: center; gap: 3px; box-sizing: border-box;
-                min-width: 34px; padding: 2px 6px; border-radius: 999px; font-size: 12px;
-                font-weight: 700; line-height: 1.4; font-variant-numeric: tabular-nums; }
-            .ch-stat-right { color: #2E7D32; background: #E8F5E9; }
-            .ch-stat-wrong { color: #D32F2F; background: #FFEBEE; }
+                min-width: 28px; padding: 0 2px; font-size: 12px;
+                font-weight: 700; line-height: 1.4; font-variant-numeric: tabular-nums;
+                background: transparent; }
+            .ch-stat-right { color: #2E7D32; }
+            .ch-stat-wrong { color: #D32F2F; }
             .ch-stat-icon { font-size: 11px; line-height: 1; }
             body.has-challenge {
                 --ch-bar-offset: calc(34px + env(safe-area-inset-top, 0px));
