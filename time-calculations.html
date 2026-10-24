@@ -387,8 +387,10 @@
             animation: shakeError 0.5s ease-out;
         }
 
+        /* Empty annotation cells must not reserve the 46px row above the
+           operands; only a problem that uses a carry or scratch note shows it. */
         .input-cell.is-unused {
-            visibility: hidden;
+            display: none;
         }
 
         /* The carried unit shows as a small red note above the column */
