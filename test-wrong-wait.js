@@ -216,6 +216,38 @@ check('exports the five-second wait constant', () => {
         WrongWait._resetForTests();
     });
 
+    await checkAsync('isLocked tracks the in-flight wait and keydown is blocked', async () => {
+        WrongWait._resetForTests();
+        const { doc } = createFakeDocument();
+        const listeners = [];
+        doc.addEventListener = (type, fn, capture) => {
+            listeners.push({ type, fn, capture });
+        };
+        doc.removeEventListener = (type, fn, capture) => {
+            const index = listeners.findIndex((item) => item.type === type && item.fn === fn && item.capture === capture);
+            if (index >= 0) listeners.splice(index, 1);
+        };
+        const timers = installFakeTimers();
+        assert.strictEqual(WrongWait.isLocked(), false);
+        const done = WrongWait.lock({ document: doc, durationMs: 100 });
+        assert.strictEqual(WrongWait.isLocked(), true);
+        const keydown = listeners.find((item) => item.type === 'keydown' && item.capture === true);
+        assert.ok(keydown, 'keydown capture guard must be installed');
+        let prevented = false;
+        keydown.fn({
+            target: { closest: () => null },
+            preventDefault() { prevented = true; },
+            stopPropagation() {}
+        });
+        assert.strictEqual(prevented, true);
+        timers.advance(100);
+        await done;
+        assert.strictEqual(WrongWait.isLocked(), false);
+        assert.strictEqual(listeners.length, 0, 'keydown guard must be removed');
+        timers.restore();
+        WrongWait._resetForTests();
+    });
+
     console.log(`\n${passed} passed`);
 })().catch((error) => {
     console.error(error);

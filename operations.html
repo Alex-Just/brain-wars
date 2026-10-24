@@ -895,6 +895,7 @@
 
             async #handleOperatorClick(event) {
                 if (!this.#state.isPlaying) return;
+                if (window.BrainWarsWrongWait?.isLocked?.()) return;
 
                 const button = event.target;
                 const selectedOperator = button.dataset.operator;

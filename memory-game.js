@@ -257,6 +257,9 @@
       this.setMessage(this.keys.tryAgain);
 
       square.classList.add('wrong');
+      const wait = globalThis.BrainWarsWrongWait
+          ? globalThis.BrainWarsWrongWait.lock()
+          : Promise.resolve();
 
       await new Promise(resolve => setTimeout(resolve, 300));
 
@@ -283,7 +286,7 @@
         }
       }
 
-      if (globalThis.BrainWarsWrongWait) await globalThis.BrainWarsWrongWait.lock();
+      await wait;
 
       this.playerSequence = [];
       this.setMessage(this.keys.remember);

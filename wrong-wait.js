@@ -20,6 +20,9 @@
 
     let inflight = null;
     let activeNodes = null;
+    let keyGuard = null;
+
+    const NAV_ALLOW_SELECTOR = '.top-nav, .top-left-nav, [data-lang-toggle]';
 
     function resolveDocument(options) {
         return options.document || global.document;
@@ -33,6 +36,29 @@
             || doc.querySelector?.('main.game-card')
             || doc.querySelector?.('main')
             || doc.body;
+    }
+
+    function isLocked() {
+        return inflight !== null;
+    }
+
+    function installKeyGuard(doc) {
+        if (keyGuard || !doc?.addEventListener) return;
+        keyGuard = (event) => {
+            const target = event.target;
+            if (target && typeof target.closest === 'function' && target.closest(NAV_ALLOW_SELECTOR)) {
+                return;
+            }
+            event.preventDefault();
+            event.stopPropagation();
+        };
+        doc.addEventListener('keydown', keyGuard, true);
+    }
+
+    function removeKeyGuard(doc) {
+        if (!keyGuard || !doc?.removeEventListener) return;
+        doc.removeEventListener('keydown', keyGuard, true);
+        keyGuard = null;
     }
 
     function labelText() {
@@ -130,17 +156,23 @@
         if (!mount.style.position) mount.style.position = 'relative';
     }
 
-    function cleanup() {
+    function cleanup(doc) {
+        removeKeyGuard(doc);
+        if (activeNodes?.mount) {
+            activeNodes.mount.removeAttribute?.('aria-busy');
+        }
         if (!activeNodes) return;
         const { capture, panel } = activeNodes;
-        if (capture && typeof capture.remove === 'function') capture.remove();
-        if (panel && typeof panel.remove === 'function') panel.remove();
+        if (typeof capture?.remove === 'function') capture.remove();
+        if (typeof panel?.remove === 'function') panel.remove();
         activeNodes = null;
     }
 
     function mountUi(doc, mount, durationMs) {
         ensureStyles(doc);
         ensureMountPosition(mount);
+        installKeyGuard(doc);
+        mount.setAttribute?.('aria-busy', 'true');
 
         const capture = doc.createElement('div');
         capture.className = CAPTURE_CLASS;
@@ -167,7 +199,7 @@
         panel.appendChild(track);
         mount.appendChild(capture);
         mount.appendChild(panel);
-        activeNodes = { capture, panel, fill };
+        activeNodes = { capture, panel, fill, mount, doc };
 
         // Next frame so the width transition runs from 0 → 100%.
         const start = () => {
@@ -191,7 +223,7 @@
 
         return new Promise((resolve) => {
             global.setTimeout(() => {
-                cleanup();
+                cleanup(doc);
                 resolve();
             }, durationMs);
         });
@@ -206,11 +238,12 @@
     }
 
     function _resetForTests() {
-        cleanup();
+        const doc = activeNodes?.doc;
+        cleanup(doc);
         inflight = null;
     }
 
-    const api = { WRONG_WAIT_MS, lock, _resetForTests };
+    const api = { WRONG_WAIT_MS, lock, isLocked, _resetForTests };
 
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = api;
