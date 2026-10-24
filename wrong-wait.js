@@ -15,6 +15,8 @@
     const TRACK_CLASS = 'bw-wrong-wait-track';
     const FILL_CLASS = 'bw-wrong-wait-fill';
     const FILL_RUNNING_CLASS = 'is-running';
+    const LOCKED_CLASS = 'bw-wrong-wait-locked';
+    const CONTROL_DIM_OPACITY = '0.4';
     const LABEL_FALLBACK = 'Wait to try again';
     const LABEL_KEY = 'ww_wait_retry';
 
@@ -137,13 +139,75 @@
 .${FILL_CLASS}.${FILL_RUNNING_CLASS} {
     transform: scaleX(1);
 }
+.${LOCKED_CLASS} {
+    --bw-wrong-wait-control-opacity: ${CONTROL_DIM_OPACITY};
+}
+.${LOCKED_CLASS} :is(
+    button,
+    input,
+    textarea,
+    select,
+    .numpad-grid,
+    .operators,
+    .operator,
+    .choice-button,
+    .square,
+    .amount-box,
+    .num-box,
+    .input-cell,
+    .answer-box,
+    .check-btn
+) {
+    opacity: var(--bw-wrong-wait-control-opacity);
+    transition: opacity 0.2s ease;
+}
 @media (prefers-reduced-motion: reduce) {
     .${FILL_CLASS} {
+        transition: none;
+    }
+    .${LOCKED_CLASS} :is(
+        button,
+        input,
+        textarea,
+        select,
+        .numpad-grid,
+        .operators,
+        .operator,
+        .choice-button,
+        .square,
+        .amount-box,
+        .num-box,
+        .input-cell,
+        .answer-box,
+        .check-btn
+    ) {
         transition: none;
     }
 }
 `.trim();
         doc.head.appendChild(style);
+    }
+
+    function addClass(el, name) {
+        if (!el) return;
+        if (el.classList?.add) {
+            el.classList.add(name);
+            return;
+        }
+        const parts = String(el.className || '').split(/\s+/).filter(Boolean);
+        if (!parts.includes(name)) el.className = parts.concat(name).join(' ');
+    }
+
+    function removeClass(el, name) {
+        if (!el) return;
+        if (el.classList?.remove) {
+            el.classList.remove(name);
+            return;
+        }
+        el.className = String(el.className || '')
+            .split(/\s+/)
+            .filter((part) => part && part !== name)
+            .join(' ');
     }
 
     function ensureMountPosition(mount) {
@@ -163,6 +227,7 @@
         removeKeyGuard(doc);
         if (activeNodes?.mount) {
             activeNodes.mount.removeAttribute?.('aria-busy');
+            removeClass(activeNodes.mount, LOCKED_CLASS);
         }
         if (!activeNodes) return;
         const { capture, panel } = activeNodes;
@@ -176,6 +241,7 @@
         ensureMountPosition(mount);
         installKeyGuard(doc);
         mount.setAttribute?.('aria-busy', 'true');
+        addClass(mount, LOCKED_CLASS);
 
         const capture = doc.createElement('div');
         capture.className = CAPTURE_CLASS;

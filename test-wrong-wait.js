@@ -218,6 +218,25 @@ check('exports the five-second wait constant', () => {
         WrongWait._resetForTests();
     });
 
+    await checkAsync('mount gains the locked class while waiting and loses it after', async () => {
+        WrongWait._resetForTests();
+        const { doc, game } = createFakeDocument();
+        const timers = installFakeTimers();
+        const done = WrongWait.lock({ document: doc, durationMs: 100 });
+        assert.ok(
+            String(game.className).split(/\s+/).includes('bw-wrong-wait-locked'),
+            'mount must show dimmed controls while locked'
+        );
+        timers.advance(100);
+        await done;
+        assert.ok(
+            !String(game.className).split(/\s+/).includes('bw-wrong-wait-locked'),
+            'mount must clear the locked class after the wait'
+        );
+        timers.restore();
+        WrongWait._resetForTests();
+    });
+
     await checkAsync('isLocked tracks the in-flight wait and keydown is blocked', async () => {
         WrongWait._resetForTests();
         const { doc } = createFakeDocument();
