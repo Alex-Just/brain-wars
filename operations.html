@@ -904,6 +904,7 @@
                 });
 
                 if (selectedOperator === this.#state.currentProblem.correctOperator) {
+                    window.BrainWarsChallenge?.noteAnswer?.(true);
                     button.classList.add('tapped');
                     
                     // If there were errors this round, decrease level
@@ -967,6 +968,7 @@
                         }, 500);
                     }, 400);
                 } else {
+                    window.BrainWarsChallenge?.noteAnswer?.(false);
                     button.classList.add('wrong');
                     this.#state.hadErrorThisRound = true;  // Mark that there was an error this round
                     setTimeout(() => {

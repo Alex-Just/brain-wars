@@ -1083,6 +1083,7 @@
                 }
                 const status = BrainWarsUnits.check(question, this.#state.typed);
                 if (status === 'correct') {
+                    window.BrainWarsChallenge?.noteAnswer?.(true);
                     this.#handleCorrect();
                     return;
                 }
@@ -1090,6 +1091,7 @@
                     this.#showHint('fill');
                     return;
                 }
+                window.BrainWarsChallenge?.noteAnswer?.(false);
                 this.#handleWrong();
             }
 
@@ -1105,9 +1107,11 @@
                     return;
                 }
                 if (status === 'wrong') {
+                    window.BrainWarsChallenge?.noteAnswer?.(false);
                     this.#handleTableWrong();
                     return;
                 }
+                window.BrainWarsChallenge?.noteAnswer?.(true);
                 this.#handleTableRowCorrect(question, row);
             }
 

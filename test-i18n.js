@@ -347,6 +347,27 @@ check('a mistake re-queues the game at the end without duplicating it', () => {
     assert.strictEqual(queue[queue.length - 1], repeated, 'the game must come back at the end');
 });
 
+check('every graded tap bumps the answer counters', () => {
+    const challenge = require('./challenge.js');
+    const run = challenge.createRun(5, 10);
+    assert.strictEqual(run.right, 0, 'a new run starts with no right answers');
+    assert.strictEqual(run.wrong, 0, 'a new run starts with no wrong answers');
+    challenge.bumpAnswer(run, true);
+    challenge.bumpAnswer(run, true);
+    challenge.bumpAnswer(run, false);
+    assert.strictEqual(run.right, 2);
+    assert.strictEqual(run.wrong, 1);
+    // A run stored before the counters existed has neither field
+    const legacy = { total: 3 };
+    challenge.bumpAnswer(legacy, true);
+    assert.strictEqual(legacy.right, 1);
+    assert.strictEqual(legacy.wrong, 0);
+    // A corrupted value must not poison the tally
+    legacy.right = 'x';
+    challenge.bumpAnswer(legacy, true);
+    assert.strictEqual(legacy.right, 1);
+});
+
 check('challenge navigation replaces history so Back always exits the run', () => {
     // Steps used to push history entries, so Back revisited an earlier round and the
     // stale-tab redirect threw the player forward again: a visible bounce. Replacing

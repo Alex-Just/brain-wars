@@ -187,9 +187,20 @@
             current: queue[0],
             solved: 0,
             retries: 0,
+            right: 0,
+            wrong: 0,
             dirty: false
         };
         saveRun(run);
+        return run;
+    }
+
+    // One graded tap, counted where the game grades it. Runs stored before the
+    // counters existed have no fields yet, so normalise both on the way in.
+    function bumpAnswer(run, ok) {
+        run.right = Math.max(0, Math.round(Number(run.right) || 0));
+        run.wrong = Math.max(0, Math.round(Number(run.wrong) || 0));
+        run[ok ? 'right' : 'wrong']++;
         return run;
     }
 
@@ -213,8 +224,17 @@
         weightFor: weightFor,
         parsePracticeHistory: parsePracticeHistory,
         buildQueue: buildQueue,
+        bumpAnswer: bumpAnswer,
         practiceUrl: practiceUrl,
         loadPracticeHistory: loadPracticeHistory,
+        // One graded tap: every game reports its own answer here, and the run keeps
+        // the tally across page loads. Outside a challenge it is a no-op.
+        noteAnswer: (ok) => {
+            if (!active) return;
+            bumpAnswer(run, ok);
+            saveRun(run);
+            renderStats();
+        },
         // Starting level for games that read it while setting up their round
         startLevel: () => (active ? run.level : 1)
     };
@@ -271,6 +291,31 @@
 
     /* -------------------------------- top bar ------------------------------ */
 
+    let stats = null;
+
+    function buildStat(kind, icon) {
+        const chip = document.createElement('span');
+        chip.className = `ch-stat ch-stat-${kind}`;
+        const glyph = document.createElement('span');
+        glyph.className = 'ch-stat-icon';
+        glyph.setAttribute('aria-hidden', 'true');
+        glyph.textContent = icon;
+        const value = document.createElement('span');
+        value.className = 'ch-stat-value';
+        chip.append(glyph, value);
+        return { chip, value };
+    }
+
+    function renderStats() {
+        if (!stats) return;
+        const right = Math.max(0, Number(run.right) || 0);
+        const wrong = Math.max(0, Number(run.wrong) || 0);
+        stats.right.value.textContent = String(right);
+        stats.wrong.value.textContent = String(wrong);
+        stats.right.chip.setAttribute('aria-label', global.I18n.t('ch_right_count', { n: right }));
+        stats.wrong.chip.setAttribute('aria-label', global.I18n.t('ch_wrong_count', { n: wrong }));
+    }
+
     function injectStyles() {
         if (document.getElementById('challenge-styles')) return;
         const style = document.createElement('style');
@@ -285,6 +330,13 @@
             .ch-seg { flex: 1 1 0; min-width: 2px; border-radius: 3px; background: #e2e8f0; }
             .ch-seg.is-done { background: #4CAF50; }
             .ch-flag { flex: 0 0 auto; font-size: 14px; line-height: 1; }
+            .ch-stats { flex: 0 0 auto; display: flex; gap: 4px; }
+            .ch-stat { display: inline-flex; align-items: center; gap: 3px; box-sizing: border-box;
+                min-width: 34px; padding: 2px 6px; border-radius: 999px; font-size: 12px;
+                font-weight: 700; line-height: 1.4; font-variant-numeric: tabular-nums; }
+            .ch-stat-right { color: #2E7D32; background: #E8F5E9; }
+            .ch-stat-wrong { color: #D32F2F; background: #FFEBEE; }
+            .ch-stat-icon { font-size: 11px; line-height: 1; }
             body.has-challenge {
                 --ch-bar-offset: calc(34px + env(safe-area-inset-top, 0px));
                 padding-top: var(--ch-bar-offset);
@@ -338,7 +390,20 @@
         flag.hidden = true;
         flag.setAttribute('aria-label', global.I18n.t('ch_dirty_title'));
 
-        bar.append(track, flag);
+        stats = {
+            right: buildStat('right', '✓'),
+            wrong: buildStat('wrong', '✗')
+        };
+
+        const counts = document.createElement('div');
+        counts.className = 'ch-stats';
+        // The bar is a status region; the counters change on every tap, so keep them
+        // out of the live announcements. Their labels stay readable on demand.
+        counts.setAttribute('aria-live', 'off');
+        counts.append(stats.right.chip, stats.wrong.chip);
+        renderStats();
+
+        bar.append(track, flag, counts);
         document.body.appendChild(bar);
         document.body.classList.add('has-challenge');
 
@@ -400,6 +465,7 @@
     function init() {
         injectStyles();
         const flag = mountBar();
+        global.I18n?.subscribe?.(renderStats);
         hideLevelPicker();
         watchSignals(flag);
         // The game builds its own DOM (level menu, board) in its own DOMContentLoaded handler

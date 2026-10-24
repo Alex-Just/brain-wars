@@ -1389,6 +1389,7 @@
                 const typed = euros * 100 + cents;
 
                 if (typed === expected) {
+                    window.BrainWarsChallenge?.noteAnswer?.(true);
                     this.#state.done[step] = true;
                     this.#state.answers[`${prefix}-eur`] = String(Math.floor(expected / 100));
                     this.#state.answers[`${prefix}-cts`] = String(expected % 100);
@@ -1411,6 +1412,7 @@
                 if (this.#state.step !== 'b' || this.#state.done.b) return;
                 const problem = this.#state.problem;
                 if ((answer === 'yes') === problem.afford) {
+                    window.BrainWarsChallenge?.noteAnswer?.(true);
                     this.#state.done.b = true;
                     this.#advanceFrom('b');
                     return;
@@ -1419,6 +1421,7 @@
             }
 
             #markWrong(prefix) {
+                window.BrainWarsChallenge?.noteAnswer?.(false);
                 this.#state.hadErrorThisRound = true;
 
                 const step = this.#elements.steps.querySelector(`.step[data-step="${prefix}"]`);

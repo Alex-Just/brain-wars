@@ -858,6 +858,7 @@
             }
 
             #handleCorrect() {
+                window.BrainWarsChallenge?.noteAnswer?.(true);
                 const cell = this.#state.activeCell;
                 const step = this.#state.problem.steps[this.#state.stepIndex];
                 // Show the carried unit as +1 above the column
@@ -883,6 +884,7 @@
             }
 
             #handleWrong() {
+                window.BrainWarsChallenge?.noteAnswer?.(false);
                 this.#state.hadErrorThisRound = true;
                 const cell = this.#state.activeCell;
                 cell.classList.add('error-shake');

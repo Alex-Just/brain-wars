@@ -1879,6 +1879,18 @@
             'Прогресс челленджа'
         ],
         [
+            'ch_right_count',
+            'Correct answers: {n}',
+            'Respuestas correctas: {n}',
+            'Верных ответов: {n}'
+        ],
+        [
+            'ch_wrong_count',
+            'Wrong answers: {n}',
+            'Respuestas incorrectas: {n}',
+            'Неверных ответов: {n}'
+        ],
+        [
             'ch_dirty_title',
             'Solved with mistakes',
             'Resuelto con errores',

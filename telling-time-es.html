@@ -800,6 +800,7 @@
                 const { ANIMATION_DURATION } = this.#config;
 
                 if (selectedPhrase === this.#state.correctPhrase) {
+                    window.BrainWarsChallenge?.noteAnswer?.(true);
                     button.classList.add('tapped');
                     this.#state.lastResult = 'correct';
 
@@ -820,6 +821,7 @@
 
                 } else {
                     // Mark the wrong button
+                    window.BrainWarsChallenge?.noteAnswer?.(false);
                     button.classList.add('wrong'); 
                     
                     // Briefly highlight the correct button

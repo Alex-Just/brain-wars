@@ -1081,6 +1081,7 @@
             }
 
             #handleWrong(status) {
+                window.BrainWarsChallenge?.noteAnswer?.(false);
                 this.#state.hadErrorThisRound = true;
                 this.#showHint(status, 1200);
                 this.#shakeBoxes();
@@ -1115,6 +1116,7 @@
             }
 
             #handleCorrect() {
+                window.BrainWarsChallenge?.noteAnswer?.(true);
                 this.#state.locked = true;
                 this.#showHint('correct');
                 // A clean first try moves the ladder up; a round with mistakes is repeated

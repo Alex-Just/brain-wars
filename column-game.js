@@ -396,8 +396,10 @@
 		if (!userVal) return;
 
 		if (userVal === state.expectedAnswer) {
+			global.BrainWarsChallenge?.noteAnswer?.(true);
 			hooks.handleCorrectInput();
 		} else {
+			global.BrainWarsChallenge?.noteAnswer?.(false);
 			hooks.handleWrongInput();
 		}
 	}

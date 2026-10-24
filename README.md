@@ -137,7 +137,7 @@ brain-wars/
 │                         #   money-problems, elapsed-time, time-calculations,
 │                         #   money-calculations, unit-conversions
 ├── pwa.js                # Registers the service worker on http and https
-├── sw.js                 # Precache and fetch rules. VERSION is v20
+├── sw.js                 # Precache and fetch rules. VERSION is v22
 ├── manifest.json         # PWA name and icons
 ├── icons/                # App icons
 ├── analytics-worker/     # Worker, D1 schema, and Wrangler config
