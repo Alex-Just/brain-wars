@@ -1,6 +1,7 @@
 /**
  * Answer analytics: capture game results, queue them offline, upload them idempotently.
- * Disabled unless ENDPOINT is set. Browser: window.BrainWarsAnalytics. Node (tests): module.exports.
+ * Disabled unless ENDPOINT is set and the page is not served from a local dev host.
+ * Browser: window.BrainWarsAnalytics. Node (tests): module.exports.
  */
 ((global) => {
     'use strict';
@@ -113,6 +114,21 @@
         return { queue, backoff, nextTryAt: now + backoff, permanentTries: 0 };
     }
 
+    // The shared worker holds real players' data. A local dev server must never
+    // upload its test runs, so loopback and file:// pages are not tracked.
+    function isLocalHost(hostname) {
+        const host = String(hostname || '').toLowerCase().replace(/\.$/, '');
+        if (host === 'localhost' || host.endsWith('.localhost')) return true;
+        if (host === '0.0.0.0' || host === '::1' || host === '[::1]') return true;
+        return /^127(?:\.\d{1,3}){3}$/.test(host);
+    }
+
+    function shouldTrack(location) {
+        if (!location) return false;
+        if (location.protocol !== 'http:' && location.protocol !== 'https:') return false;
+        return !isLocalHost(location.hostname);
+    }
+
     // The random device id the uploader uses, exposed so Challenge mode can ask the
     // worker for this device's practice history.
     function getDeviceId() {
@@ -121,7 +137,7 @@
 
     const core = {
         buildEvent, enqueue, takeBatch, ack, reconcileQueue, risingEdges, captureEvent,
-        classifyResponse, nextBackoff, flushOnce, getDeviceId,
+        classifyResponse, nextBackoff, flushOnce, getDeviceId, isLocalHost, shouldTrack,
         ENDPOINT, QUEUE_MAX, BATCH_MAX, MIN_FLUSH_GAP_MS, MAX_PERMANENT_TRIES
     };
     global.BrainWarsAnalytics = core;
@@ -255,7 +271,7 @@
         scheduleFlush(false);
     }
 
-    if (typeof document !== 'undefined' && ENDPOINT) {
+    if (typeof document !== 'undefined' && ENDPOINT && shouldTrack(global.location)) {
         const file = global.location.pathname.split('/').pop() || 'index.html';
         const game = global.BrainWarsGames?.byFile(file);
         if (game) start(game);

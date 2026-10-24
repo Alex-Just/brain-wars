@@ -24,7 +24,24 @@ const CLEANUP_ROUNDS = 20;
 const TS_PAST_MS = 2 * 365 * 24 * 60 * 60 * 1000;
 const TS_FUTURE_MS = 2 * 24 * 60 * 60 * 1000;
 const ALLOWED_HOSTS = new Set(['alex-just.github.io']);
-const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1']);
+
+// Local development must never leave test runs in the shared table. The client
+// already skips loopback pages, but an older cached copy can still post.
+function isLocalHost(hostname) {
+    const host = String(hostname || '').toLowerCase().replace(/\.$/, '');
+    if (host === 'localhost' || host.endsWith('.localhost')) return true;
+    if (host === '0.0.0.0' || host === '::1' || host === '[::1]') return true;
+    return /^127(?:\.\d{1,3}){3}$/.test(host);
+}
+
+function isLocalOrigin(origin) {
+    if (!origin) return false;
+    try {
+        return isLocalHost(new URL(origin).hostname);
+    } catch {
+        return false;
+    }
+}
 
 // The ranges the browser preview offers, and the window each surface opens on. The
 // preview opens on the last three days; the weekly email keeps its seven.
@@ -61,7 +78,7 @@ function corsHeaders(origin) {
     } catch {
         return {};
     }
-    const allowed = ALLOWED_HOSTS.has(url.hostname) || LOCAL_HOSTS.has(url.hostname);
+    const allowed = ALLOWED_HOSTS.has(url.hostname) || isLocalHost(url.hostname);
     if (!allowed) return {};
     return {
         'Access-Control-Allow-Origin': origin,
@@ -142,6 +159,10 @@ async function handlePractice(url, env, cors) {
 }
 
 async function handleIngest(request, env, cors) {
+    // Accept and drop local test runs so a cached client still clears its queue.
+    if (isLocalOrigin(request.headers.get('Origin'))) {
+        return json({ inserted: 0, ignored: 0, rejected: 0 }, 200, cors);
+    }
     const body = await request.text();
     if (body.length > BODY_MAX_BYTES) {
         return json({ error: 'too_large' }, 400, cors);

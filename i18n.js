@@ -1832,9 +1832,9 @@
         // ---- Challenge mode (ch_*) ----
         [
             'ch_title',
-            'Challenge',
-            'Desafío',
-            'Челлендж'
+            'Exam',
+            'Examen',
+            'Экзамен'
         ],
         [
             'ch_games_label',
@@ -1874,9 +1874,9 @@
         ],
         [
             'ch_progress_aria',
-            'Challenge progress',
-            'Progreso del desafío',
-            'Прогресс челленджа'
+            'Exam progress',
+            'Progreso del examen',
+            'Прогресс экзамена'
         ],
         [
             'ch_right_count',
@@ -1898,9 +1898,9 @@
         ],
         [
             'ch_done_title',
-            'Challenge complete!',
-            '¡Desafío completado!',
-            'Челлендж пройден!'
+            'Exam complete!',
+            '¡Examen completado!',
+            'Экзамен пройден!'
         ],
         [
             'ch_done_line',

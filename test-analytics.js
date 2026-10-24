@@ -45,6 +45,20 @@ check('getDeviceId persists one id and returns the same value', () => {
     }
 });
 
+check('analytics skips local development and non-web hosts', () => {
+    ['localhost', 'LOCALHOST', 'localhost.', 'games.localhost', '127.0.0.1', '127.9.9.9',
+        '::1', '[::1]', '0.0.0.0'].forEach((hostname) => {
+        assert.strictEqual(Analytics.isLocalHost(hostname), true, `${hostname} must count as local`);
+        assert.strictEqual(Analytics.shouldTrack({ protocol: 'http:', hostname }), false, `${hostname} must not be tracked`);
+    });
+    assert.strictEqual(Analytics.isLocalHost('localhost.example.com'), false);
+    assert.strictEqual(Analytics.isLocalHost('192.168.1.20'), false);
+    assert.strictEqual(Analytics.shouldTrack({ protocol: 'https:', hostname: 'alex-just.github.io' }), true);
+    assert.strictEqual(Analytics.shouldTrack({ protocol: 'http:', hostname: '192.168.1.20' }), true);
+    assert.strictEqual(Analytics.shouldTrack({ protocol: 'file:', hostname: '' }), false);
+    assert.strictEqual(Analytics.shouldTrack(null), false);
+});
+
 check('enqueue appends and drops the oldest beyond the cap', () => {
     let queue = [];
     for (let i = 0; i < 5; i++) queue = Analytics.enqueue(queue, { id: 'e' + i }, 3);
@@ -352,6 +366,20 @@ async function runAsyncTests() {
         assert.strictEqual((await Worker.default.fetch(stubRequest({ path: '/other' }), { DB: db })).status, 405);
     });
 
+    await checkAsync('fetch ignores local development origins', async () => {
+        const db = stubDB();
+        for (const origin of ['http://localhost:8765', 'http://127.0.0.1:8765', 'http://[::1]:8765', 'http://app.localhost']) {
+            const response = await Worker.default.fetch(
+                stubRequest({ origin, body: batchBody([validEvent()]) }),
+                { DB: db }
+            );
+            assert.strictEqual(response.status, 200, `${origin} must be accepted and dropped`);
+            assert.deepStrictEqual(await response.json(), { inserted: 0, ignored: 0, rejected: 0 });
+        }
+        assert.strictEqual(db.log.inserts.length, 0, 'local events must never reach the database');
+        assert.strictEqual(db.log.batches.length, 0);
+    });
+
     await checkAsync('fetch rate-limits by server-side arrival', async () => {
         const db = stubDB({ count: 5000 });
         const response = await Worker.default.fetch(
@@ -370,6 +398,10 @@ async function runAsyncTests() {
 
         const evil = await Worker.default.fetch(stubRequest({ origin: 'https://localhost.evil.com', body: batchBody([]) }), { DB: db });
         assert.strictEqual(evil.headers.get('Access-Control-Allow-Origin'), null);
+
+        const local = await Worker.default.fetch(stubRequest({ method: 'OPTIONS', origin: 'http://localhost:8765' }), { DB: db });
+        assert.strictEqual(local.status, 204);
+        assert.strictEqual(local.headers.get('Access-Control-Allow-Origin'), 'http://localhost:8765');
     });
 
     await checkAsync('scheduled clears old IPs in bounded batches', async () => {

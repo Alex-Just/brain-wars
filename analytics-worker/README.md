@@ -12,7 +12,8 @@ The worker ignores a repeated event id. The client can send the same batch again
 - One IP can add 5000 events in 24 hours. The count uses `received_at`.
 - `ts` must fall within the last two years or the next two days. The worker still counts an accepted old `ts` by arrival time.
 - The cron at 04:00 UTC clears `ip` on rows older than 90 days. The other columns stay.
-- CORS allows `alex-just.github.io`, `localhost`, and `127.0.0.1`.
+- CORS allows `alex-just.github.io` and loopback hosts.
+- Ingest accepts and drops requests whose `Origin` is a loopback host, so local test runs never enter the database. The client skips those hosts too.
 
 ## Weekly progress email
 
@@ -97,7 +98,7 @@ npx wrangler deploy
 
 `wrangler.toml` names the worker, binds the database as `DB`, and sets the crons. Deploy `worker.mjs`.
 
-When you change `analytics.js` or the precache list, bump `VERSION` in `sw.js` in the same commit and push `master`. The service worker caches `analytics.js`. The installed app loads the new file on the next visit. The current `VERSION` is `v22`.
+When you change `analytics.js` or the precache list, bump `VERSION` in `sw.js` in the same commit and push `master`. The service worker caches `analytics.js`. The installed app loads the new file on the next visit. The current `VERSION` is `v23`.
 
 ## Read the rows
 
