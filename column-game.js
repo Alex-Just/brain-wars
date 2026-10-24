@@ -292,6 +292,7 @@
 	}
 
 	function handleKeyPress(key, ctx) {
+		if (global.BrainWarsWrongWait?.isLocked?.()) return;
 		const { elements, state } = ctx;
 		if (key === "backspace") {
 			state.currentInput = state.currentInput.slice(0, -1);
@@ -391,6 +392,7 @@
 	}
 
 	async function submitCurrentInput(ctx) {
+		if (global.BrainWarsWrongWait?.isLocked?.()) return;
 		const { state, hooks } = ctx;
 		const userVal = state.currentInput.trim();
 		if (!userVal) return;
