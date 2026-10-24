@@ -783,7 +783,7 @@
                  return Array.from(distractors);
              }
 
-             #handleChoiceClick(event) {
+             async #handleChoiceClick(event) {
                 // If already processing a click for this round, ignore subsequent clicks
                 if (this.#state.processingClick) {
                     console.log("Ignoring click, already processing.");
@@ -821,32 +821,17 @@
 
 
                 } else {
-                    // Mark the wrong button
                     window.BrainWarsChallenge?.noteAnswer?.(false);
-                    button.classList.add('wrong'); 
-                    
-                    // Briefly highlight the correct button
-                     this.#elements.choiceButtons.forEach(btn => {
-                        if(btn.dataset.phrase === this.#state.correctPhrase) {
-                            // Use a temporary class for highlighting correct answer
-                            btn.classList.add('tapped'); // Re-use tapped style for correct highlight
-                        }
-                     });
-
-                    this.#state.lastResult = 'wrong';
+                    button.classList.add('wrong');
                     this.#state.hadErrorThisRound = true;
-
-                    // Decrease level on every mistake, but not below 1
                     this.#state.level = Math.max(1, this.#state.level - 1);
                     this.#renderLevel();
-                    this.#renderMessage();
-                    
-                     // Wait a bit, then show "Tap to continue"
-                    setTimeout(() => {
-                         this.#state.waitingForTap = true;
-                         this.#elements.instructions.style.display = 'block'; // Show instructions
-                         // Keep choices visible so user can see the correct answer highlight
-                    }, ANIMATION_DURATION.WRONG_TAP + 300); // Wait for animation + extra delay
+                    // Keep the prompt; do not reveal the correct phrase.
+
+                    if (window.BrainWarsWrongWait) await window.BrainWarsWrongWait.lock();
+
+                    button.classList.remove('wrong');
+                    this.#state.processingClick = false;
                 }
             }
             

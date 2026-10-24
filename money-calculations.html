@@ -847,14 +847,14 @@
                 }
             }
 
-            #submitInput() {
+            async #submitInput() {
                 clearTimeout(this.#state.checkTimer);
                 this.#state.checkTimer = null;
                 if (!this.#state.currentInput) return;
                 if (this.#state.accepted.includes(this.#state.currentInput)) {
                     this.#handleCorrect();
                 } else {
-                    this.#handleWrong();
+                    await this.#handleWrong();
                 }
             }
 
@@ -884,7 +884,7 @@
                 note.setAttribute('aria-hidden', 'true');
             }
 
-            #handleWrong() {
+            async #handleWrong() {
                 window.BrainWarsChallenge?.noteAnswer?.(false);
                 this.#state.hadErrorThisRound = true;
                 const cell = this.#state.activeCell;
@@ -901,6 +901,7 @@
 
                 this.#state.currentInput = '';
                 this.#renderInput();
+                if (window.BrainWarsWrongWait) await window.BrainWarsWrongWait.lock();
             }
 
             #finishRound() {

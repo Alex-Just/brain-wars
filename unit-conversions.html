@@ -1075,11 +1075,11 @@
                 }, autoClearMs);
             }
 
-            #checkAnswer() {
+            async #checkAnswer() {
                 if (this.#state.locked) return;
                 const question = this.#state.question;
                 if (question.table) {
-                    this.#checkTable(question);
+                    await this.#checkTable(question);
                     return;
                 }
                 const status = BrainWarsUnits.check(question, this.#state.typed);
@@ -1093,13 +1093,13 @@
                     return;
                 }
                 window.BrainWarsChallenge?.noteAnswer?.(false);
-                this.#handleWrong();
+                await this.#handleWrong();
             }
 
             // Only the active row is graded. A correct row reveals the next one; the
             // last one finishes the round. Intermediate rows never show the global
             // "correct" hint, so a challenge run does not end before the chain does.
-            #checkTable(question) {
+            async #checkTable(question) {
                 const index = this.#state.activeRow;
                 const row = question.rows[index];
                 const status = BrainWarsUnits.check(row, this.#state.typedRows[index] || '');
@@ -1109,7 +1109,7 @@
                 }
                 if (status === 'wrong') {
                     window.BrainWarsChallenge?.noteAnswer?.(false);
-                    this.#handleTableWrong();
+                    await this.#handleTableWrong();
                     return;
                 }
                 window.BrainWarsChallenge?.noteAnswer?.(true);
@@ -1131,7 +1131,7 @@
                 this.#renderRule();
             }
 
-            #handleTableWrong() {
+            async #handleTableWrong() {
                 const index = this.#state.activeRow;
                 this.#state.hadErrorThisRound = true;
                 // A mistake reveals the rule of the row being worked on
@@ -1141,9 +1141,10 @@
                 this.#renderTable();
                 this.#renderRule();
                 this.#showHint('wrong', 1200);
+                if (window.BrainWarsWrongWait) await window.BrainWarsWrongWait.lock();
             }
 
-            #handleWrong() {
+            async #handleWrong() {
                 this.#state.hadErrorThisRound = true;
                 // A mistake reveals the general rule for this question
                 this.#state.showRule = true;
@@ -1156,6 +1157,7 @@
                 // Clear the entry so it can be typed again; the answer itself stays hidden
                 this.#state.typed = '';
                 this.#renderAnswer();
+                if (window.BrainWarsWrongWait) await window.BrainWarsWrongWait.lock();
             }
 
             #handleCorrect() {

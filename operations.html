@@ -893,7 +893,7 @@
                 this.#elements.levelDisplay.textContent = I18n.t('level_label', { n: this.#state.level });
             }
 
-            #handleOperatorClick(event) {
+            async #handleOperatorClick(event) {
                 if (!this.#state.isPlaying) return;
 
                 const button = event.target;
@@ -972,9 +972,8 @@
                     window.BrainWarsChallenge?.noteAnswer?.(false);
                     button.classList.add('wrong');
                     this.#state.hadErrorThisRound = true;  // Mark that there was an error this round
-                    setTimeout(() => {
-                        button.classList.remove('wrong');
-                    }, ANIMATION_DURATION.WRONG_TAP);
+                    if (window.BrainWarsWrongWait) await window.BrainWarsWrongWait.lock();
+                    button.classList.remove('wrong');
                 }
             }
 

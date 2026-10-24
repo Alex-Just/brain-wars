@@ -390,7 +390,7 @@
 		}
 	}
 
-	function submitCurrentInput(ctx) {
+	async function submitCurrentInput(ctx) {
 		const { state, hooks } = ctx;
 		const userVal = state.currentInput.trim();
 		if (!userVal) return;
@@ -398,10 +398,11 @@
 		if (userVal === state.expectedAnswer) {
 			global.BrainWarsChallenge?.noteAnswer?.(true);
 			hooks.handleCorrectInput();
-		} else {
-			global.BrainWarsChallenge?.noteAnswer?.(false);
-			hooks.handleWrongInput();
+			return;
 		}
+		global.BrainWarsChallenge?.noteAnswer?.(false);
+		hooks.handleWrongInput();
+		if (global.BrainWarsWrongWait) await global.BrainWarsWrongWait.lock();
 	}
 
 	function selectLevel(level, ctx) {

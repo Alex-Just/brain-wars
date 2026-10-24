@@ -1379,7 +1379,7 @@
                 };
             }
 
-            #checkAmount() {
+            async #checkAmount() {
                 const problem = this.#state.problem;
                 const step = this.#state.step;
                 const prefix = step === 'a' ? 'a' : 'c';
@@ -1400,7 +1400,7 @@
                     return;
                 }
 
-                this.#markWrong(prefix);
+                await this.#markWrong(prefix);
             }
 
             #flashCorrect(prefix) {
@@ -1409,7 +1409,7 @@
                 setTimeout(() => boxes.forEach(box => box.classList.remove('correct-flash')), 450);
             }
 
-            #answerChoice(answer) {
+            async #answerChoice(answer) {
                 if (this.#state.step !== 'b' || this.#state.done.b) return;
                 const problem = this.#state.problem;
                 if ((answer === 'yes') === problem.afford) {
@@ -1418,10 +1418,10 @@
                     this.#advanceFrom('b');
                     return;
                 }
-                this.#markWrong('b');
+                await this.#markWrong('b');
             }
 
-            #markWrong(prefix) {
+            async #markWrong(prefix) {
                 window.BrainWarsChallenge?.noteAnswer?.(false);
                 this.#state.hadErrorThisRound = true;
 
@@ -1447,6 +1447,7 @@
                     this.#state.activeBox = `${prefix}-eur`;
                 }
                 this.#renderSteps();
+                if (window.BrainWarsWrongWait) await window.BrainWarsWrongWait.lock();
             }
 
             #clearWrongHighlight() {

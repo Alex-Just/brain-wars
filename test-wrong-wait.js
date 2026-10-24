@@ -8,9 +8,9 @@ function check(name, fn) {
     try {
         fn();
         passed++;
-        console.log('  ok - ' + name);
+        console.log(`  ok - ${name}`);
     } catch (error) {
-        console.error('  FAIL - ' + name);
+        console.error(`  FAIL - ${name}`);
         throw error;
     }
 }
@@ -19,9 +19,9 @@ async function checkAsync(name, fn) {
     try {
         await fn();
         passed++;
-        console.log('  ok - ' + name);
+        console.log(`  ok - ${name}`);
     } catch (error) {
-        console.error('  FAIL - ' + name);
+        console.error(`  FAIL - ${name}`);
         throw error;
     }
 }
@@ -55,7 +55,7 @@ function createFakeDocument() {
                 while (stack.length) {
                     const child = stack.shift();
                     if (String(child.className).split(/\s+/).includes(className)) return child;
-                    if (child.children && child.children.length) {
+                    if (child.children?.length) {
                         stack.push(...child.children);
                     }
                 }
@@ -94,6 +94,8 @@ function createFakeDocument() {
         querySelector(selector) {
             if (selector === '.top-nav') return null;
             if (selector === '#game') return game;
+            if (selector === 'main.game' || selector === 'main') return game;
+            if (selector === 'main.game-card') return null;
             return body.querySelector(selector) || head.querySelector(selector);
         }
     };
@@ -214,7 +216,7 @@ check('exports the five-second wait constant', () => {
         WrongWait._resetForTests();
     });
 
-    console.log('\n' + passed + ' passed');
+    console.log(`\n${passed} passed`);
 })().catch((error) => {
     console.error(error);
     process.exitCode = 1;

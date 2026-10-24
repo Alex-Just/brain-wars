@@ -27,7 +27,12 @@
 
     function resolveMount(doc, options) {
         if (options.mount) return options.mount;
-        return doc.getElementById('game') || doc.body;
+        // Prefer the game main so the hub top-nav stays usable during the wait.
+        return doc.getElementById('game')
+            || doc.querySelector?.('main.game')
+            || doc.querySelector?.('main.game-card')
+            || doc.querySelector?.('main')
+            || doc.body;
     }
 
     function labelText() {
@@ -54,7 +59,7 @@
     }
 
     function ensureStyles(doc) {
-        if (doc.getElementById && doc.getElementById(STYLE_ID)) return;
+        if (doc.getElementById?.(STYLE_ID)) return;
         if (!doc.head || !doc.createElement) return;
         const style = doc.createElement('style');
         style.id = STYLE_ID;
@@ -113,9 +118,9 @@
     }
 
     function ensureMountPosition(mount) {
-        if (!mount || !mount.style) return;
-        const view = mount.ownerDocument && mount.ownerDocument.defaultView;
-        if (view && view.getComputedStyle) {
+        if (!mount?.style) return;
+        const view = mount.ownerDocument?.defaultView;
+        if (view?.getComputedStyle) {
             const position = view.getComputedStyle(mount).position;
             if (position === 'static' || !position) {
                 mount.style.position = 'relative';
@@ -177,7 +182,7 @@
 
     function runLock(options) {
         const doc = resolveDocument(options);
-        if (!doc || !doc.createElement) {
+        if (!doc?.createElement) {
             return Promise.resolve();
         }
         const durationMs = Math.max(0, Number(options.durationMs) || WRONG_WAIT_MS);

@@ -1057,7 +1057,7 @@
                 }, autoClearMs);
             }
 
-            #checkAnswer() {
+            async #checkAnswer() {
                 if (this.#state.locked) return;
                 if (this.#state.checkTimer) {
                     clearTimeout(this.#state.checkTimer);
@@ -1078,10 +1078,10 @@
                     this.#showHint('fill');
                     return;
                 }
-                this.#handleWrong(status);
+                await this.#handleWrong(status);
             }
 
-            #handleWrong(status) {
+            async #handleWrong(status) {
                 window.BrainWarsChallenge?.noteAnswer?.(false);
                 this.#state.hadErrorThisRound = true;
                 this.#showHint(status, 1200);
@@ -1090,6 +1090,7 @@
                 this.#state.answers = { hours: '', minutes: '', durHours: '', durMinutes: '' };
                 this.#state.activeBox = this.#state.enabledBoxes[0];
                 this.#renderBoxes();
+                if (window.BrainWarsWrongWait) await window.BrainWarsWrongWait.lock();
             }
 
             #boxValue(name) {

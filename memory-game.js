@@ -260,7 +260,7 @@
 
       await new Promise(resolve => setTimeout(resolve, 300));
 
-      // Only animate squares that were part of the sequence
+      // Show the rest of the sequence briefly, then clear for a retry of the same sequence.
       this.sequence.forEach(squareIndex => {
         const otherSquare = this.squares[squareIndex];
         if (otherSquare !== square) {
@@ -270,13 +270,11 @@
 
       await new Promise(resolve => setTimeout(resolve, 600));
 
-      // Clean up all squares
-      this.squares.forEach(square => {
-        square.classList.remove('wrong', 'tapped', 'ready');
-        square.tabIndex = -1;
+      this.squares.forEach(squareEl => {
+        squareEl.classList.remove('wrong', 'tapped', 'ready');
+        squareEl.tabIndex = -1;
       });
 
-      // Check if we need to go back a level
       if (this.consecutiveErrors >= this.MAX_ERRORS) {
         this.consecutiveErrors = 0;
         if (this.level > 1) {
@@ -285,20 +283,7 @@
         }
       }
 
-      // Generate new random sequence for current level
-      const totalSquares = this.calculateTotalSquares(this.level);
-      this.sequence = []; // Clear existing sequence
-
-      // Fill with new random squares
-      while (this.sequence.length < totalSquares) {
-        const availableSquares = Array.from(new Array(9).keys())
-          .filter(i => !this.sequence.includes(i));
-        const randomIndex = Math.floor(BrainWarsGames.random() * availableSquares.length);
-        this.sequence.push(availableSquares[randomIndex]);
-      }
-
-      // Shuffle the sequence for extra randomness
-      this.sequence = this.sequence.sort(() => BrainWarsGames.random() - 0.5);
+      if (globalThis.BrainWarsWrongWait) await globalThis.BrainWarsWrongWait.lock();
 
       this.playerSequence = [];
       this.setMessage(this.keys.remember);
