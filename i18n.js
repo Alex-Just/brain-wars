@@ -51,6 +51,12 @@
             'Назад к играм'
         ],
         [
+            'ww_wait_retry',
+            'Wait to try again',
+            'Espera para intentarlo de nuevo',
+            'Подождите, чтобы попробовать снова'
+        ],
+        [
             'game_follow',
             'Follow the Leader',
             'Sigue al líder',

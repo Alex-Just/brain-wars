@@ -70,6 +70,12 @@ check('all dictionary values are non-empty strings', () => {
     });
 });
 
+check('wrong-wait label exists in every language', () => {
+    assert.strictEqual(I18n.translations.en.ww_wait_retry, 'Wait to try again');
+    assert.ok(I18n.translations.es.ww_wait_retry.trim().length > 0);
+    assert.ok(I18n.translations.ru.ww_wait_retry.trim().length > 0);
+});
+
 console.log('i18n API');
 check('t() interpolates parameters per language', () => {
     I18n.setLang('en');
