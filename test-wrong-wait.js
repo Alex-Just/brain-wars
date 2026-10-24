@@ -68,7 +68,9 @@ function createFakeDocument() {
             setAttribute() {},
             getAttribute() {
                 return null;
-            }
+            },
+            // Layout read used by wrong-wait to commit the initial transform.
+            offsetWidth: 1
         };
         return el;
     }

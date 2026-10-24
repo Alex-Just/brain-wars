@@ -14,7 +14,7 @@
     const LABEL_CLASS = 'bw-wrong-wait-label';
     const TRACK_CLASS = 'bw-wrong-wait-track';
     const FILL_CLASS = 'bw-wrong-wait-fill';
-    const FILL_ACTIVE_CLASS = 'is-active';
+    const FILL_RUNNING_CLASS = 'is-running';
     const LABEL_FALLBACK = 'Wait to try again';
     const LABEL_KEY = 'ww_wait_retry';
 
@@ -125,14 +125,17 @@
     background: #FFEBEE;
 }
 .${FILL_CLASS} {
-    width: 0%;
+    width: 100%;
     height: 100%;
     border-radius: 999px;
     background: #D32F2F;
-    transition: width linear;
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform linear;
+    will-change: transform;
 }
-.${FILL_CLASS}.${FILL_ACTIVE_CLASS} {
-    width: 100%;
+.${FILL_CLASS}.${FILL_RUNNING_CLASS} {
+    transform: scaleX(1);
 }
 @media (prefers-reduced-motion: reduce) {
     .${FILL_CLASS} {
@@ -201,15 +204,25 @@
         mount.appendChild(panel);
         activeNodes = { capture, panel, fill, mount, doc };
 
-        // Next frame so the width transition runs from 0 → 100%.
-        const start = () => {
-            fill.className = `${FILL_CLASS} ${FILL_ACTIVE_CLASS}`;
+        // Force a layout pass so the initial scaleX(0) is committed before we
+        // flip to scaleX(1). A lone rAF is not enough on Mobile Safari: it often
+        // paints the running state in the first frame and skips the transition.
+        startFillAnimation(fill);
+    }
+
+    function startFillAnimation(fill) {
+        const run = () => {
+            fill.className = `${FILL_CLASS} ${FILL_RUNNING_CLASS}`;
         };
-        if (typeof global.requestAnimationFrame === 'function') {
-            global.requestAnimationFrame(start);
-        } else {
-            start();
+        // Reading layout forces the browser to apply scaleX(0) first.
+        void fill.offsetWidth;
+        if (typeof global.requestAnimationFrame !== 'function') {
+            run();
+            return;
         }
+        global.requestAnimationFrame(() => {
+            global.requestAnimationFrame(run);
+        });
     }
 
     function runLock(options) {
