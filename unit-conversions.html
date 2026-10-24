@@ -394,7 +394,10 @@
             width: 100%;
             display: flex;
             flex-direction: column;
-            gap: 5px;
+            gap: 8px;
+            /* Keep the active equation clear of the prompt above and the
+               keypad below; rows stay closer to each other than to those. */
+            margin-block: 10px;
         }
 
         .table-row {
