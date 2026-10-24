@@ -323,10 +323,11 @@
         }
 
         /* The equation: a measurement, an equals sign, and the answer slot.
-           Fixed height so the number pad never jumps between questions. */
+           The slot is 54px tall; a little extra keeps the row steady without
+           leaving a blank band above the number pad. */
         .convert-board {
             width: 100%;
-            min-height: clamp(96px, 26vw, 118px);
+            min-height: 64px;
             display: flex;
             align-items: center;
             justify-content: center;
