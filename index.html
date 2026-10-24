@@ -45,12 +45,37 @@
         }
     </style>
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const loader = document.getElementById('boot-loader');
-            if (!loader) return;
-            loader.classList.add('is-done');
-            setTimeout(() => loader.remove(), 400);
-        });
+        (() => {
+            const loader = () => document.getElementById('boot-loader');
+            let navigating = false;
+            const hideLoader = () => {
+                if (!navigating) loader()?.classList.add('is-done');
+            };
+
+            // The loader stays in the DOM after the hub is ready so it can cover
+            // the wait between tapping a game and that page painting.
+            document.addEventListener('DOMContentLoaded', hideLoader);
+
+            document.addEventListener('click', (event) => {
+                const target = event.target;
+                const link = target instanceof Element ? target.closest('a.game-card') : null;
+                if (!link) return;
+                // Leave modified clicks and new-tab links to the browser.
+                if (event.defaultPrevented || event.button !== 0) return;
+                if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                if (link.target && link.target !== '_self') return;
+                if (link.hasAttribute('download')) return;
+                navigating = true;
+                loader()?.classList.remove('is-done');
+            });
+
+            // Returning through the back/forward cache must not restore the
+            // overlay over the hub.
+            window.addEventListener('pageshow', () => {
+                navigating = false;
+                hideLoader();
+            });
+        })();
     </script>
     <title>Выбор игры</title>
     <script src="i18n.js" defer></script>
