@@ -289,11 +289,13 @@
                 --ch-bar-offset: calc(34px + env(safe-area-inset-top, 0px));
                 padding-top: var(--ch-bar-offset);
             }
-            /* Some games position their header with position: fixed (operations,
-               follow-the-leader, telling-time), where page padding does nothing, so the
-               header has to be moved down by the same amount as the padding. */
+            /* Follow the Leader still pins its back/language row and level readout to the
+               viewport, where page padding does nothing, so both have to move down by the
+               bar's height. The other games keep their bar in the page flow, where the
+               padding above is enough; their level pill also carries .level-badge, so it
+               must not be shifted a second time. */
             body.has-challenge .top-left-nav,
-            body.has-challenge #levelDisplay {
+            body.has-challenge #levelDisplay:not(.level-badge) {
                 transform: translateY(var(--ch-bar-offset));
             }
             /* The custom-equation form has no place inside a challenge run */

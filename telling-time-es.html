@@ -102,26 +102,20 @@
         body {
             font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background-color: var(--color-background);
+            color: var(--color-text);
             margin: 0;
-            padding: 0;
+            padding: 12px 8px;
             min-height: 100vh;
-            min-height: 100dvh;
-            height: 100vh;
-            height: 100dvh;
-            max-height: 100vh;
-            max-height: 100dvh;
+            min-height: 100svh;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            justify-content: safe center;
+            justify-content: flex-start;
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
             overflow-x: hidden;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
-            position: fixed;
-            width: 100%;
             user-select: none;
             -webkit-user-select: none; /* Safari */
             -moz-user-select: none;    /* Firefox (older) */
@@ -135,11 +129,11 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            width: min(90vw, 400px);
+            justify-content: safe center;
+            width: min(94vw, 400px);
+            flex: 1 0 auto;
             padding: 0;
             margin: 0;
-            min-height: 100vh;
-            min-height: 100dvh;
             padding-bottom: env(safe-area-inset-bottom, 20px); /* Add safe area padding */
         }
 
@@ -221,54 +215,69 @@
             /* Position adjusted dynamically by JS/CSS */
         }
 
-        /* Level display */
-        /* Back to the game list + language pill, pinned top-left */
-        .top-left-nav {
-            position: fixed;
-            top: max(15px, env(safe-area-inset-top));
-            left: max(15px, env(safe-area-inset-left));
+        /* Header Navigation */
+        .top-nav {
+            width: min(94vw, 400px);
             display: flex;
             align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
             gap: 8px;
-            z-index: 1000;
+            flex-wrap: wrap;
+            z-index: 10;
         }
 
-        .back-btn {
+        .nav-btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-width: 44px;
-            min-height: 44px;
             background: white;
             border: 1px solid rgba(0,0,0,0.08);
+            color: var(--color-text-secondary);
             border-radius: 10px;
-            color: var(--color-text-secondary, #666);
-            font-size: 20px;
-            line-height: 1;
+            min-height: 44px;
+            padding: 10px 14px;
+            font-size: 14px;
             text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            font-weight: 500;
+            white-space: nowrap;
         }
 
-        .back-btn:active {
-            background: #f8fafc;
+        .nav-btn:active {
+            background-color: #f8fafc;
+            color: var(--color-primary-dark);
             transform: scale(0.97);
         }
 
-        #levelDisplay {
-            position: fixed;
-            top: max(15px, env(safe-area-inset-top));
-            right: max(15px, env(safe-area-inset-right));
-            /* Same height as the language pill, so both sit on the row's centre line */
-            box-sizing: border-box;
-            display: flex;
+        .icon-btn {
+            min-width: 44px;
+            padding: 10px 12px;
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        .level-badge {
+            display: inline-flex;
             align-items: center;
-            height: 52px;
-            font-size: var(--font-size-base);
-            padding: var(--spacing-sm) 15px;
-            border-radius: var(--border-radius-sm);
-            background: rgba(0,0,0,0.1);
+            gap: 6px;
+            background: rgba(0, 0, 0, 0.08);
             color: var(--color-text-secondary);
-            z-index: 1000;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 600;
+            min-height: 44px;
+            padding: 10px 12px;
+            border: 1px solid transparent;
+            border-radius: 10px;
+            white-space: nowrap;
+        }
+
+        /* The level advances on its own here, so the pill is a readout, not a picker. */
+        #levelDisplay {
+            cursor: default;
         }
 
         /* Instructions (Hidden initially) */
@@ -284,10 +293,10 @@
         /* Safe area insets */
         @supports (padding: max(0px)) {
             body {
-                padding: max(10px, env(safe-area-inset-top))
-                         max(10px, env(safe-area-inset-right))
-                         max(10px, env(safe-area-inset-bottom))
-                         max(10px, env(safe-area-inset-left));
+                padding: max(12px, env(safe-area-inset-top))
+                         max(8px, env(safe-area-inset-right))
+                         max(12px, env(safe-area-inset-bottom))
+                         max(8px, env(safe-area-inset-left));
             }
         }
 
@@ -406,11 +415,6 @@
                  margin-bottom: 70px;
              }
 
-             #levelDisplay {
-                 font-size: clamp(14px, 3.5vw, 16px);
-                 padding: 8px 12px;
-             }
-
              #instructions {
                   font-size: clamp(18px, 4.5vw, 24px);
                   bottom: clamp(70px, 12vh, 100px);
@@ -438,12 +442,6 @@
                  margin-top: 10px;
                  margin-bottom: 65px; /* Keep space for button */
             }
-            
-            #levelDisplay {
-                 font-size: 18px;
-                 bottom: 65px; /* Position above start button */
-                 padding: 8px;
-             }
         }
 
         @media (max-width: 360px) {
@@ -471,15 +469,16 @@
 <body>
     <div id="boot-loader" aria-hidden="true"></div>
 
-    <div class="top-left-nav">
-        <a id="backBtn" class="back-btn" href="./index.html" data-i18n-aria-label="nav_back" aria-label="Назад к играм"><svg class="back-arrow" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path d="M20 12H6M11.5 6 5.5 12 11.5 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+    <!-- Top Navigation -->
+    <header class="top-nav">
+        <a id="backBtn" class="nav-btn icon-btn" href="./index.html" data-i18n-aria-label="nav_back" aria-label="Назад к играм"><svg class="back-arrow" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path d="M20 12H6M11.5 6 5.5 12 11.5 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
         <div data-lang-toggle></div>
-    </div>
+        <output class="level-badge" id="levelDisplay">Nivel 1</output>
+    </header>
     <main class="game" id="game">
-        <output class="level-display" id="levelDisplay">Nivel 1</output>
         
         <!-- Analog Clock Display Area -->
-        <div id="analogClockContainer" style="aspect-ratio: 1; margin-top: clamp(40px, 10vh, 120px); margin-bottom: 20px;">
+        <div id="analogClockContainer" style="aspect-ratio: 1; margin-top: clamp(8px, 2vh, 24px); margin-bottom: 20px;">
              <svg id="analogClock" viewBox="-10 -10 120 120" style="width: 100%; height: 100%;">
                 <defs>
                     <!-- Define markers for the end of the hands -->
