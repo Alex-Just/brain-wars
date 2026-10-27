@@ -51,11 +51,11 @@ Follow the Leader and Unfollow the Leader stay in the repository. The hub and Ch
 
 ## Analytics
 
-The live app sends one row per answer attempt to its own Cloudflare Worker. The row stores the game, the result (`1` right or `0` wrong), the device time, a random device id, and the request IP and country. The worker clears the IP after 90 days. The other columns stay. The app sets no cookies and creates no accounts.
+The live app sends one row per graded answer to its own Cloudflare Worker. The row stores the game, the result (`1` right or `0` wrong), the device time, a random device id, and the request IP and country. The worker clears the IP after 90 days. The other columns stay. The app sets no cookies and creates no accounts.
 
 Challenge mode also reads `GET /practice` for this device's per-game counts over the last three days. That route takes no token, and it returns only game ids and aggregate counts, with no IP, country, timestamps, or event ids.
 
-Telling-time stores a wrong tap and skips the completion that follows that same tap. Every other game stores the wrong attempt and the solved attempt as two rows.
+Every graded tap stores one row. In a multi-step game, each correct step and each wrong tap is its own row. Telling-time ends the round after one tap, so a wrong tap stores one wrong row and no right row for that round.
 
 Read the rows in the Cloudflare D1 console for database `brain-wars-answers`. Every Sunday at 18:00 UTC, the worker aggregates the past week and emails a progress report to the parent. The report lists overall accuracy, active days, and the top three skills that need practice with arithmetic tips. Deploy steps, limits, report configuration, and queries are in [`analytics-worker/README.md`](analytics-worker/README.md).
 
@@ -137,7 +137,7 @@ brain-wars/
 │                         #   money-problems, elapsed-time, time-calculations,
 │                         #   money-calculations, unit-conversions
 ├── pwa.js                # Registers the service worker on http and https
-├── sw.js                 # Precache and fetch rules. VERSION is v27
+├── sw.js                 # Precache and fetch rules. VERSION is v28
 ├── manifest.json         # PWA name and icons
 ├── icons/                # App icons
 ├── analytics-worker/     # Worker, D1 schema, and Wrangler config

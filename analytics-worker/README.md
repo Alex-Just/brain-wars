@@ -6,6 +6,8 @@ The live ingest URL is `https://brain-wars-answers.alex-just.workers.dev/ingest`
 
 The worker ignores a repeated event id. The client can send the same batch again.
 
+The app sends one event per graded answer, including every step of a multi-step question and every wrong tap. Practice and exam both report.
+
 ## Limits
 
 - A request can hold 200 events and 65536 bytes.
@@ -98,7 +100,7 @@ npx wrangler deploy
 
 `wrangler.toml` names the worker, binds the database as `DB`, and sets the crons. Deploy `worker.mjs`.
 
-When you change `analytics.js` or the precache list, bump `VERSION` in `sw.js` in the same commit and push `master`. The service worker caches `analytics.js`. The installed app loads the new file on the next visit. The current `VERSION` is `v27`.
+When you change `analytics.js` or the precache list, bump `VERSION` in `sw.js` in the same commit and push `master`. The service worker caches `analytics.js`. The installed app loads the new file on the next visit. The current `VERSION` is `v28`.
 
 ## Read the rows
 
