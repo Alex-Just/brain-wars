@@ -374,6 +374,14 @@ check('every graded tap bumps the answer counters', () => {
     assert.strictEqual(legacy.right, 1);
 });
 
+check('every graded answer reports to analytics', () => {
+    const challenge = fs.readFileSync(path.join(__dirname, 'challenge.js'), 'utf8');
+    assert.ok(challenge.includes('recordAnswer'), 'noteAnswer must report to analytics');
+    const memory = fs.readFileSync(path.join(__dirname, 'memory-game.js'), 'utf8');
+    assert.ok(memory.includes('noteAnswer?.(true)'), 'memory games must report correct moves');
+    assert.ok(memory.includes('noteAnswer?.(false)'), 'memory games must report wrong moves');
+});
+
 check('challenge navigation replaces history so Back always exits the run', () => {
     // Steps used to push history entries, so Back revisited an earlier round and the
     // stale-tab redirect threw the player forward again: a visible bounce. Replacing

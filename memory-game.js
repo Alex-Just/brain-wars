@@ -252,6 +252,7 @@
     }
 
     async handleWrongMove(square) {
+      globalThis.BrainWarsChallenge?.noteAnswer?.(false);
       this.isPlayerTurn = false;
       this.consecutiveErrors++;
       this.setMessage(this.keys.tryAgain);
@@ -294,6 +295,7 @@
     }
 
     async handleCorrectMove(square) {
+      globalThis.BrainWarsChallenge?.noteAnswer?.(true);
       // Reset consecutive errors on correct move
       this.consecutiveErrors = 0;
 

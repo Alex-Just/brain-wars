@@ -63,6 +63,13 @@ check('recordAnswer does nothing without a web location', () => {
     assert.strictEqual(Analytics.recordAnswer('operations', true), false);
 });
 
+check('the browser reports graded answers instead of watching DOM signals', () => {
+    const source = fs.readFileSync(path.join(__dirname, 'analytics.js'), 'utf8');
+    assert.ok(source.includes('recordAnswer'), 'analytics.js must expose recordAnswer');
+    assert.ok(!source.includes('MutationObserver'), 'the DOM observer must be gone');
+    assert.ok(!source.includes('risingEdges'), 'round-level edge capture must be gone');
+});
+
 check('enqueue appends and drops the oldest beyond the cap', () => {
     let queue = [];
     for (let i = 0; i < 5; i++) queue = Analytics.enqueue(queue, { id: 'e' + i }, 3);
@@ -77,32 +84,6 @@ check('takeBatch returns the first events only', () => {
 check('ack removes exactly the sent ids', () => {
     const queue = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
     assert.deepStrictEqual(Analytics.ack(queue, ['a', 'c']).map((event) => event.id), ['b']);
-});
-
-check('risingEdges reports only false-to-true transitions', () => {
-    assert.deepStrictEqual(Analytics.risingEdges({ mistake: false, completion: false }, { mistake: true, completion: false }), ['mistake']);
-    assert.deepStrictEqual(Analytics.risingEdges({ mistake: true, completion: false }, { mistake: true, completion: true }), ['completion']);
-    assert.deepStrictEqual(Analytics.risingEdges({ mistake: true, completion: true }, { mistake: false, completion: true }), []);
-});
-
-check('captureEvent records every attempt in standard games', () => {
-    const state = { mistakeSeen: false };
-    assert.strictEqual(Analytics.captureEvent(state, 'mistake', 'time-calculations'), false);
-    assert.strictEqual(state.mistakeSeen, true);
-    assert.strictEqual(Analytics.captureEvent(state, 'completion', 'time-calculations'), true);
-    assert.strictEqual(state.mistakeSeen, false);
-});
-
-check('captureEvent suppresses the completion after a mistake in telling-time', () => {
-    const state = { mistakeSeen: false };
-    assert.strictEqual(Analytics.captureEvent(state, 'mistake', 'telling-time'), false);
-    assert.strictEqual(Analytics.captureEvent(state, 'completion', 'telling-time'), null);
-    assert.strictEqual(state.mistakeSeen, false);
-});
-
-check('captureEvent keeps a clean telling-time completion', () => {
-    const state = { mistakeSeen: false };
-    assert.strictEqual(Analytics.captureEvent(state, 'completion', 'telling-time'), true);
 });
 
 check('classifyResponse maps statuses', () => {

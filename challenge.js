@@ -213,6 +213,13 @@
     const run = inChallenge ? loadRun() : null;
     const active = Boolean(inChallenge && run);
 
+    // The page's registered game id, used to attribute each graded answer.
+    function currentGameId() {
+        if (typeof global.location === 'undefined') return null;
+        const file = global.location.pathname.split('/').pop();
+        return global.BrainWarsGames?.byFile(file)?.id || null;
+    }
+
     const Challenge = {
         limits: LIMITS,
         defaults: DEFAULTS,
@@ -227,9 +234,17 @@
         bumpAnswer: bumpAnswer,
         practiceUrl: practiceUrl,
         loadPracticeHistory: loadPracticeHistory,
-        // One graded tap: every game reports its own answer here, and the run keeps
-        // the tally across page loads. Outside a challenge it is a no-op.
+        // One graded tap: every game reports here. Analytics records it in every
+        // mode; the exam counters only move while a challenge run is active.
         noteAnswer: (ok) => {
+            const gameId = currentGameId();
+            if (gameId) {
+                try {
+                    global.BrainWarsAnalytics?.recordAnswer?.(gameId, ok);
+                } catch {
+                    // Analytics must never break gameplay.
+                }
+            }
             if (!active) return;
             bumpAnswer(run, ok);
             saveRun(run);

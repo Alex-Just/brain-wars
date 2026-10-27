@@ -17,10 +17,6 @@
     const BACKOFF_START_MS = 30000;
     const BACKOFF_CAP_MS = 300000;
 
-    // telling-time raises its completion signal after a wrong tap too, so a round
-    // whose one attempt was already recorded wrong must not emit a correct event.
-    const SUPPRESS_AFTER_MISTAKE = new Set(['telling-time']);
-
     /* ---------- pure core ---------- */
 
     // Event ids only have to be unique per attempt, and crypto keeps them
@@ -55,27 +51,6 @@
         const kept = new Set(resultQueue.map((event) => event.id));
         const removed = new Set(snapshot.filter((event) => !kept.has(event.id)).map((event) => event.id));
         return liveQueue.filter((event) => !removed.has(event.id));
-    }
-
-    function risingEdges(prev, next) {
-        const edges = [];
-        if (!prev.mistake && next.mistake) edges.push('mistake');
-        if (!prev.completion && next.completion) edges.push('completion');
-        return edges;
-    }
-
-    // Returns the correct flag for the event to record, or null for no event.
-    function captureEvent(state, edge, gameId) {
-        if (edge === 'mistake') {
-            state.mistakeSeen = true;
-            return false;
-        }
-        if (edge === 'completion') {
-            const suppress = state.mistakeSeen && SUPPRESS_AFTER_MISTAKE.has(gameId);
-            state.mistakeSeen = false;
-            return suppress ? null : true;
-        }
-        return null;
     }
 
     function classifyResponse(status) {
@@ -140,7 +115,7 @@
     }
 
     const core = {
-        buildEvent, enqueue, takeBatch, ack, reconcileQueue, risingEdges, captureEvent,
+        buildEvent, enqueue, takeBatch, ack, reconcileQueue,
         classifyResponse, nextBackoff, flushOnce, getDeviceId, isLocalHost, shouldTrack,
         createReporter, recordAnswer,
         ENDPOINT, QUEUE_MAX, BATCH_MAX, MIN_FLUSH_GAP_MS, MAX_PERMANENT_TRIES
@@ -150,18 +125,6 @@
     if (typeof module !== 'undefined' && module.exports) module.exports = core;
 
     /* ---------- browser bootstrap ---------- */
-
-    function signalHit(signal) {
-        if (!signal) return false;
-        if (signal.kind === 'class') {
-            return [...document.querySelectorAll(signal.selector)].some((element) => element.classList.contains(signal.value));
-        }
-        const element = document.querySelector(signal.selector);
-        if (!element) return false;
-        if (signal.kind === 'style') return element.style[signal.property] === signal.value;
-        if (signal.kind === 'text') return element.textContent.trim() === global.I18n.t(signal.key);
-        return false;
-    }
 
     function safeStorage() {
         try {
@@ -306,35 +269,11 @@
         return true;
     }
 
-    function start(game) {
-        const collector = ensureReporter();
-        const captureState = { mistakeSeen: false };
-        let hits = { mistake: signalHit(game.mistake), completion: signalHit(game.completion) };
-
-        const evaluate = () => {
-            const next = { mistake: signalHit(game.mistake), completion: signalHit(game.completion) };
-            risingEdges(hits, next).forEach((edge) => {
-                const correct = captureEvent(captureState, edge, game.id);
-                if (correct !== null) collector.record(game.id, correct);
-            });
-            hits = next;
-        };
-
-        new MutationObserver(evaluate).observe(document.documentElement, {
-            subtree: true, childList: true, characterData: true,
-            attributes: true, attributeFilter: ['class', 'style']
-        });
-    }
-
     if (typeof document !== 'undefined' && ENDPOINT && shouldTrack(global.location)) {
-        const file = global.location.pathname.split('/').pop() || 'index.html';
-        const game = global.BrainWarsGames?.byFile(file);
-        if (game) {
-            try {
-                start(game);
-            } catch {
-                // Analytics must never break a game.
-            }
+        try {
+            ensureReporter();
+        } catch {
+            // Analytics must never break a game.
         }
     }
 })(typeof window !== 'undefined' ? window : globalThis);
