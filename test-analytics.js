@@ -59,6 +59,10 @@ check('analytics skips local development and non-web hosts', () => {
     assert.strictEqual(Analytics.shouldTrack(null), false);
 });
 
+check('recordAnswer does nothing without a web location', () => {
+    assert.strictEqual(Analytics.recordAnswer('operations', true), false);
+});
+
 check('enqueue appends and drops the oldest beyond the cap', () => {
     let queue = [];
     for (let i = 0; i < 5; i++) queue = Analytics.enqueue(queue, { id: 'e' + i }, 3);
@@ -178,8 +182,6 @@ check('the worker guide documents the live ingest and the rate limit', () => {
     assert.ok(!readme.includes('"ts":0'), 'ts 0 is outside the validation window');
 });
 
-console.log('analytics worker');
-
 const Games = require('./games.js');
 
 // A rejected run exits like a failed test: the promise chain below ends in .catch,
@@ -205,6 +207,34 @@ async function runAsyncTests() {
             throw error;
         }
     }
+
+    console.log('analytics reporter');
+    await checkAsync('a reporter queues and flushes every graded answer', async () => {
+        const store = new Map();
+        const storage = {
+            getItem: (key) => (store.has(key) ? store.get(key) : null),
+            setItem: (key, value) => store.set(key, String(value))
+        };
+        const posted = [];
+        const reporter = Analytics.createReporter({
+            storage,
+            device: 'dev-reporter',
+            now: () => NOW,
+            post: async (batch) => { posted.push(batch); return 200; }
+        });
+        reporter.start();
+        reporter.record('operations', true);
+        reporter.record('operations', false);
+        await reporter.flush();
+        assert.strictEqual(posted.length, 1);
+        assert.deepStrictEqual(
+            posted[0].map((event) => [event.game, event.correct, event.device]),
+            [['operations', true, 'dev-reporter'], ['operations', false, 'dev-reporter']]
+        );
+        assert.strictEqual(store.get('brain_wars_answers'), '[]');
+    });
+
+    console.log('analytics worker');
 
     const validEvent = (overrides) => ({
         id: 'e-0123456789', game: 'time-calculations', correct: true, ts: NOW, device: 'dev-1',

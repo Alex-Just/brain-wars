@@ -129,6 +129,10 @@
         return !isLocalHost(location.hostname);
     }
 
+    // The reporter is created lazily: the browser bootstrap flushes the queue on
+    // load, and the answer hook records into the same instance.
+    let reporter = null;
+
     // The random device id the uploader uses, exposed so Challenge mode can ask the
     // worker for this device's practice history.
     function getDeviceId() {
@@ -138,6 +142,7 @@
     const core = {
         buildEvent, enqueue, takeBatch, ack, reconcileQueue, risingEdges, captureEvent,
         classifyResponse, nextBackoff, flushOnce, getDeviceId, isLocalHost, shouldTrack,
+        createReporter, recordAnswer,
         ENDPOINT, QUEUE_MAX, BATCH_MAX, MIN_FLUSH_GAP_MS, MAX_PERMANENT_TRIES
     };
     global.BrainWarsAnalytics = core;
@@ -187,15 +192,36 @@
         }
     }
 
-    function start(game) {
-        const storage = safeStorage();
-        const device = deviceId(storage);
-        const captureState = { mistakeSeen: false };
-        let hits = { mistake: false, completion: false };
+    async function postBatch(batch) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+        try {
+            const response = await fetch(ENDPOINT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ events: batch }),
+                signal: controller.signal
+            });
+            await response.json(); // An unparseable body counts as a failure.
+            return response.status;
+        } finally {
+            clearTimeout(timer);
+        }
+    }
+
+    // One shared queue for every answer. `post` and the clock are injectable so the
+    // reporter can be tested without a browser or a network.
+    function createReporter(options = {}) {
+        const storage = options.storage !== undefined ? options.storage : safeStorage();
+        const now = options.now || (() => Date.now());
+        const post = options.post || postBatch;
+        const device = options.device || deviceId(storage);
         let queue = readQueue(storage);
         let flushState = { backoff: 0, nextTryAt: 0, permanentTries: 0 };
         let flushing = false;
+        let flushPromise = Promise.resolve();
         let lastFlushAt = 0;
+        let started = false;
 
         const persist = () => {
             try {
@@ -205,75 +231,110 @@
             }
         };
 
+        const flush = () => {
+            if (flushing) return flushPromise;
+            flushing = true;
+            flushPromise = (async () => {
+                try {
+                    while (queue.length && now() >= flushState.nextTryAt) {
+                        const snapshot = queue;
+                        const result = await flushOnce(snapshot, post, flushState, now());
+                        queue = reconcileQueue(queue, snapshot, result.queue);
+                        flushState = {
+                            backoff: result.backoff,
+                            nextTryAt: result.nextTryAt,
+                            permanentTries: result.permanentTries
+                        };
+                        persist();
+                        if (flushState.nextTryAt > 0) break;
+                    }
+                } finally {
+                    flushing = false;
+                }
+            })();
+            return flushPromise;
+        };
+
+        const scheduleFlush = (onlyIfIdle) => {
+            const current = now();
+            if (onlyIfIdle && current - lastFlushAt < MIN_FLUSH_GAP_MS) return;
+            lastFlushAt = current;
+            if (!queue.length) return;
+            void flush().catch(() => {});
+        };
+
+        const record = (game, correct) => {
+            queue = enqueue(queue, buildEvent(game, correct, now(), device), QUEUE_MAX);
+            persist();
+            scheduleFlush(true);
+        };
+
+        const start = () => {
+            if (started) return;
+            started = true;
+            if (typeof global.addEventListener === 'function') {
+                global.addEventListener('online', () => scheduleFlush(false));
+            }
+            if (typeof document !== 'undefined' && document.addEventListener) {
+                document.addEventListener('visibilitychange', () => {
+                    if (!document.hidden) scheduleFlush(false);
+                });
+            }
+            scheduleFlush(false);
+        };
+
+        return { record, flush, start };
+    }
+
+    function ensureReporter() {
+        if (!reporter) {
+            reporter = createReporter();
+            reporter.start();
+        }
+        return reporter;
+    }
+
+    // The shared answer hook: every game reports each graded tap here. A page on
+    // loopback or file:// is never tracked, and analytics never breaks gameplay.
+    function recordAnswer(game, correct) {
+        if (!shouldTrack(global.location)) return false;
+        try {
+            ensureReporter().record(game, correct);
+        } catch {
+            return false;
+        }
+        return true;
+    }
+
+    function start(game) {
+        const collector = ensureReporter();
+        const captureState = { mistakeSeen: false };
+        let hits = { mistake: signalHit(game.mistake), completion: signalHit(game.completion) };
+
         const evaluate = () => {
             const next = { mistake: signalHit(game.mistake), completion: signalHit(game.completion) };
             risingEdges(hits, next).forEach((edge) => {
                 const correct = captureEvent(captureState, edge, game.id);
-                if (correct !== null) {
-                    queue = enqueue(queue, buildEvent(game.id, correct, Date.now(), device), QUEUE_MAX);
-                    persist();
-                    scheduleFlush(true);
-                }
+                if (correct !== null) collector.record(game.id, correct);
             });
             hits = next;
         };
 
-        const post = async (batch) => {
-            const controller = new AbortController();
-            const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-            try {
-                const response = await fetch(ENDPOINT, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ events: batch }),
-                    signal: controller.signal
-                });
-                await response.json(); // An unparseable body counts as a failure.
-                return response.status;
-            } finally {
-                clearTimeout(timer);
-            }
-        };
-
-        const flush = async () => {
-            if (flushing) return;
-            flushing = true;
-            try {
-                while (queue.length && Date.now() >= flushState.nextTryAt) {
-                    const snapshot = queue;
-                    const result = await flushOnce(snapshot, post, flushState, Date.now());
-                    queue = reconcileQueue(queue, snapshot, result.queue);
-                    flushState = { backoff: result.backoff, nextTryAt: result.nextTryAt, permanentTries: result.permanentTries };
-                    persist();
-                    if (flushState.nextTryAt > 0) break;
-                }
-            } finally {
-                flushing = false;
-            }
-        };
-
-        function scheduleFlush(onlyIfIdle) {
-            const now = Date.now();
-            if (onlyIfIdle && now - lastFlushAt < MIN_FLUSH_GAP_MS) return;
-            lastFlushAt = now;
-            void flush();
-        }
-
-        hits = { mistake: signalHit(game.mistake), completion: signalHit(game.completion) }; // baseline, no events
         new MutationObserver(evaluate).observe(document.documentElement, {
             subtree: true, childList: true, characterData: true,
             attributes: true, attributeFilter: ['class', 'style']
         });
-        global.addEventListener('online', () => scheduleFlush(false));
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden) scheduleFlush(false);
-        });
-        scheduleFlush(false);
     }
 
     if (typeof document !== 'undefined' && ENDPOINT && shouldTrack(global.location)) {
         const file = global.location.pathname.split('/').pop() || 'index.html';
         const game = global.BrainWarsGames?.byFile(file);
-        if (game) start(game);
+        if (game) {
+            try {
+                start(game);
+            } catch {
+                // Analytics must never break a game.
+            }
+        }
     }
 })(typeof window !== 'undefined' ? window : globalThis);
