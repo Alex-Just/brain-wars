@@ -357,6 +357,19 @@
             z-index: 2;
         }
 
+        /* Pick-a-cell steps: no cell is hinted, so the whole grid has to look tappable. */
+        .math-grid.is-picking {
+            box-shadow: 0 0 0 2px rgba(96, 172, 189, 0.35);
+        }
+
+        .math-grid.is-picking .grid-cell {
+            cursor: pointer;
+        }
+
+        .math-grid.is-picking .grid-cell:active {
+            background-color: var(--color-primary-light);
+        }
+
         .grid-cell.typing-preview {
             color: var(--color-primary-dark);
             font-weight: 700;

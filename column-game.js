@@ -306,6 +306,10 @@
 		}
 
 		if (key >= "0" && key <= "9") {
+			// Digits only go into a selected cell. In pick-a-cell mode the
+			// selection step leaves the target list empty until the right cell
+			// is tapped, so the keypad stays inert.
+			if (state.activeTargetCells.length === 0) return;
 			if (state.currentInput.length >= state.expectedAnswer.length) return;
 			elements.instructionHint.classList.remove("is-error");
 			state.currentInput += key;
@@ -333,23 +337,29 @@
 				const cellEl = document.createElement("div");
 				cellEl.className = `grid-cell ${cellData.classes.join(" ")}`;
 				cellEl.id = `cell-${r}-${c}`;
+				cellEl.dataset.row = String(r);
+				cellEl.dataset.col = String(c);
 				cellEl.textContent = cellData.char;
 				grid.appendChild(cellEl);
 			}
 		}
 	}
 
+	function clearActiveTargets(ctx) {
+		const { state } = ctx;
+		state.activeTargetCells.forEach(({ r, c }) => {
+			const cell = document.getElementById(`cell-${r}-${c}`);
+			if (!cell) return;
+			cell.classList.remove("active-input", "typing-preview", "multi");
+			cell.textContent = state.gridMatrix[r][c].char;
+		});
+		state.activeTargetCells = [];
+	}
+
 	function syncActiveCell(ctx) {
 		const { elements, state } = ctx;
 		const step = state.steps[state.stepIndex];
-		const previous = state.activeTargetCells;
-		previous.forEach(({ r, c }) => {
-			const cell = document.getElementById(`cell-${r}-${c}`);
-			if (cell) {
-				cell.classList.remove("active-input", "typing-preview", "multi");
-				cell.textContent = state.gridMatrix[r][c].char;
-			}
-		});
+		clearActiveTargets(ctx);
 
 		state.activeTargetCells = [{ r: step.row, c: step.col }];
 		const cell = document.getElementById(`cell-${step.row}-${step.col}`);
@@ -882,6 +892,10 @@
 			}
 		}
 
+		clearActiveTargets() {
+			BrainWarsColumnGame.clearActiveTargets(this.ctx());
+		}
+
 		syncActiveCell() {
 			BrainWarsColumnGame.syncActiveCell(this.ctx());
 		}
@@ -1278,6 +1292,7 @@
 		bindEvents,
 		handleKeyPress,
 		renderGridDOM,
+		clearActiveTargets,
 		syncActiveCell,
 		toggleLevelMenu,
 		handleLanguageChange,

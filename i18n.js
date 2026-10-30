@@ -467,6 +467,18 @@
             'Не совсем так. Попробуй ещё раз!'
         ],
         [
+            'lm_pick_cell_hint',
+            'First, tap the cell where the digit goes',
+            'Primero, toca la celda donde va la cifra',
+            'Сначала нажми на клетку, куда пишем цифру'
+        ],
+        [
+            'lm_pick_cell_wrong',
+            'Not this cell. Think about the place value.',
+            'No es esta celda. Piensa en el valor posicional.',
+            'Не эта клетка. Подумай о разряде.'
+        ],
+        [
             'lm_done_title',
             'Well done!',
             '¡Bien hecho!',

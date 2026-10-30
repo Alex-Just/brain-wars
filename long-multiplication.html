@@ -173,7 +173,10 @@
                         maxProductDigits: 8,
                         // The notebook grid never uses more than this many columns: with
                         // more the cells and digits get too small to read on a phone.
-                        maxGridColumns: 12
+                        maxGridColumns: 12,
+                        // From this level the next cell is not revealed: the child
+                        // first finds the place value and taps the cell before typing.
+                        pickCellFromLevel: 10
                     };
                 }
 
@@ -199,8 +202,14 @@
                         numCols: 0,
                         baseCol: 0,
                         resultRow: 0,
-                        activeTargetCells: []
+                        activeTargetCells: [],
+                        awaitingCellSelection: false
                     };
+                }
+
+                bindEvents() {
+                    super.bindEvents();
+                    this.elements.mathGrid.addEventListener('click', (event) => this.handleGridClick(event));
                 }
 
                 getLevelConfig(level) {
@@ -526,8 +535,29 @@
                     this.state.currentInput = '';
                     this.state.expectedAnswer = String(step.expected);
                     this.elements.instructionHint.classList.remove('is-error');
-                    this.syncActiveCell();
 
+                    if (this.requiresCellSelection()) {
+                        this.beginCellSelection();
+                    } else {
+                        this.state.awaitingCellSelection = false;
+                        this.elements.mathGrid.classList.remove('is-picking');
+                        this.syncActiveCell();
+                        this.renderStepHint(step);
+                    }
+                }
+
+                requiresCellSelection() {
+                    return this.state.level >= this.config.pickCellFromLevel;
+                }
+
+                beginCellSelection() {
+                    this.clearActiveTargets();
+                    this.state.awaitingCellSelection = true;
+                    this.elements.mathGrid.classList.add('is-picking');
+                    this.elements.instructionHint.textContent = I18n.t('lm_pick_cell_hint');
+                }
+
+                renderStepHint(step) {
                     if (step.type === 'MUL') {
                         this.elements.instructionHint.textContent = step.carryBefore > 0
                             ? I18n.t('lm_mul_hint_carry', { a: step.a, b: step.b, carry: step.carryBefore })
@@ -539,6 +569,53 @@
                         const expression = step.carryBefore > 0 ? `${terms} + ${step.carryBefore}` : terms;
                         this.elements.instructionHint.textContent = I18n.t('lm_add_hint', { expr: expression });
                     }
+                }
+
+                handleGridClick(event) {
+                    if (!this.state.awaitingCellSelection) return;
+                    if (window.BrainWarsWrongWait?.isLocked?.()) return;
+
+                    const cell = event.target.closest?.('.grid-cell');
+                    if (!cell) return;
+
+                    const step = this.state.steps[this.state.stepIndex];
+                    if (!step) return;
+
+                    const row = Number(cell.dataset.row);
+                    const col = Number(cell.dataset.col);
+                    if (row === step.row && col === step.col) {
+                        this.selectCellForStep(step);
+                    } else {
+                        this.rejectCell(cell, step);
+                    }
+                }
+
+                selectCellForStep(step) {
+                    this.state.awaitingCellSelection = false;
+                    this.elements.mathGrid.classList.remove('is-picking');
+                    this.elements.instructionHint.classList.remove('is-error');
+                    this.syncActiveCell();
+                    this.renderStepHint(step);
+                }
+
+                async rejectCell(cell, step) {
+                    this.state.hadErrorThisRound = true;
+                    window.BrainWarsChallenge?.noteAnswer?.(false);
+
+                    cell.classList.add('error-shake');
+                    setTimeout(() => cell.classList.remove('error-shake'), 600);
+
+                    this.elements.instructionHint.classList.add('is-error');
+                    this.elements.instructionHint.textContent = I18n.t('lm_pick_cell_wrong');
+
+                    await window.BrainWarsWrongWait?.lock?.();
+
+                    // A new round or a language change may have replaced the step
+                    // while the wait was running; only restore this step's prompt.
+                    if (!this.state.awaitingCellSelection) return;
+                    if (this.state.steps[this.state.stepIndex] !== step) return;
+                    this.elements.instructionHint.classList.remove('is-error');
+                    this.elements.instructionHint.textContent = I18n.t('lm_pick_cell_hint');
                 }
 
                 handleCorrectInput() {

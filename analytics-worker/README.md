@@ -100,7 +100,7 @@ npx wrangler deploy
 
 `wrangler.toml` names the worker, binds the database as `DB`, and sets the crons. Deploy `worker.mjs`.
 
-When you change `analytics.js` or the precache list, bump `VERSION` in `sw.js` in the same commit and push `master`. The service worker caches `analytics.js`. The installed app loads the new file on the next visit. The current `VERSION` is `v28`.
+When you change `analytics.js` or the precache list, bump `VERSION` in `sw.js` in the same commit and push `master`. The service worker caches `analytics.js`. The installed app loads the new file on the next visit. The current `VERSION` is `v29`.
 
 ## Read the rows
 
