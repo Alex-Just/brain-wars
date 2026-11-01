@@ -394,9 +394,10 @@ const PREVIEW_CSS = `
 .pw-line { transition: stroke-width 120ms ease; }
 .pw-hit { pointer-events: stroke; cursor: pointer; }
 .pw-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-.pw-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; border: 1px solid #e2e8f0; border-radius: 999px; background-color: #ffffff; font-size: 12px; color: #334155; cursor: pointer; user-select: none; }
+.pw-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; border: 1px solid #e2e8f0; border-radius: 999px; background-color: #ffffff; font-size: 12px; color: #334155; cursor: pointer; user-select: none; transition: opacity 120ms ease, border-color 120ms ease, background-color 120ms ease; }
 .pw-chip:hover { background-color: #f8fafc; }
 .pw-chip.is-active { border-color: #0f172a; background-color: #f8fafc; }
+.pw-chip.is-dimmed { opacity: 0.4; }
 .pw-chip input { margin: 0; accent-color: #0f172a; }
 .pw-swatch { width: 8px; height: 8px; border-radius: 50%; flex: none; }
 .pw-trend { white-space: nowrap; font-weight: 600; }
@@ -424,7 +425,7 @@ const PREVIEW_SCRIPT = `
     const chips = new Map(boxes.map((box) => [box.getAttribute('data-game'), box.closest('label')]));
     const clearHover = () => {
         for (const group of groups) group.classList.remove('is-hovered', 'is-dimmed');
-        for (const chip of chips.values()) if (chip) chip.classList.remove('is-active');
+        for (const chip of chips.values()) if (chip) chip.classList.remove('is-active', 'is-dimmed');
     };
     const hover = (group) => {
         if (group.classList.contains('is-hidden')) return;
@@ -433,7 +434,11 @@ const PREVIEW_SCRIPT = `
             other.classList.toggle('is-hovered', other === group);
             other.classList.toggle('is-dimmed', other !== group && !other.classList.contains('is-hidden'));
         }
-        for (const [id, chip] of chips) if (chip) chip.classList.toggle('is-active', id === game);
+        for (const [id, chip] of chips) {
+            if (!chip) continue;
+            chip.classList.toggle('is-active', id === game);
+            chip.classList.toggle('is-dimmed', id !== game);
+        }
     };
     const sync = () => {
         clearHover();

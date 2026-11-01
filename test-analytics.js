@@ -684,6 +684,7 @@ async function runAsyncTests() {
         assert.ok(html.includes('class="pw-line"'), 'the line is styled for hover');
         assert.ok(html.includes('class="pw-hit"'), 'each line has a wide hover target');
         assert.ok(html.includes('.pw-series.is-dimmed'), 'hover dims the other lines');
+        assert.ok(html.includes('.pw-chip.is-dimmed'), 'hover dims the other chips');
         assert.ok(html.includes('pointerenter'), 'hover is wired');
 
         const emailHtml = Report.renderReportHtml(summary);
