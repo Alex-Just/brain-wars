@@ -472,10 +472,7 @@ function renderProgressSection(progress) {
         let drawing = false;
         const dots = [];
         game.points.forEach((point, index) => {
-            if (!point) {
-                drawing = false;
-                return;
-            }
+            if (!point) return;
             const px = x(index).toFixed(1);
             const py = y(point.accuracyPct).toFixed(1);
             path += `${drawing ? 'L' : 'M'}${px},${py} `;
@@ -503,7 +500,7 @@ function renderProgressSection(progress) {
             <div class="pw-section-head">
                 <div>
                     <div class="pw-eyebrow">Progress by Game</div>
-                    <div class="pw-sub">Accuracy ${bucketDescription} · lines connect all dots; gaps mean no attempts</div>
+                    <div class="pw-sub">Accuracy ${bucketDescription} · lines connect all points, even across gaps</div>
                 </div>
                 <div class="pw-actions">
                     <button type="button" class="pw-action" data-progress-all>Show all</button>

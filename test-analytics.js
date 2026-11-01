@@ -641,7 +641,7 @@ async function runAsyncTests() {
             game, name, color, total, correct: Math.round(total / 2), accuracyPct: 50, delta,
             points: game === 'telling-time'
                 ? [null, { total: 2, correct: 1, accuracyPct: 50 }, null]
-                : [null, { total: 2, correct: 1, accuracyPct: 50 }, { total: 2, correct: 1, accuracyPct: 50 }]
+                : [{ total: 2, correct: 1, accuracyPct: 50 }, null, { total: 2, correct: 1, accuracyPct: 50 }]
         }));
         const progress = {
             period: { days: 3, since: 0, now: 0 },
@@ -679,7 +679,8 @@ async function runAsyncTests() {
         assert.ok(html.includes('title="Only one point in this range"'), 'single-point games explain why they start off');
         const unitSeries = html.match(/<g class="pw-series[^"]*" data-series="unit-conversions"[^>]*><path d="([^"]*)"/);
         assert.ok(unitSeries, 'the unit-conversions series has a path');
-        assert.ok(unitSeries[1].includes('L'), 'consecutive dots are connected even with low attempts');
+        assert.strictEqual((unitSeries[1].match(/M/g) || []).length, 1, 'a gap does not start a new segment');
+        assert.strictEqual((unitSeries[1].match(/L/g) || []).length, 1, 'points on either side of a gap are connected');
 
         const emailHtml = Report.renderReportHtml(summary);
         assert.ok(!emailHtml.includes('Progress by Game'), 'the email stays static');
