@@ -57,7 +57,7 @@ Challenge mode also reads `GET /practice` for this device's per-game counts over
 
 Every graded tap stores one row. In a multi-step game, each correct step and each wrong tap is its own row. Telling-time ends the round after one tap, so a wrong tap stores one wrong row and no right row for that round.
 
-Read the rows in the Cloudflare D1 console for database `brain-wars-answers`. Every Sunday at 18:00 UTC, the worker aggregates the past week and emails a progress report to the parent. The report lists overall accuracy, active days, and the top three skills that need practice with arithmetic tips. Deploy steps, limits, report configuration, and queries are in [`analytics-worker/README.md`](analytics-worker/README.md).
+Read the rows in the Cloudflare D1 console for database `brain-wars-answers`. Every Sunday at 18:00 UTC, the worker aggregates the past week and emails a progress report to the parent. The report lists overall accuracy, active days, and the top three skills that need practice with arithmetic tips. The worker also serves an interactive preview with per-game progress over the selected range. Deploy steps, limits, report configuration, and queries are in [`analytics-worker/README.md`](analytics-worker/README.md).
 
 Capture runs when `ENDPOINT` in `analytics.js` is set. This repository points it at the live ingest URL.
 

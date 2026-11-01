@@ -4,7 +4,7 @@
  * Deploy from the Cloudflare dashboard; keep the pasted copy in sync with this file.
  */
 
-import { DEFAULT_REPORT_DAYS, generatePracticeStats, generateWeeklySummary, renderReportHtml, sendReportEmail } from './report.mjs';
+import { DEFAULT_REPORT_DAYS, generatePracticeStats, generateProgressSeries, generateWeeklySummary, renderReportHtml, sendReportEmail } from './report.mjs';
 
 export const GAME_IDS = [
     'follow-the-leader', 'unfollow-the-leader', 'operations', 'telling-time',
@@ -127,11 +127,15 @@ function previewNav(url, activeDays) {
 async function handlePreview(url, env, cors) {
     const days = resolveDays(url.searchParams.get('days'), PREVIEW_DEFAULT_DAYS);
     const device = url.searchParams.get('device') || env?.REPORT_DEVICE || null;
-    const summary = await generateWeeklySummary(env.DB, { days, device });
+    const now = Date.now();
+    const [summary, progress] = await Promise.all([
+        generateWeeklySummary(env.DB, { days, device, now }),
+        generateProgressSeries(env.DB, { days, device, now })
+    ]);
     if (url.searchParams.get('format') === 'json') {
-        return json(summary, 200, cors);
+        return json({ ...summary, progress }, 200, cors);
     }
-    const html = renderReportHtml(summary, { nav: previewNav(url, days) });
+    const html = renderReportHtml(summary, { nav: previewNav(url, days), progress });
     return new Response(html, {
         status: 200,
         headers: { 'Content-Type': 'text/html; charset=utf-8', ...cors }

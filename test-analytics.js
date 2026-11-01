@@ -281,7 +281,7 @@ async function runAsyncTests() {
         text: async () => body
     });
 
-    const stubDB = ({ count = 0, changes = 1, totalsRow = null, gamesRows = [] } = {}) => {
+    const stubDB = ({ count = 0, changes = 1, totalsRow = null, gamesRows = [], progressRows = [] } = {}) => {
         const log = { inserts: [], updates: [], batches: [] };
         return {
             log,
@@ -297,6 +297,7 @@ async function runAsyncTests() {
                                 return { n: count };
                             },
                             all: async () => {
+                                if (sql.includes('GROUP BY game, bucket')) return { results: progressRows };
                                 if (sql.includes('GROUP BY game')) return { results: gamesRows };
                                 return { results: [] };
                             },
@@ -429,6 +430,87 @@ async function runAsyncTests() {
 
     console.log('weekly email reporter');
 
+    await checkAsync('progress buckets follow the selected range', () => {
+        assert.strictEqual(Report.bucketMsForDays(1), 60 * 60 * 1000);
+        assert.strictEqual(Report.bucketMsForDays(3), 3 * 60 * 60 * 1000);
+        assert.strictEqual(Report.bucketMsForDays(7), DAY);
+        assert.strictEqual(Report.bucketMsForDays(30), DAY);
+    });
+
+    await checkAsync('generateProgressSeries fills every bucket and computes per-game accuracy', async () => {
+        const progressNow = Date.UTC(2026, 9, 11); // midnight UTC keeps the buckets predictable
+        const hour = 60 * 60 * 1000;
+        const firstHour = progressNow / hour - 24;
+        const db = stubDB({
+            progressRows: [
+                { game: 'unit-conversions', bucket: firstHour, total: 4, correct_count: 1 },
+                { game: 'unit-conversions', bucket: firstHour + 12, total: 5, correct_count: 4 },
+                { game: 'operations', bucket: firstHour + 23, total: 2, correct_count: 2 }
+            ]
+        });
+        const progress = await Report.generateProgressSeries(db, { now: progressNow, days: 1 });
+        assert.strictEqual(progress.bucketMs, hour);
+        assert.strictEqual(progress.buckets.length, 24);
+        assert.strictEqual(progress.buckets[0].start, firstHour * hour);
+        assert.strictEqual(progress.games.length, 2);
+        const unit = progress.games.find((game) => game.game === 'unit-conversions');
+        assert.strictEqual(unit.name, 'Unit Conversions');
+        assert.match(unit.color, /^#[0-9a-f]{6}$/i);
+        assert.strictEqual(unit.total, 9);
+        assert.strictEqual(unit.correct, 5);
+        assert.strictEqual(unit.accuracyPct, 55.6);
+        assert.strictEqual(unit.points.length, 24);
+        assert.strictEqual(unit.points[0].accuracyPct, 25);
+        assert.strictEqual(unit.points[1], null);
+        assert.strictEqual(unit.points[12].accuracyPct, 80);
+        assert.strictEqual(progress.games[0].game, 'unit-conversions', 'games sort by attempts');
+    });
+
+    await checkAsync('every game has a distinct progress colour', async () => {
+        const progressNow = Date.UTC(2026, 9, 11);
+        const hour = 60 * 60 * 1000;
+        const bucket = progressNow / hour - 1;
+        const progressRows = Worker.GAME_IDS.map((game) => ({
+            game, bucket, total: 1, correct_count: 1
+        }));
+        const progress = await Report.generateProgressSeries(stubDB({ progressRows }), { now: progressNow, days: 1 });
+        const colors = progress.games.map((game) => game.color);
+        assert.strictEqual(progress.games.length, Worker.GAME_IDS.length);
+        assert.strictEqual(new Set(colors).size, Worker.GAME_IDS.length, 'colours must be unique');
+        assert.ok(!colors.includes('#64748b'), 'no game falls back to grey');
+    });
+
+    await checkAsync('progress buckets carry short labels for the chart', async () => {
+        const progressNow = Date.UTC(2026, 9, 11); // midnight UTC
+        const week = await Report.generateProgressSeries(stubDB(), { now: progressNow, days: 7 });
+        assert.strictEqual(week.buckets.length, 7);
+        assert.strictEqual(week.buckets[6].label, 'Oct 10');
+        const day = await Report.generateProgressSeries(stubDB(), { now: progressNow, days: 1 });
+        assert.strictEqual(day.buckets.length, 24);
+        assert.strictEqual(day.buckets[23].label, '23:00');
+        const threeDays = await Report.generateProgressSeries(stubDB(), { now: progressNow, days: 3 });
+        assert.match(threeDays.buckets[23].label, /^(Mon|Tue|Wed|Thu|Fri|Sat|Sun) 21:00$/);
+    });
+
+    await checkAsync('generateProgressSeries compares the two halves of the range', async () => {
+        const progressNow = Date.UTC(2026, 9, 11); // midnight UTC
+        const threeHours = 3 * 60 * 60 * 1000;
+        const firstBucket = (progressNow - 3 * DAY) / threeHours;
+        const db = stubDB({
+            progressRows: [
+                { game: 'money-problems', bucket: firstBucket, total: 5, correct_count: 1 },
+                { game: 'money-problems', bucket: firstBucket + 23, total: 5, correct_count: 4 },
+                { game: 'operations', bucket: firstBucket, total: 4, correct_count: 0 },
+                { game: 'operations', bucket: firstBucket + 23, total: 4, correct_count: 4 }
+            ]
+        });
+        const progress = await Report.generateProgressSeries(db, { now: progressNow, days: 3 });
+        const money = progress.games.find((game) => game.game === 'money-problems');
+        const operations = progress.games.find((game) => game.game === 'operations');
+        assert.strictEqual(money.delta, 60);
+        assert.strictEqual(operations.delta, null, 'four attempts per half is not enough to compare');
+    });
+
     await checkAsync('generateWeeklySummary calculates metrics and ranks top 3 skills needing practice', async () => {
         const db = stubDB({
             totalsRow: { total: 15, correct_count: 10, wrong_count: 5, active_days: 3, device_count: 1 },
@@ -537,6 +619,71 @@ async function runAsyncTests() {
         assert.ok(!emailHtml.includes('/report/preview?days='), 'the email carries no tabs');
     });
 
+    await checkAsync('the preview renders a progress chart with toggleable games and a trend column', () => {
+        const base = {
+            total: 90, correct: 45, wrong: 45, accuracyPct: 50, activeDays: 2,
+            topPractice: [], mastered: []
+        };
+        const nav = [
+            { days: 1, href: '/report/preview?days=1', active: false },
+            { days: 3, href: '/report/preview?days=3', active: true },
+            { days: 7, href: '/report/preview?days=7', active: false },
+            { days: 30, href: '/report/preview?days=30', active: false }
+        ];
+        const games = [
+            ['unit-conversions', 'Unit Conversions', '#2563eb', 20, 12.5],
+            ['money-problems', 'Money Problems', '#db2777', 18, -8],
+            ['operations', 'Mental Math', '#4f46e5', 16, 0],
+            ['telling-time', 'What Time Is It?', '#ea580c', 14, null],
+            ['long-division', 'Long Division', '#0891b2', 12, 3.2],
+            ['elapsed-time', 'Elapsed Time', '#d97706', 10, 1.1]
+        ].map(([game, name, color, total, delta]) => ({
+            game, name, color, total, correct: Math.round(total / 2), accuracyPct: 50, delta,
+            points: game === 'telling-time'
+                ? [null, { total: 2, correct: 1, accuracyPct: 50 }, null]
+                : [null, { total: 2, correct: 1, accuracyPct: 50 }, { total: 2, correct: 1, accuracyPct: 50 }]
+        }));
+        const progress = {
+            period: { days: 3, since: 0, now: 0 },
+            bucketMs: 3 * 60 * 60 * 1000,
+            buckets: [
+                { start: 0, label: 'Thu 00:00' },
+                { start: 3 * 60 * 60 * 1000, label: 'Thu 03:00' },
+                { start: 6 * 60 * 60 * 1000, label: 'Thu 06:00' }
+            ],
+            games
+        };
+        const summary = {
+            ...base,
+            period: { days: 3, sinceFormatted: 'Oct 8, 2026', nowFormatted: 'Oct 10, 2026' },
+            games: games.map((game) => ({
+                game: game.game, name: game.name, total: game.total, correct: game.correct,
+                wrong: game.total - game.correct, accuracyPct: game.accuracyPct
+            }))
+        };
+
+        const html = Report.renderReportHtml(summary, { nav, progress });
+        assert.ok(html.includes('Progress by Game'));
+        assert.ok(html.includes('data-progress'));
+        assert.ok(html.includes('data-game="unit-conversions"'));
+        assert.ok(html.includes('data-series="unit-conversions"'));
+        assert.ok(html.includes('data-progress-all'));
+        assert.ok(html.includes('>Trend</th>'), 'the preview table adds a trend column');
+        assert.ok(html.includes('+12.5 pts'));
+        assert.ok(html.includes('−8 pts'));
+        assert.ok(html.includes('→ 0 pts'));
+        assert.match(html, /data-game="unit-conversions"[^>]*checked/, 'multi-point games start visible');
+        assert.match(html, /data-game="elapsed-time"[^>]*checked/, 'a two-point game starts visible');
+        assert.match(html, /data-game="telling-time"(?![^>]*checked)/, 'a one-point game starts hidden');
+        assert.match(html, /class="pw-series is-hidden" data-series="telling-time"/, 'the one-point series starts hidden');
+        assert.ok(html.includes('title="Only one point in this range"'), 'single-point games explain why they start off');
+
+        const emailHtml = Report.renderReportHtml(summary);
+        assert.ok(!emailHtml.includes('Progress by Game'), 'the email stays static');
+        assert.ok(!emailHtml.includes('data-progress'), 'the email carries no chart');
+        assert.ok(!emailHtml.includes('>Trend</th>'), 'the email keeps its five columns');
+    });
+
     await checkAsync('sendReportEmail sends via Resend with Bearer auth and recipient', async () => {
         const originalFetch = globalThis.fetch;
         let sentUrl = null;
@@ -633,6 +780,39 @@ async function runAsyncTests() {
         assert.ok(rangeHtml.includes('past 30 days'), 'an explicit range is honored');
         assert.ok(rangeHtml.includes('token=secret123'), 'tabs keep the token so a click stays authorized');
         assert.ok(rangeHtml.includes('device=dev-9'), 'tabs keep the device filter');
+    });
+
+    await checkAsync('the preview serves the progress series in HTML and JSON', async () => {
+        const bucketMs = 3 * 60 * 60 * 1000;
+        const db = stubDB({
+            totalsRow: { total: 5, correct_count: 3, wrong_count: 2, active_days: 1, device_count: 1 },
+            gamesRows: [{ game: 'operations', total: 5, correct_count: 3, wrong_count: 2, accuracy_pct: 60 }],
+            progressRows: [{
+                game: 'operations',
+                bucket: Math.floor((Date.now() - 1) / bucketMs),
+                total: 5,
+                correct_count: 3
+            }]
+        });
+        const env = { DB: db, REPORT_TOKEN: 'secret123' };
+
+        const jsonRes = await Worker.default.fetch(stubRequest({
+            method: 'GET',
+            path: '/report/preview?token=secret123&days=3&format=json'
+        }), env);
+        const data = await jsonRes.json();
+        assert.strictEqual(data.progress.bucketMs, bucketMs);
+        assert.strictEqual(data.progress.games[0].game, 'operations');
+        assert.strictEqual(data.progress.games[0].points.length, data.progress.buckets.length);
+
+        const htmlRes = await Worker.default.fetch(stubRequest({
+            method: 'GET',
+            path: '/report/preview?token=secret123&days=3'
+        }), env);
+        const html = await htmlRes.text();
+        assert.ok(html.includes('Progress by Game'), 'the preview renders the chart');
+        assert.ok(html.includes('data-progress'), 'the preview wires the toggles');
+        assert.ok(html.includes('data-game="operations"'), 'the chart names the game');
     });
 
     console.log('practice read endpoint');

@@ -70,11 +70,41 @@ export const SKILL_INFO = {
     }
 };
 
+// Stable colours keep a game recognisable when the range changes.
+const GAME_COLORS = {
+    'unit-conversions': '#2563eb',
+    'money-calculations': '#7c3aed',
+    'money-problems': '#db2777',
+    'long-division': '#0891b2',
+    'telling-time': '#ea580c',
+    'time-calculations': '#65a30d',
+    'long-multiplication': '#dc2626',
+    'elapsed-time': '#d97706',
+    'long-addition': '#059669',
+    'operations': '#4f46e5',
+    'long-subtraction': '#0d9488',
+    'follow-the-leader': '#9333ea',
+    'unfollow-the-leader': '#be123c'
+};
+const FALLBACK_COLOR = '#64748b';
+const MIN_TREND_ATTEMPTS = 5;
+const MIN_LINE_ATTEMPTS = 3;
+
 const DAY_MS = 24 * 60 * 60 * 1000;
+const HOUR_MS = 60 * 60 * 1000;
+const THREE_HOURS_MS = 3 * HOUR_MS;
 
 // The weekly email window. The browser preview opens narrower (three days); the
 // worker picks each surface's default and passes it in.
 export const DEFAULT_REPORT_DAYS = 7;
+
+// The progress chart keeps roughly 24-30 points per range: hourly for a day,
+// three-hourly for three days, and daily for a week or a month.
+export function bucketMsForDays(days) {
+    if (days <= 1) return HOUR_MS;
+    if (days <= 3) return THREE_HOURS_MS;
+    return DAY_MS;
+}
 
 // "1 day" / "3 days" / "30 days".
 function daysLabel(days) {
@@ -88,10 +118,26 @@ function periodDays(period) {
     return Number.isInteger(days) && days > 0 ? days : DEFAULT_REPORT_DAYS;
 }
 
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
 function formatDate(ms) {
     const d = new Date(ms);
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return `${months[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}`;
+    return `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}`;
+}
+
+// Chart labels stay short: a time for a day, weekday and time for three days,
+// and a date for a week or a month.
+function bucketLabel(start, bucketMs) {
+    const d = new Date(start);
+    if (bucketMs >= DAY_MS) return `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}`;
+    const time = `${String(d.getUTCHours()).padStart(2, '0')}:00`;
+    if (bucketMs >= THREE_HOURS_MS) return `${WEEKDAYS[d.getUTCDay()]} ${time}`;
+    return time;
+}
+
+function accuracyPct(correct, total) {
+    return total > 0 ? Math.round((correct * 1000) / total) / 10 : 0;
 }
 
 /**
@@ -144,7 +190,7 @@ export async function generateWeeklySummary(db, options = {}) {
     const wrong = totalsRow?.wrong_count || 0;
     const activeDays = totalsRow?.active_days || 0;
     const deviceCount = totalsRow?.device_count || 0;
-    const accuracyPct = total > 0 ? Math.round((correct * 1000) / total) / 10 : 0;
+    const overallAccuracy = accuracyPct(correct, total);
 
     const rawGames = gamesResult?.results || [];
     const games = rawGames.map((row) => {
@@ -176,12 +222,106 @@ export async function generateWeeklySummary(db, options = {}) {
         total,
         correct,
         wrong,
-        accuracyPct,
+        accuracyPct: overallAccuracy,
         activeDays,
         deviceCount,
         games,
         topPractice,
         mastered
+    };
+}
+
+/**
+ * Queries D1 for one accuracy point per game and time bucket. Empty buckets stay
+ * null so the chart can break a line instead of drawing a false zero.
+ */
+export async function generateProgressSeries(db, options = {}) {
+    const now = typeof options.now === 'number' ? options.now : Date.now();
+    const days = Number.isInteger(options.days) && options.days > 0 ? options.days : DEFAULT_REPORT_DAYS;
+    const device = options.device || null;
+    const bucketMs = bucketMsForDays(days);
+    const since = now - days * DAY_MS;
+    const firstBucket = Math.floor(since / bucketMs);
+    const lastBucket = Math.floor((now - 1) / bucketMs);
+
+    let sql = `
+        SELECT game,
+               CAST(ts / ? AS INTEGER) AS bucket,
+               COUNT(*) AS total,
+               COALESCE(SUM(correct), 0) AS correct_count
+        FROM answers
+        WHERE ts >= ? AND ts <= ?
+    `;
+    const args = [bucketMs, since, now];
+    if (device) {
+        sql += ' AND device = ?';
+        args.push(device);
+    }
+    sql += ' GROUP BY game, bucket ORDER BY bucket';
+
+    const result = await db.prepare(sql).bind(...args).all();
+    const buckets = [];
+    for (let bucket = firstBucket; bucket <= lastBucket; bucket++) {
+        const start = bucket * bucketMs;
+        buckets.push({ start, label: bucketLabel(start, bucketMs) });
+    }
+
+    const byGame = new Map();
+    for (const row of result?.results || []) {
+        let game = byGame.get(row.game);
+        if (!game) {
+            const info = SKILL_INFO[row.game] || { name: row.game };
+            game = {
+                game: row.game,
+                name: info.name,
+                color: GAME_COLORS[row.game] || FALLBACK_COLOR,
+                total: 0,
+                correct: 0,
+                points: new Array(buckets.length).fill(null)
+            };
+            byGame.set(row.game, game);
+        }
+        const index = row.bucket - firstBucket;
+        if (index < 0 || index >= buckets.length) continue;
+        game.points[index] = {
+            total: row.total,
+            correct: row.correct_count,
+            accuracyPct: accuracyPct(row.correct_count, row.total)
+        };
+        game.total += row.total;
+        game.correct += row.correct_count;
+    }
+
+    const games = [...byGame.values()]
+        .map((game) => ({ ...game, accuracyPct: accuracyPct(game.correct, game.total) }))
+        .sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
+
+    const midpoint = since + (now - since) / 2;
+    for (const game of games) {
+        let firstTotal = 0;
+        let firstCorrect = 0;
+        let secondTotal = 0;
+        let secondCorrect = 0;
+        game.points.forEach((point, index) => {
+            if (!point) return;
+            if (buckets[index].start < midpoint) {
+                firstTotal += point.total;
+                firstCorrect += point.correct;
+            } else {
+                secondTotal += point.total;
+                secondCorrect += point.correct;
+            }
+        });
+        game.delta = firstTotal >= MIN_TREND_ATTEMPTS && secondTotal >= MIN_TREND_ATTEMPTS
+            ? Math.round((accuracyPct(secondCorrect, secondTotal) - accuracyPct(firstCorrect, firstTotal)) * 10) / 10
+            : null;
+    }
+
+    return {
+        period: { since, now, days },
+        bucketMs,
+        buckets,
+        games
     };
 }
 
@@ -234,6 +374,169 @@ function renderRangeNav(nav) {
                 </div>`;
 }
 
+// Preview-only styles. The email keeps inline styles and never receives this block.
+const PREVIEW_CSS = `
+.pw-section { margin-bottom: 26px; }
+.pw-section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.pw-eyebrow { font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; }
+.pw-sub { font-size: 12px; color: #64748b; margin-top: 3px; }
+.pw-actions { display: flex; gap: 12px; }
+.pw-action { border: 0; background: none; padding: 0; font: inherit; font-size: 12px; font-weight: 600; color: #2563eb; cursor: pointer; }
+.pw-action:hover { text-decoration: underline; }
+.pw-chart-card { border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 16px 12px 16px; background-color: #ffffff; }
+.pw-chart-scroll { overflow-x: auto; max-width: 100%; }
+.pw-chart { display: block; width: 100%; min-width: 640px; height: auto; }
+.pw-chart text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+.pw-series.is-hidden { display: none; }
+.pw-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.pw-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; border: 1px solid #e2e8f0; border-radius: 999px; background-color: #ffffff; font-size: 12px; color: #334155; cursor: pointer; user-select: none; }
+.pw-chip:hover { background-color: #f8fafc; }
+.pw-chip input { margin: 0; accent-color: #0f172a; }
+.pw-swatch { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.pw-trend { white-space: nowrap; font-weight: 600; }
+.pw-trend-up { color: #16a34a; }
+.pw-trend-down { color: #dc2626; }
+.pw-trend-flat { color: #64748b; }
+.pw-trend-none { color: #94a3b8; font-weight: 500; }
+.pw-table-scroll { overflow-x: auto; max-width: 100%; }
+@media (max-width: 640px) {
+    .pw-section-head { align-items: flex-start; }
+    .pw-body { padding-left: 18px !important; padding-right: 18px !important; }
+    .pw-chart-card { padding: 10px; }
+    .pw-chip { padding: 4px 7px; gap: 5px; font-size: 11px; }
+}
+`;
+
+// Small, dependency-free behaviour: checkboxes show or hide pre-rendered series.
+const PREVIEW_SCRIPT = `
+(() => {
+    const root = document.querySelector('[data-progress]');
+    if (!root) return;
+    const boxes = Array.from(root.querySelectorAll('input[data-game]'));
+    const series = new Map(Array.from(root.querySelectorAll('[data-series]')).map((node) => [node.getAttribute('data-series'), node]));
+    const sync = () => {
+        for (const box of boxes) {
+            const node = series.get(box.getAttribute('data-game'));
+            if (node) node.classList.toggle('is-hidden', !box.checked);
+        }
+    };
+    for (const box of boxes) box.addEventListener('change', sync);
+    const all = root.querySelector('[data-progress-all]');
+    const none = root.querySelector('[data-progress-none]');
+    if (all) all.addEventListener('click', () => {
+        for (const box of boxes) box.checked = true;
+        sync();
+    });
+    if (none) none.addEventListener('click', () => {
+        for (const box of boxes) box.checked = false;
+        sync();
+    });
+    sync();
+})();
+`;
+
+function renderProgressSection(progress) {
+    const { buckets, games, bucketMs } = progress;
+    const width = 760;
+    const height = 280;
+    const margin = { top: 18, right: 18, bottom: 30, left: 44 };
+    const plotWidth = width - margin.left - margin.right;
+    const plotHeight = height - margin.top - margin.bottom;
+    const x = (index) => buckets.length <= 1
+        ? margin.left + plotWidth / 2
+        : margin.left + (index / (buckets.length - 1)) * plotWidth;
+    const y = (value) => margin.top + plotHeight - (value / 100) * plotHeight;
+    const plottedPoints = (game) => game.points.filter(Boolean).length;
+    const visible = new Set(games.filter((game) => plottedPoints(game) > 1).map((game) => game.game));
+    const bucketDescription = bucketMs >= DAY_MS ? 'per day' : bucketMs >= THREE_HOURS_MS ? 'per 3 hours' : 'per hour';
+
+    const grid = [0, 25, 50, 75, 100].map((value) => {
+        const lineY = y(value);
+        return `<line x1="${margin.left}" x2="${width - margin.right}" y1="${lineY}" y2="${lineY}" stroke="#e2e8f0" stroke-width="1"/>` +
+            `<text x="${margin.left - 8}" y="${lineY + 4}" text-anchor="end" font-size="11" fill="#64748b">${value}%</text>`;
+    }).join('');
+
+    const labelStep = Math.max(1, Math.ceil((buckets.length - 1) / 5));
+    const labelIndexes = [];
+    for (let index = 0; index < buckets.length; index += labelStep) labelIndexes.push(index);
+    if (labelIndexes[labelIndexes.length - 1] !== buckets.length - 1) labelIndexes.push(buckets.length - 1);
+    const xLabels = labelIndexes.map((index) => {
+        const first = index === 0;
+        const last = index === buckets.length - 1;
+        const anchor = first && !last ? 'start' : last && !first ? 'end' : 'middle';
+        const labelX = first && !last ? margin.left : last && !first ? width - margin.right : x(index);
+        return `<text x="${labelX.toFixed(1)}" y="${height - 8}" text-anchor="${anchor}" font-size="11" fill="#64748b">${escapeHtml(buckets[index].label)}</text>`;
+    }).join('');
+
+    const series = games.map((game) => {
+        let path = '';
+        let drawing = false;
+        const dots = [];
+        game.points.forEach((point, index) => {
+            if (!point) {
+                drawing = false;
+                return;
+            }
+            const px = x(index).toFixed(1);
+            const py = y(point.accuracyPct).toFixed(1);
+            if (point.total >= MIN_LINE_ATTEMPTS) {
+                path += `${drawing ? 'L' : 'M'}${px},${py} `;
+                drawing = true;
+            } else {
+                drawing = false;
+            }
+            dots.push(`<circle cx="${px}" cy="${py}" r="2.5" fill="currentColor"/>`);
+        });
+        const hidden = visible.has(game.game) ? '' : ' is-hidden';
+        return `<g class="pw-series${hidden}" data-series="${escapeHtml(game.game)}" style="color: ${game.color}">` +
+            `<path d="${path.trim()}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>` +
+            dots.join('') +
+            '</g>';
+    }).join('');
+
+    const legend = games.map((game) => {
+        const note = plottedPoints(game) <= 1 ? ' title="Only one point in this range"' : '';
+        return `<label class="pw-chip"${note}>` +
+            `<input type="checkbox" data-game="${escapeHtml(game.game)}"${visible.has(game.game) ? ' checked' : ''}>` +
+            `<span class="pw-swatch" style="background-color: ${game.color}"></span>` +
+            `<span>${escapeHtml(game.name)}</span>` +
+            '</label>';
+    }).join('');
+
+    return `
+        <div class="pw-section" data-progress>
+            <div class="pw-section-head">
+                <div>
+                    <div class="pw-eyebrow">Progress by Game</div>
+                    <div class="pw-sub">Accuracy ${bucketDescription} · lines need 3+ attempts; dots show all buckets</div>
+                </div>
+                <div class="pw-actions">
+                    <button type="button" class="pw-action" data-progress-all>Show all</button>
+                    <button type="button" class="pw-action" data-progress-none>Hide all</button>
+                </div>
+            </div>
+            <div class="pw-chart-card">
+                <div class="pw-chart-scroll">
+                    <svg class="pw-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Accuracy by game over the selected period">
+                        ${grid}
+                        ${xLabels}
+                        ${series}
+                    </svg>
+                </div>
+                <div class="pw-legend">${legend}</div>
+            </div>
+        </div>`;
+}
+
+function renderTrend(delta) {
+    if (delta === null || delta === undefined) {
+        return '<span class="pw-trend pw-trend-none" title="Not enough attempts in both halves of the range">—</span>';
+    }
+    if (delta > 0) return `<span class="pw-trend pw-trend-up">↑ +${delta} pts</span>`;
+    if (delta < 0) return `<span class="pw-trend pw-trend-down">↓ −${Math.abs(delta)} pts</span>`;
+    return '<span class="pw-trend pw-trend-flat">→ 0 pts</span>';
+}
+
 /**
  * Builds responsive, high-contrast, minimal modern HTML email.
  */
@@ -243,6 +546,14 @@ export function renderReportHtml(summary, options = {}) {
     // The range tabs turn the same report into the interactive preview. The email
     // passes no nav, so it keeps its weekly wording and carries no links.
     const preview = Array.isArray(options.nav) && options.nav.length > 0;
+    const progress = preview && options.progress && Array.isArray(options.progress.games) && options.progress.games.length > 0
+        ? options.progress
+        : null;
+    const showTrend = Boolean(progress);
+    const progressSection = showTrend ? renderProgressSection(progress) : '';
+    const trendByGame = new Map((progress?.games || []).map((game) => [game.game, game.delta]));
+    const colorByGame = new Map((progress?.games || []).map((game) => [game.game, game.color]));
+    const cardWidth = preview ? 880 : 560;
     const navHtml = preview ? renderRangeNav(options.nav) : '';
     const pageTitle = preview ? 'Brain Wars Progress Report' : 'Brain Wars Weekly Report';
     const heading = preview ? 'Math Progress' : 'Weekly Math Progress';
@@ -314,11 +625,10 @@ export function renderReportHtml(summary, options = {}) {
 
     let breakdownTable = '';
     if (games.length > 0) {
-        breakdownTable = `
-        <div style="margin-top: 24px;">
-            <div style="font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">
-                Activity Breakdown
-            </div>
+        const trendHeader = showTrend
+            ? '<th style="padding: 6px 0; text-align: right; font-weight: 500;" title="Second half vs first half of the selected range">Trend</th>'
+            : '';
+        const table = `
             <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
                 <thead>
                     <tr style="border-bottom: 1px solid #e2e8f0; color: #64748b;">
@@ -327,20 +637,36 @@ export function renderReportHtml(summary, options = {}) {
                         <th style="padding: 6px 0; text-align: right; font-weight: 500;">Correct</th>
                         <th style="padding: 6px 0; text-align: right; font-weight: 500;">Mistakes</th>
                         <th style="padding: 6px 0; text-align: right; font-weight: 500;">Accuracy</th>
+                        ${trendHeader}
                     </tr>
                 </thead>
                 <tbody>
-                    ${games.map((item) => `
+                    ${games.map((item) => {
+                        const trendCell = showTrend
+                            ? `<td style="padding: 8px 0; text-align: right;">${renderTrend(trendByGame.get(item.game))}</td>`
+                            : '';
+                        const color = colorByGame.get(item.game);
+                        const gameLabel = showTrend && color
+                            ? `<span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background-color: ${color}; margin-right: 7px; vertical-align: 1px;"></span>${escapeHtml(item.name)}`
+                            : escapeHtml(item.name);
+                        return `
                         <tr style="border-bottom: 1px solid #f1f5f9;">
-                            <td style="padding: 8px 0; color: #0f172a; font-weight: 500;">${escapeHtml(item.name)}</td>
+                            <td style="padding: 8px 0; color: #0f172a; font-weight: 500;">${gameLabel}</td>
                             <td style="padding: 8px 0; text-align: right; color: #64748b;">${item.total}</td>
                             <td style="padding: 8px 0; text-align: right; color: #16a34a; font-weight: 600;">${item.correct}</td>
                             <td style="padding: 8px 0; text-align: right; color: ${item.wrong > 0 ? '#dc2626' : '#94a3b8'}; font-weight: 600;">${item.wrong}</td>
                             <td style="padding: 8px 0; text-align: right; color: #0f172a; font-weight: 600;">${item.accuracyPct}%</td>
-                        </tr>
-                    `).join('')}
+                            ${trendCell}
+                        </tr>`;
+                    }).join('')}
                 </tbody>
-            </table>
+            </table>`;
+        breakdownTable = `
+        <div style="margin-top: 24px;">
+            <div style="font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">
+                Activity Breakdown
+            </div>
+            ${showTrend ? `<div class="pw-table-scroll">${table}</div>` : table}
         </div>`;
     }
 
@@ -350,12 +676,13 @@ export function renderReportHtml(summary, options = {}) {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${pageTitle}</title>
+    ${preview ? `<style>${PREVIEW_CSS}</style>` : ''}
 </head>
 <body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0f172a; line-height: 1.5; -webkit-font-smoothing: antialiased;">
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 32px 16px;">
         <tr>
             <td align="center">${navHtml}
-                <table role="presentation" width="100%" style="max-width: 560px; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden;" cellspacing="0" cellpadding="0">
+                <table role="presentation" width="100%" style="max-width: ${cardWidth}px; table-layout: fixed; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden;" cellspacing="0" cellpadding="0">
                     <!-- Brand & Date Header (Solid background & high contrast for all email clients) -->
                     <tr>
                         <td style="padding: 28px 32px 20px 32px; border-bottom: 1px solid #f1f5f9; background-color: #ffffff;">
@@ -395,7 +722,8 @@ export function renderReportHtml(summary, options = {}) {
 
                     <!-- Body Content -->
                     <tr>
-                        <td style="padding: 24px 32px 32px 32px;">
+                        <td class="pw-body" style="padding: 24px 32px 32px 32px;">
+                            ${progressSection}
                             ${practiceSection}
                             ${masteredSection}
                             ${breakdownTable}
@@ -421,6 +749,7 @@ export function renderReportHtml(summary, options = {}) {
             </td>
         </tr>
     </table>
+    ${preview ? `<script>${PREVIEW_SCRIPT}</script>` : ''}
 </body>
 </html>`;
 }
