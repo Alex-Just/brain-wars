@@ -677,10 +677,14 @@ async function runAsyncTests() {
         assert.match(html, /data-game="telling-time"(?![^>]*checked)/, 'a one-point game starts hidden');
         assert.match(html, /class="pw-series is-hidden" data-series="telling-time"/, 'the one-point series starts hidden');
         assert.ok(html.includes('title="Only one point in this range"'), 'single-point games explain why they start off');
-        const unitSeries = html.match(/<g class="pw-series[^"]*" data-series="unit-conversions"[^>]*><path d="([^"]*)"/);
+        const unitSeries = html.match(/<g class="pw-series[^"]*" data-series="unit-conversions"[^>]*><path[^>]* d="([^"]*)"/);
         assert.ok(unitSeries, 'the unit-conversions series has a path');
         assert.strictEqual((unitSeries[1].match(/M/g) || []).length, 1, 'a gap does not start a new segment');
         assert.strictEqual((unitSeries[1].match(/L/g) || []).length, 1, 'points on either side of a gap are connected');
+        assert.ok(html.includes('class="pw-line"'), 'the line is styled for hover');
+        assert.ok(html.includes('class="pw-hit"'), 'each line has a wide hover target');
+        assert.ok(html.includes('.pw-series.is-dimmed'), 'hover dims the other lines');
+        assert.ok(html.includes('pointerenter'), 'hover is wired');
 
         const emailHtml = Report.renderReportHtml(summary);
         assert.ok(!emailHtml.includes('Progress by Game'), 'the email stays static');

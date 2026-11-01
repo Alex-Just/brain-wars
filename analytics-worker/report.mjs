@@ -387,9 +387,16 @@ const PREVIEW_CSS = `
 .pw-chart { display: block; width: 100%; min-width: 640px; height: auto; }
 .pw-chart text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
 .pw-series.is-hidden { display: none; }
+.pw-series { transition: opacity 120ms ease; }
+.pw-series.is-dimmed { opacity: 0.18; }
+.pw-series.is-hovered .pw-line { stroke-width: 3.5; }
+.pw-series.is-hovered { filter: drop-shadow(0 0 3px rgba(15, 23, 42, 0.35)); }
+.pw-line { transition: stroke-width 120ms ease; }
+.pw-hit { pointer-events: stroke; cursor: pointer; }
 .pw-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .pw-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; border: 1px solid #e2e8f0; border-radius: 999px; background-color: #ffffff; font-size: 12px; color: #334155; cursor: pointer; user-select: none; }
 .pw-chip:hover { background-color: #f8fafc; }
+.pw-chip.is-active { border-color: #0f172a; background-color: #f8fafc; }
 .pw-chip input { margin: 0; accent-color: #0f172a; }
 .pw-swatch { width: 8px; height: 8px; border-radius: 50%; flex: none; }
 .pw-trend { white-space: nowrap; font-weight: 600; }
@@ -412,14 +419,34 @@ const PREVIEW_SCRIPT = `
     const root = document.querySelector('[data-progress]');
     if (!root) return;
     const boxes = Array.from(root.querySelectorAll('input[data-game]'));
-    const series = new Map(Array.from(root.querySelectorAll('[data-series]')).map((node) => [node.getAttribute('data-series'), node]));
+    const groups = Array.from(root.querySelectorAll('[data-series]'));
+    const series = new Map(groups.map((node) => [node.getAttribute('data-series'), node]));
+    const chips = new Map(boxes.map((box) => [box.getAttribute('data-game'), box.closest('label')]));
+    const clearHover = () => {
+        for (const group of groups) group.classList.remove('is-hovered', 'is-dimmed');
+        for (const chip of chips.values()) if (chip) chip.classList.remove('is-active');
+    };
+    const hover = (group) => {
+        if (group.classList.contains('is-hidden')) return;
+        const game = group.getAttribute('data-series');
+        for (const other of groups) {
+            other.classList.toggle('is-hovered', other === group);
+            other.classList.toggle('is-dimmed', other !== group && !other.classList.contains('is-hidden'));
+        }
+        for (const [id, chip] of chips) if (chip) chip.classList.toggle('is-active', id === game);
+    };
     const sync = () => {
+        clearHover();
         for (const box of boxes) {
             const node = series.get(box.getAttribute('data-game'));
             if (node) node.classList.toggle('is-hidden', !box.checked);
         }
     };
     for (const box of boxes) box.addEventListener('change', sync);
+    for (const group of groups) {
+        group.addEventListener('pointerenter', () => hover(group));
+        group.addEventListener('pointerleave', clearHover);
+    }
     const all = root.querySelector('[data-progress-all]');
     const none = root.querySelector('[data-progress-none]');
     if (all) all.addEventListener('click', () => {
@@ -480,8 +507,10 @@ function renderProgressSection(progress) {
             dots.push(`<circle cx="${px}" cy="${py}" r="2.5" fill="currentColor"/>`);
         });
         const hidden = visible.has(game.game) ? '' : ' is-hidden';
+        const linePath = path.trim();
         return `<g class="pw-series${hidden}" data-series="${escapeHtml(game.game)}" style="color: ${game.color}">` +
-            `<path d="${path.trim()}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>` +
+            `<path class="pw-line" d="${linePath}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>` +
+            (linePath ? `<path class="pw-hit" d="${linePath}" fill="none" stroke="transparent" stroke-width="14" pointer-events="stroke" vector-effect="non-scaling-stroke"/>` : '') +
             dots.join('') +
             '</g>';
     }).join('');
