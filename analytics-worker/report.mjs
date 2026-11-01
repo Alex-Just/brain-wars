@@ -88,7 +88,6 @@ const GAME_COLORS = {
 };
 const FALLBACK_COLOR = '#64748b';
 const MIN_TREND_ATTEMPTS = 5;
-const MIN_LINE_ATTEMPTS = 3;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
@@ -479,12 +478,8 @@ function renderProgressSection(progress) {
             }
             const px = x(index).toFixed(1);
             const py = y(point.accuracyPct).toFixed(1);
-            if (point.total >= MIN_LINE_ATTEMPTS) {
-                path += `${drawing ? 'L' : 'M'}${px},${py} `;
-                drawing = true;
-            } else {
-                drawing = false;
-            }
+            path += `${drawing ? 'L' : 'M'}${px},${py} `;
+            drawing = true;
             dots.push(`<circle cx="${px}" cy="${py}" r="2.5" fill="currentColor"/>`);
         });
         const hidden = visible.has(game.game) ? '' : ' is-hidden';
@@ -508,7 +503,7 @@ function renderProgressSection(progress) {
             <div class="pw-section-head">
                 <div>
                     <div class="pw-eyebrow">Progress by Game</div>
-                    <div class="pw-sub">Accuracy ${bucketDescription} · lines need 3+ attempts; dots show all buckets</div>
+                    <div class="pw-sub">Accuracy ${bucketDescription} · lines connect all dots; gaps mean no attempts</div>
                 </div>
                 <div class="pw-actions">
                     <button type="button" class="pw-action" data-progress-all>Show all</button>
