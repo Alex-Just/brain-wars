@@ -427,12 +427,12 @@ const PREVIEW_SCRIPT = `
         for (const group of groups) group.classList.remove('is-hovered', 'is-dimmed');
         for (const chip of chips.values()) if (chip) chip.classList.remove('is-active', 'is-dimmed');
     };
-    const hover = (group) => {
-        if (group.classList.contains('is-hidden')) return;
-        const game = group.getAttribute('data-series');
+    const focusGame = (game) => {
+        const target = series.get(game);
+        if (!target || target.classList.contains('is-hidden')) return;
         for (const other of groups) {
-            other.classList.toggle('is-hovered', other === group);
-            other.classList.toggle('is-dimmed', other !== group && !other.classList.contains('is-hidden'));
+            other.classList.toggle('is-hovered', other === target);
+            other.classList.toggle('is-dimmed', other !== target && !other.classList.contains('is-hidden'));
         }
         for (const [id, chip] of chips) {
             if (!chip) continue;
@@ -449,8 +449,13 @@ const PREVIEW_SCRIPT = `
     };
     for (const box of boxes) box.addEventListener('change', sync);
     for (const group of groups) {
-        group.addEventListener('pointerenter', () => hover(group));
+        group.addEventListener('pointerenter', () => focusGame(group.getAttribute('data-series')));
         group.addEventListener('pointerleave', clearHover);
+    }
+    for (const [game, chip] of chips) {
+        if (!chip) continue;
+        chip.addEventListener('pointerenter', () => focusGame(game));
+        chip.addEventListener('pointerleave', clearHover);
     }
     const all = root.querySelector('[data-progress-all]');
     const none = root.querySelector('[data-progress-none]');

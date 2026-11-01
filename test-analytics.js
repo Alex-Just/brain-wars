@@ -686,6 +686,7 @@ async function runAsyncTests() {
         assert.ok(html.includes('.pw-series.is-dimmed'), 'hover dims the other lines');
         assert.ok(html.includes('.pw-chip.is-dimmed'), 'hover dims the other chips');
         assert.ok(html.includes('pointerenter'), 'hover is wired');
+        assert.ok(html.includes("chip.addEventListener('pointerenter'"), 'chip hover focuses its line');
 
         const emailHtml = Report.renderReportHtml(summary);
         assert.ok(!emailHtml.includes('Progress by Game'), 'the email stays static');
