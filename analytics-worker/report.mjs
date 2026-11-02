@@ -86,7 +86,23 @@ const GAME_COLORS = {
     'follow-the-leader': '#9333ea',
     'unfollow-the-leader': '#be123c'
 };
+const DARK_GAME_COLORS = {
+    'unit-conversions': '#60a5fa',
+    'money-calculations': '#a78bfa',
+    'money-problems': '#f472b6',
+    'long-division': '#22d3ee',
+    'telling-time': '#fb923c',
+    'time-calculations': '#a3e635',
+    'long-multiplication': '#f87171',
+    'elapsed-time': '#fbbf24',
+    'long-addition': '#34d399',
+    'operations': '#818cf8',
+    'long-subtraction': '#2dd4bf',
+    'follow-the-leader': '#c084fc',
+    'unfollow-the-leader': '#fb7185'
+};
 const FALLBACK_COLOR = '#64748b';
+const DARK_FALLBACK_COLOR = '#94a3b8';
 const MIN_TREND_ATTEMPTS = 5;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -365,7 +381,7 @@ function renderRangeNav(nav) {
         const skin = tab.active
             ? ' background-color: #0f172a; border-color: #0f172a; color: #ffffff;'
             : ' background-color: #ffffff; border-color: #cbd5e1; color: #334155;';
-        return `<a href="${escapeHtml(tab.href)}"${current} style="display: inline-block; padding: 6px 16px; margin: 0 3px; border: 1px solid; border-radius: 999px; font-size: 13px; font-weight: 600; text-decoration: none;${skin}">${escapeHtml(daysLabel(tab.days))}</a>`;
+        return `<a href="${escapeHtml(tab.href)}" class="pw-tab${tab.active ? ' is-active' : ''}"${current} style="display: inline-block; padding: 6px 16px; margin: 0 3px; border: 1px solid; border-radius: 999px; font-size: 13px; font-weight: 600; text-decoration: none;${skin}">${escapeHtml(daysLabel(tab.days))}</a>`;
     }).join('');
     return `
                 <div style="max-width: 560px; margin: 0 auto 14px auto; text-align: center;">
@@ -374,7 +390,18 @@ function renderRangeNav(nav) {
 }
 
 // Preview-only styles. The email keeps inline styles and never receives this block.
+const LIGHT_GAME_VARS = Object.keys(GAME_COLORS)
+    .map((game) => `--pw-${game}: ${GAME_COLORS[game]};`)
+    .join(' ');
+const DARK_GAME_VARS = Object.keys(GAME_COLORS)
+    .map((game) => `--pw-${game}: ${DARK_GAME_COLORS[game] || DARK_FALLBACK_COLOR};`)
+    .join(' ');
+
 const PREVIEW_CSS = `
+:root {
+    color-scheme: light dark;
+    ${LIGHT_GAME_VARS}
+}
 .pw-section { margin-bottom: 26px; }
 .pw-section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
 .pw-eyebrow { font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -411,6 +438,65 @@ const PREVIEW_CSS = `
     .pw-body { padding-left: 18px !important; padding-right: 18px !important; }
     .pw-chart-card { padding: 10px; }
     .pw-chip { padding: 4px 7px; gap: 5px; font-size: 11px; }
+}
+@media (prefers-color-scheme: dark) {
+    :root {
+        color-scheme: dark;
+        ${DARK_GAME_VARS}
+    }
+    body { background-color: #0b1120 !important; color: #e2e8f0 !important; }
+    .pw-page { background-color: #0b1120 !important; }
+    .pw-card { background-color: #111827 !important; border-color: #1e293b !important; }
+    .pw-card-head { background-color: #111827 !important; border-bottom-color: #1e293b !important; }
+    .pw-brand { color: #f8fafc !important; }
+    .pw-brand-sub { color: #94a3b8 !important; }
+    .pw-metrics { background-color: #0f172a !important; border-bottom-color: #1e293b !important; }
+    .pw-metrics td + td { border-left-color: #1e293b !important; }
+    .pw-metric-label { color: #94a3b8 !important; }
+    .pw-metric-value { color: #f8fafc !important; }
+    .pw-metric-correct { color: #4ade80 !important; }
+    .pw-metric-note { color: #94a3b8 !important; }
+    .pw-eyebrow { color: #cbd5e1 !important; }
+    .pw-focus-item { border-bottom-color: #1e293b !important; }
+    .pw-focus-name { color: #f1f5f9 !important; }
+    .pw-muted { color: #94a3b8 !important; }
+    .pw-tip { color: #cbd5e1 !important; border-left-color: #475569 !important; }
+    .pw-mistake { color: #fca5a5 !important; background-color: #450a0a !important; }
+    .pw-mastered { color: #4ade80 !important; }
+    .pw-state-perfect { background-color: #052e16 !important; border-color: #166534 !important; }
+    .pw-state-perfect .pw-state-title { color: #4ade80 !important; }
+    .pw-state-perfect .pw-state-note { color: #86efac !important; }
+    .pw-state-empty { background-color: #0f172a !important; border-color: #334155 !important; }
+    .pw-state-empty .pw-state-title { color: #e2e8f0 !important; }
+    .pw-state-empty .pw-state-note { color: #94a3b8 !important; }
+    .pw-table-scroll thead tr { color: #94a3b8 !important; border-color: #1e293b !important; }
+    .pw-table-scroll tbody tr { border-color: #1e293b !important; }
+    .pw-table-scroll tbody td:nth-child(1) { color: #e2e8f0 !important; }
+    .pw-table-scroll tbody td:nth-child(2) { color: #94a3b8 !important; }
+    .pw-table-scroll tbody td:nth-child(3) { color: #4ade80 !important; }
+    .pw-table-scroll tbody td:nth-child(4) { color: #f87171 !important; }
+    .pw-table-scroll tbody td:nth-child(4).pw-zero { color: #64748b !important; }
+    .pw-table-scroll tbody td:nth-child(5) { color: #f1f5f9 !important; }
+    .pw-trend-up { color: #4ade80; }
+    .pw-trend-down { color: #f87171; }
+    .pw-trend-flat { color: #94a3b8; }
+    .pw-trend-none { color: #64748b; }
+    .pw-chart-card { background-color: #0f172a; border-color: #1e293b; }
+    .pw-chart line { stroke: #334155; }
+    .pw-chart text { fill: #94a3b8; }
+    .pw-series.is-dimmed { opacity: 0.25; }
+    .pw-series.is-hovered { filter: drop-shadow(0 0 4px rgba(226, 232, 240, 0.45)); }
+    .pw-chip { background-color: #111827; border-color: #334155; color: #e2e8f0; }
+    .pw-chip:hover { background-color: #1e293b; }
+    .pw-chip.is-active { border-color: #e2e8f0; background-color: #1e293b; }
+    .pw-chip input { accent-color: #e2e8f0; }
+    .pw-action { color: #60a5fa; }
+    .pw-sub { color: #94a3b8; }
+    .pw-cta { background-color: #3b82f6 !important; color: #ffffff !important; }
+    .pw-footer { background-color: #0f172a !important; border-top-color: #1e293b !important; }
+    .pw-footer div { color: #64748b !important; }
+    .pw-tab { background-color: #111827 !important; border-color: #334155 !important; color: #cbd5e1 !important; }
+    .pw-tab.is-active { background-color: #3b82f6 !important; border-color: #3b82f6 !important; color: #ffffff !important; }
 }
 `;
 
@@ -518,7 +604,7 @@ function renderProgressSection(progress) {
         });
         const hidden = visible.has(game.game) ? '' : ' is-hidden';
         const linePath = path.trim();
-        return `<g class="pw-series${hidden}" data-series="${escapeHtml(game.game)}" style="color: ${game.color}">` +
+        return `<g class="pw-series${hidden}" data-series="${escapeHtml(game.game)}" style="color: var(--pw-${game.game}, ${game.color})">` +
             `<path class="pw-line" d="${linePath}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>` +
             (linePath ? `<path class="pw-hit" d="${linePath}" fill="none" stroke="transparent" stroke-width="14" pointer-events="stroke" vector-effect="non-scaling-stroke"/>` : '') +
             dots.join('') +
@@ -529,7 +615,7 @@ function renderProgressSection(progress) {
         const note = plottedPoints(game) <= 1 ? ' title="Only one point in this range"' : '';
         return `<label class="pw-chip"${note}>` +
             `<input type="checkbox" data-game="${escapeHtml(game.game)}"${visible.has(game.game) ? ' checked' : ''}>` +
-            `<span class="pw-swatch" style="background-color: ${game.color}"></span>` +
+            `<span class="pw-swatch" style="background-color: var(--pw-${game.game}, ${game.color})"></span>` +
             `<span>${escapeHtml(game.name)}</span>` +
             '</label>';
     }).join('');
@@ -595,24 +681,24 @@ export function renderReportHtml(summary, options = {}) {
     if (topPractice.length > 0) {
         practiceSection = `
         <div style="margin-bottom: 24px;">
-            <div style="font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">
+            <div class="pw-eyebrow" style="font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">
                 Focus Areas for Practice
             </div>
             ${topPractice.map((item, index) => `
-                <div style="padding: 14px 0; border-bottom: 1px solid #f1f5f9;">
+                <div class="pw-focus-item" style="padding: 14px 0; border-bottom: 1px solid #f1f5f9;">
                     <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;">
-                        <span style="font-size: 15px; font-weight: 600; color: #0f172a;">
+                        <span class="pw-focus-name" style="font-size: 15px; font-weight: 600; color: #0f172a;">
                             ${index + 1}. ${escapeHtml(item.name)}
                         </span>
-                        <span style="font-size: 12px; font-weight: 500; color: #dc2626; background-color: #fef2f2; padding: 2px 8px; border-radius: 4px;">
+                        <span class="pw-mistake" style="font-size: 12px; font-weight: 500; color: #dc2626; background-color: #fef2f2; padding: 2px 8px; border-radius: 4px;">
                             ${item.wrong} mistake${item.wrong === 1 ? '' : 's'} (${item.accuracyPct}%)
                         </span>
                     </div>
-                    <div style="font-size: 13px; color: #64748b; margin-top: 3px;">
+                    <div class="pw-muted" style="font-size: 13px; color: #64748b; margin-top: 3px;">
                         ${escapeHtml(item.skill)}
                     </div>
                     ${item.tip ? `
-                        <div style="font-size: 13px; color: #334155; margin-top: 6px; padding-left: 10px; border-left: 2px solid #cbd5e1; line-height: 1.4;">
+                        <div class="pw-tip" style="font-size: 13px; color: #334155; margin-top: 6px; padding-left: 10px; border-left: 2px solid #cbd5e1; line-height: 1.4;">
                             <strong>Tip:</strong> ${escapeHtml(item.tip)}
                         </div>
                     ` : ''}
@@ -621,21 +707,21 @@ export function renderReportHtml(summary, options = {}) {
         </div>`;
     } else if (total > 0) {
         practiceSection = `
-        <div style="margin-bottom: 24px; padding: 14px 16px; background-color: #f0fdf4; border-radius: 6px; border: 1px solid #dcfce7;">
-            <div style="font-size: 14px; font-weight: 600; color: #166534;">
+        <div class="pw-state pw-state-perfect" style="margin-bottom: 24px; padding: 14px 16px; background-color: #f0fdf4; border-radius: 6px; border: 1px solid #dcfce7;">
+            <div class="pw-state-title" style="font-size: 14px; font-weight: 600; color: #166534;">
                 ${perfectHeading}
             </div>
-            <div style="font-size: 13px; color: #15803d; margin-top: 2px;">
+            <div class="pw-state-note" style="font-size: 13px; color: #15803d; margin-top: 2px;">
                 All ${total} attempts were solved correctly without mistakes.
             </div>
         </div>`;
     } else {
         practiceSection = `
-        <div style="margin-bottom: 24px; padding: 14px 16px; background-color: #f8fafc; border-radius: 6px; border: 1px solid #e2e8f0;">
-            <div style="font-size: 14px; font-weight: 600; color: #334155;">
+        <div class="pw-state pw-state-empty" style="margin-bottom: 24px; padding: 14px 16px; background-color: #f8fafc; border-radius: 6px; border: 1px solid #e2e8f0;">
+            <div class="pw-state-title" style="font-size: 14px; font-weight: 600; color: #334155;">
                 No Practice Recorded
             </div>
-            <div style="font-size: 13px; color: #64748b; margin-top: 2px;">
+            <div class="pw-state-note" style="font-size: 13px; color: #64748b; margin-top: 2px;">
                 No questions were solved between ${period.sinceFormatted} and ${period.nowFormatted}.
             </div>
         </div>`;
@@ -645,10 +731,10 @@ export function renderReportHtml(summary, options = {}) {
     if (mastered.length > 0) {
         masteredSection = `
         <div style="margin-bottom: 24px;">
-            <div style="font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">
+            <div class="pw-eyebrow" style="font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">
                 ${masteredHeading}
             </div>
-            <div style="font-size: 13px; color: #166534; line-height: 1.6;">
+            <div class="pw-mastered" style="font-size: 13px; color: #166534; line-height: 1.6;">
                 ${mastered.map((item) => `✓ ${escapeHtml(item.name)} (${item.total} solved)`).join(' &nbsp;•&nbsp; ')}
             </div>
         </div>`;
@@ -678,14 +764,14 @@ export function renderReportHtml(summary, options = {}) {
                             : '';
                         const color = colorByGame.get(item.game);
                         const gameLabel = showTrend && color
-                            ? `<span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background-color: ${color}; margin-right: 7px; vertical-align: 1px;"></span>${escapeHtml(item.name)}`
+                            ? `<span class="pw-dot" style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background-color: var(--pw-${item.game}, ${color}); margin-right: 7px; vertical-align: 1px;"></span>${escapeHtml(item.name)}`
                             : escapeHtml(item.name);
                         return `
                         <tr style="border-bottom: 1px solid #f1f5f9;">
                             <td style="padding: 8px 0; color: #0f172a; font-weight: 500;">${gameLabel}</td>
                             <td style="padding: 8px 0; text-align: right; color: #64748b;">${item.total}</td>
                             <td style="padding: 8px 0; text-align: right; color: #16a34a; font-weight: 600;">${item.correct}</td>
-                            <td style="padding: 8px 0; text-align: right; color: ${item.wrong > 0 ? '#dc2626' : '#94a3b8'}; font-weight: 600;">${item.wrong}</td>
+                            <td class="${item.wrong === 0 ? 'pw-zero' : ''}" style="padding: 8px 0; text-align: right; color: ${item.wrong > 0 ? '#dc2626' : '#94a3b8'}; font-weight: 600;">${item.wrong}</td>
                             <td style="padding: 8px 0; text-align: right; color: #0f172a; font-weight: 600;">${item.accuracyPct}%</td>
                             ${trendCell}
                         </tr>`;
@@ -694,7 +780,7 @@ export function renderReportHtml(summary, options = {}) {
             </table>`;
         breakdownTable = `
         <div style="margin-top: 24px;">
-            <div style="font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">
+            <div class="pw-eyebrow" style="font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">
                 Activity Breakdown
             </div>
             ${showTrend ? `<div class="pw-table-scroll">${table}</div>` : table}
@@ -706,21 +792,22 @@ export function renderReportHtml(summary, options = {}) {
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    ${preview ? '<meta name="color-scheme" content="light dark">' : ''}
     <title>${pageTitle}</title>
     ${preview ? `<style>${PREVIEW_CSS}</style>` : ''}
 </head>
 <body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0f172a; line-height: 1.5; -webkit-font-smoothing: antialiased;">
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 32px 16px;">
+    <table role="presentation" width="100%" class="pw-page" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 32px 16px;">
         <tr>
             <td align="center">${navHtml}
-                <table role="presentation" width="100%" style="max-width: ${cardWidth}px; table-layout: fixed; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden;" cellspacing="0" cellpadding="0">
+                <table role="presentation" width="100%" class="pw-card" style="max-width: ${cardWidth}px; table-layout: fixed; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden;" cellspacing="0" cellpadding="0">
                     <!-- Brand & Date Header (Solid background & high contrast for all email clients) -->
                     <tr>
-                        <td style="padding: 28px 32px 20px 32px; border-bottom: 1px solid #f1f5f9; background-color: #ffffff;">
-                            <div style="font-size: 20px; font-weight: 700; color: #0f172a; letter-spacing: -0.3px;">
+                        <td class="pw-card-head" style="padding: 28px 32px 20px 32px; border-bottom: 1px solid #f1f5f9; background-color: #ffffff;">
+                            <div class="pw-brand" style="font-size: 20px; font-weight: 700; color: #0f172a; letter-spacing: -0.3px;">
                                 🧠 Brain Wars
                             </div>
-                            <div style="font-size: 13px; color: #64748b; margin-top: 4px;">
+                            <div class="pw-brand-sub" style="font-size: 13px; color: #64748b; margin-top: 4px;">
                                 ${heading} • ${period.sinceFormatted} – ${period.nowFormatted}
                             </div>
                         </td>
@@ -728,23 +815,23 @@ export function renderReportHtml(summary, options = {}) {
 
                     <!-- Key Metrics Row -->
                     <tr>
-                        <td style="padding: 20px 32px; border-bottom: 1px solid #f1f5f9; background-color: #fafafa;">
+                        <td class="pw-metrics" style="padding: 20px 32px; border-bottom: 1px solid #f1f5f9; background-color: #fafafa;">
                             <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                                 <tr>
                                     <td width="33%" style="text-align: left;">
-                                        <div style="font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Solved</div>
-                                        <div style="font-size: 22px; font-weight: 700; color: #0f172a; margin-top: 2px;">${total}</div>
-                                        <div style="font-size: 12px; color: #16a34a; margin-top: 1px;">${correct} correct</div>
+                                        <div class="pw-metric-label" style="font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Solved</div>
+                                        <div class="pw-metric-value" style="font-size: 22px; font-weight: 700; color: #0f172a; margin-top: 2px;">${total}</div>
+                                        <div class="pw-metric-correct" style="font-size: 12px; color: #16a34a; margin-top: 1px;">${correct} correct</div>
                                     </td>
                                     <td width="33%" style="text-align: left; border-left: 1px solid #e2e8f0; padding-left: 20px;">
-                                        <div style="font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Accuracy</div>
-                                        <div style="font-size: 22px; font-weight: 700; color: #0f172a; margin-top: 2px;">${accuracyPct}%</div>
-                                        <div style="font-size: 12px; color: #64748b; margin-top: 1px;">past ${range}</div>
+                                        <div class="pw-metric-label" style="font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Accuracy</div>
+                                        <div class="pw-metric-value" style="font-size: 22px; font-weight: 700; color: #0f172a; margin-top: 2px;">${accuracyPct}%</div>
+                                        <div class="pw-metric-note" style="font-size: 12px; color: #64748b; margin-top: 1px;">past ${range}</div>
                                     </td>
                                     <td width="34%" style="text-align: left; border-left: 1px solid #e2e8f0; padding-left: 20px;">
-                                        <div style="font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Active Days</div>
-                                        <div style="font-size: 22px; font-weight: 700; color: #0f172a; margin-top: 2px;">${activeDays}</div>
-                                        <div style="font-size: 12px; color: #64748b; margin-top: 1px;">of ${range}</div>
+                                        <div class="pw-metric-label" style="font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Active Days</div>
+                                        <div class="pw-metric-value" style="font-size: 22px; font-weight: 700; color: #0f172a; margin-top: 2px;">${activeDays}</div>
+                                        <div class="pw-metric-note" style="font-size: 12px; color: #64748b; margin-top: 1px;">of ${range}</div>
                                     </td>
                                 </tr>
                             </table>
@@ -761,7 +848,7 @@ export function renderReportHtml(summary, options = {}) {
 
                             <!-- CTA -->
                             <div style="text-align: center; margin-top: 32px;">
-                                <a href="https://alex-just.github.io/brain-wars/" target="_blank" style="display: inline-block; background-color: #0f172a; color: #ffffff; text-decoration: none; padding: 10px 22px; border-radius: 6px; font-weight: 600; font-size: 14px;">
+                                <a href="https://alex-just.github.io/brain-wars/" target="_blank" class="pw-cta" style="display: inline-block; background-color: #0f172a; color: #ffffff; text-decoration: none; padding: 10px 22px; border-radius: 6px; font-weight: 600; font-size: 14px;">
                                     Start Practice Session →
                                 </a>
                             </div>
@@ -770,7 +857,7 @@ export function renderReportHtml(summary, options = {}) {
 
                     <!-- Minimal Footer -->
                     <tr>
-                        <td style="padding: 18px 32px; background-color: #fafafa; border-top: 1px solid #f1f5f9; text-align: center;">
+                        <td class="pw-footer" style="padding: 18px 32px; background-color: #fafafa; border-top: 1px solid #f1f5f9; text-align: center;">
                             <div style="font-size: 12px; color: #94a3b8;">
                                 Brain Wars Analytics • Automated weekly summary
                             </div>

@@ -480,6 +480,24 @@ async function runAsyncTests() {
         assert.ok(!colors.includes('#64748b'), 'no game falls back to grey');
     });
 
+    await checkAsync('every game has a distinct dark-mode colour', () => {
+        const html = Report.renderReportHtml({
+            period: { days: 7, sinceFormatted: 'Oct 26, 2026', nowFormatted: 'Nov 2, 2026' },
+            total: 0, correct: 0, wrong: 0, accuracyPct: 0, activeDays: 0,
+            topPractice: [], mastered: [], games: []
+        }, { nav: [{ days: 7, href: '/report/preview?days=7', active: true }] });
+        const darkCss = html.slice(html.indexOf('@media (prefers-color-scheme: dark)'));
+        const root = darkCss.match(/:root \{([^}]*)\}/);
+        assert.ok(root, 'the dark theme defines its variables');
+        const vars = [...root[1].matchAll(/--pw-([a-z-]+): (#[0-9a-f]{6})/g)]
+            .map((match) => [match[1], match[2]]);
+        assert.strictEqual(vars.length, Worker.GAME_IDS.length);
+        assert.strictEqual(new Set(vars.map(([, color]) => color)).size, Worker.GAME_IDS.length, 'dark colours must be unique');
+        Worker.GAME_IDS.forEach((game) => {
+            assert.ok(vars.some(([id]) => id === game), `${game} needs a dark colour`);
+        });
+    });
+
     await checkAsync('progress buckets carry short labels for the chart', async () => {
         const progressNow = Date.UTC(2026, 9, 11); // midnight UTC
         const week = await Report.generateProgressSeries(stubDB(), { now: progressNow, days: 7 });
@@ -687,11 +705,14 @@ async function runAsyncTests() {
         assert.ok(html.includes('.pw-chip.is-dimmed'), 'hover dims the other chips');
         assert.ok(html.includes('pointerenter'), 'hover is wired');
         assert.ok(html.includes("chip.addEventListener('pointerenter'"), 'chip hover focuses its line');
+        assert.ok(html.includes('prefers-color-scheme: dark'), 'the preview supports dark mode');
+        assert.ok(html.includes('--pw-unit-conversions'), 'game colours switch with the theme');
 
         const emailHtml = Report.renderReportHtml(summary);
         assert.ok(!emailHtml.includes('Progress by Game'), 'the email stays static');
         assert.ok(!emailHtml.includes('data-progress'), 'the email carries no chart');
         assert.ok(!emailHtml.includes('>Trend</th>'), 'the email keeps its five columns');
+        assert.ok(!emailHtml.includes('prefers-color-scheme: dark'), 'the email stays light');
     });
 
     await checkAsync('sendReportEmail sends via Resend with Bearer auth and recipient', async () => {
