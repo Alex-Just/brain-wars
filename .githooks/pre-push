@@ -25,9 +25,6 @@ CODERABBIT_GATE_SEVERITY=major
 # --gate needs CodeRabbit CLI 0.9.1 or later.
 MINIMUM_CODERABBIT_CLI_VERSION=0.9.1
 ZERO_OID=0000000000000000000000000000000000000000
-# Valid empty tree OID. Used when the first push of the default base branch
-# has no remote tip and must not compare the branch with itself.
-EMPTY_TREE_OID=$(git hash-object -t tree /dev/null)
 
 # Git passes the refs that are being pushed on stdin.
 input=$(cat)
@@ -84,6 +81,9 @@ version_is_at_least() {
 # rebase the remote tip may not be on this branch, so fall back to the
 # merge base, then to the default base branch.
 # Prints: <flag> <value>
+# Prints only "skip" when the first push of the default base branch has no
+# remote tip. Comparing that tip with --base master would review an empty
+# diff and pass the gate without a real review.
 resolve_review_base() {
     local_ref=$1
     local_sha=$2
@@ -91,10 +91,8 @@ resolve_review_base() {
     local_branch=${local_ref#refs/heads/}
 
     if [ -z "$remote_sha" ] || [ "$remote_sha" = "$ZERO_OID" ]; then
-        # A new default-base branch has no remote tip. Comparing it with
-        # --base master would review an empty diff and pass the gate.
         if [ "$local_branch" = "$DEFAULT_BASE_BRANCH" ]; then
-            printf '%s %s\n' "--base-commit" "$EMPTY_TREE_OID"
+            printf '%s\n' "skip"
             return 0
         fi
         printf '%s %s\n' "--base" "$DEFAULT_BASE_BRANCH"
@@ -148,6 +146,10 @@ while IFS=' ' read -r local_ref local_sha remote_ref remote_sha; do
     echo "pre-push: running CodeRabbit review for $local_ref..."
 
     base_pair=$(resolve_review_base "$local_ref" "$local_sha" "$remote_sha")
+    if [ "$base_pair" = "skip" ]; then
+        echo "pre-push: first push of $DEFAULT_BASE_BRANCH has no remote tip; CodeRabbit cannot compare it safely, skipping the review for this ref."
+        continue
+    fi
     base_flag=${base_pair%% *}
     base_value=${base_pair#* }
 
