@@ -22,6 +22,8 @@
 
 DEFAULT_BASE_BRANCH=master
 CODERABBIT_GATE_SEVERITY=major
+# --gate needs CodeRabbit CLI 0.9.1 or later.
+MINIMUM_CODERABBIT_CLI_VERSION=0.9.1
 ZERO_OID=0000000000000000000000000000000000000000
 
 # Git passes the refs that are being pushed on stdin.
@@ -67,6 +69,41 @@ resolve_coderabbit_cli() {
     return 1
 }
 
+# Return 0 when $1 is greater than or equal to $2 for dotted numeric versions.
+version_is_at_least() {
+    left=$1
+    right=$2
+    oldest=$(printf '%s\n%s\n' "$left" "$right" | sort -V | head -n 1)
+    [ "$oldest" = "$right" ]
+}
+
+# Prefer the remote tip when it is an ancestor of the pushed tip. After a
+# rebase the remote tip may not be on this branch, so fall back to the
+# merge base, then to the default base branch.
+# Prints: <flag> <value>
+resolve_review_base() {
+    local_sha=$1
+    remote_sha=$2
+
+    if [ -z "$remote_sha" ] || [ "$remote_sha" = "$ZERO_OID" ]; then
+        printf '%s %s\n' "--base" "$DEFAULT_BASE_BRANCH"
+        return 0
+    fi
+
+    if git merge-base --is-ancestor "$remote_sha" "$local_sha" 2>/dev/null; then
+        printf '%s %s\n' "--base-commit" "$remote_sha"
+        return 0
+    fi
+
+    common_base=$(git merge-base "$remote_sha" "$local_sha" 2>/dev/null || true)
+    if [ -n "$common_base" ]; then
+        printf '%s %s\n' "--base-commit" "$common_base"
+        return 0
+    fi
+
+    printf '%s %s\n' "--base" "$DEFAULT_BASE_BRANCH"
+}
+
 if ! coderabbit_cli=$(resolve_coderabbit_cli); then
     echo "pre-push: CodeRabbit CLI is not installed, skipping the review."
     echo "pre-push: install it with: brew install coderabbit"
@@ -80,27 +117,48 @@ if ! "$coderabbit_cli" auth status >/dev/null 2>&1; then
     exit 0
 fi
 
-# Review each non-delete ref being pushed. Prefer the remote tip as the base
-# commit so only new commits are reviewed. New branches compare to master.
+coderabbit_version=$("$coderabbit_cli" --version 2>/dev/null | tr -d '[:space:]')
+coderabbit_version=${coderabbit_version#v}
+if [ -z "$coderabbit_version" ] || \
+    ! version_is_at_least "$coderabbit_version" "$MINIMUM_CODERABBIT_CLI_VERSION"
+then
+    echo "pre-push: CodeRabbit CLI $coderabbit_version is too old for --gate, skipping the review."
+    echo "pre-push: upgrade to $MINIMUM_CODERABBIT_CLI_VERSION or later with: brew upgrade coderabbit"
+    echo "pre-push: or: coderabbit update"
+    exit 0
+fi
+
+# Review each non-delete ref being pushed in a detached worktree at the
+# pushed tip, so a push of another branch is not reviewed from HEAD.
 while IFS=' ' read -r local_ref local_sha remote_ref remote_sha; do
     [ -n "$local_ref" ] || continue
     [ "$local_sha" != "$ZERO_OID" ] || continue
 
     echo "pre-push: running CodeRabbit review for $local_ref..."
 
-    if [ -n "$remote_sha" ] && [ "$remote_sha" != "$ZERO_OID" ]; then
-        "$coderabbit_cli" review \
-            --committed \
-            --base-commit "$remote_sha" \
-            --gate "$CODERABBIT_GATE_SEVERITY"
-        status=$?
-    else
-        "$coderabbit_cli" review \
-            --committed \
-            --base "$DEFAULT_BASE_BRANCH" \
-            --gate "$CODERABBIT_GATE_SEVERITY"
-        status=$?
+    base_pair=$(resolve_review_base "$local_sha" "$remote_sha")
+    base_flag=${base_pair%% *}
+    base_value=${base_pair#* }
+
+    worktree_dir=$(mktemp -d "${TMPDIR:-/tmp}/coderabbit-pre-push.XXXXXX") || exit 1
+    if ! git worktree add --detach "$worktree_dir" "$local_sha" >/dev/null 2>&1; then
+        rm -rf "$worktree_dir"
+        echo
+        echo "pre-push: push blocked because a CodeRabbit review worktree could not be created."
+        echo "pre-push: fix the problem above, or bypass once with: git push --no-verify"
+        exit 1
     fi
+
+    (
+        cd "$worktree_dir" || exit 1
+        "$coderabbit_cli" review \
+            --committed \
+            "$base_flag" "$base_value" \
+            --gate "$CODERABBIT_GATE_SEVERITY"
+    )
+    status=$?
+
+    git worktree remove --force "$worktree_dir" >/dev/null 2>&1 || rm -rf "$worktree_dir"
 
     if [ "$status" -eq 2 ]; then
         echo
