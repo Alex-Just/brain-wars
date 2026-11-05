@@ -84,7 +84,7 @@ git config core.hooksPath .githooks
 ```
 
 - `commit-msg` strips `Co-authored-by` trailers from commit messages.
-- `pre-push` runs the Qlty quality check on the commits being pushed and blocks the push when new issues appear.
+- `pre-push` runs the Qlty quality check, then a CodeRabbit CLI review, on the commits being pushed. It blocks the push when Qlty finds new issues or CodeRabbit reports findings at or above `major`.
 
 Neither hook is a guarantee. `--no-verify` skips them, merge commits skip `commit-msg`, and a clone that did not run the `git config` command has no hooks at all.
 
@@ -102,6 +102,17 @@ git config core.hooksPath .githooks
 `.qlty/qlty.toml` holds the configuration. It enables `biome` for JavaScript, JSON, and CSS, `markdownlint` for Markdown, and `trufflehog` for secrets. Add a linter with `qlty plugins enable <name>` and commit the change. `qlty check --all` runs the same checks over the whole repository.
 
 Qlty Cloud offers a score-based block and works without pull requests: `qlty slop-one` fails a push that lowers the score of the changed files. It needs a `TYPESAFE_API_KEY` and spends API credit per run, so it is not in the hook.
+
+After Qlty, the same hook runs the [CodeRabbit CLI](https://docs.coderabbit.ai/cli) over the commits being pushed. It skips the review when the CLI is missing or not signed in. When the review reports findings at or above `major`, the push stops. Public repositories can use CodeRabbit for free; the CLI still uses your included review allowance.
+
+```bash
+brew install coderabbit
+# or: curl -fsSL https://cli.coderabbit.ai/install.sh | sh
+coderabbit auth login
+git config core.hooksPath .githooks
+```
+
+`.coderabbit.yaml` holds the review settings used by both the GitHub App and the CLI.
 
 ## Tests
 
