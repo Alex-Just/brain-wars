@@ -1,7 +1,8 @@
 #!/bin/sh
 #
-# pre-push hook: block the push when Qlty finds new issues in the commits
-# that are being pushed. No pull request is required.
+# pre-push hook: block the push when Qlty finds new issues, or when the
+# CodeRabbit CLI reports findings at or above the gate severity, in the
+# commits that are being pushed. No pull request is required.
 #
 # Enable it in a clone with:
 #   git config core.hooksPath .githooks
@@ -9,44 +10,182 @@
 # Install the Qlty CLI once:
 #   curl https://qlty.sh | sh
 #
+# Install the CodeRabbit CLI once, then sign in:
+#   brew install coderabbit
+#   coderabbit auth login
+#   # or: curl -fsSL https://cli.coderabbit.ai/install.sh | sh
+#
 # This is a guardrail, not a guarantee: `git push --no-verify` bypasses it.
-# The hook stays out of the way when Qlty is not installed, so a clone
-# without the CLI can still push.
+# The hook stays out of the way when a CLI is not installed or CodeRabbit
+# is not authenticated, so a clone without that tool can still push.
 #
 
-if ! command -v qlty >/dev/null 2>&1; then
-    echo "pre-push: qlty is not installed, skipping the quality check."
-    echo "pre-push: install it with: curl https://qlty.sh | sh"
-    exit 0
-fi
-
-if [ ! -f .qlty/qlty.toml ]; then
-    echo "pre-push: .qlty/qlty.toml is missing, skipping the quality check."
-    exit 0
-fi
+DEFAULT_BASE_BRANCH=master
+CODERABBIT_GATE_SEVERITY=major
+# --gate needs CodeRabbit CLI 0.9.1 or later.
+MINIMUM_CODERABBIT_CLI_VERSION=0.9.1
+ZERO_OID=0000000000000000000000000000000000000000
+# Valid empty tree OID. Used when the first push of the default base branch
+# has no remote tip and must not compare the branch with itself.
+EMPTY_TREE_OID=$(git hash-object -t tree /dev/null)
 
 # Git passes the refs that are being pushed on stdin.
 input=$(cat)
 
-# Qlty prints a stray upgrade-check line ("Tap enter to skip...") whenever
-# stdin is not a terminal, which is always true here. Capture the output so
-# the exit code is kept and that one line can be dropped.
-report=$(mktemp) || exit 0
-printf '%s\n' "$input" | qlty check \
-    --trigger pre-push \
-    --upstream-from-pre-push \
-    --no-formatters \
-    --skip-errored-plugins \
-    --no-upgrade-check > "$report" 2>&1
-status=$?
-grep -v '^Tap enter to skip\.\.\.$' "$report" || true
-rm -f "$report"
+if ! command -v qlty >/dev/null 2>&1; then
+    echo "pre-push: qlty is not installed, skipping the quality check."
+    echo "pre-push: install it with: curl https://qlty.sh | sh"
+elif [ ! -f .qlty/qlty.toml ]; then
+    echo "pre-push: .qlty/qlty.toml is missing, skipping the quality check."
+else
+    # Qlty prints a stray upgrade-check line ("Tap enter to skip...") whenever
+    # stdin is not a terminal, which is always true here. Capture the output so
+    # the exit code is kept and that one line can be dropped.
+    report=$(mktemp) || exit 1
+    printf '%s\n' "$input" | qlty check \
+        --trigger pre-push \
+        --upstream-from-pre-push \
+        --no-formatters \
+        --skip-errored-plugins \
+        --no-upgrade-check > "$report" 2>&1
+    status=$?
+    grep -v '^Tap enter to skip\.\.\.$' "$report" || true
+    rm -f "$report"
 
-if [ "$status" -ne 0 ]; then
-    echo
-    echo "pre-push: push blocked by the Qlty quality check."
-    echo "pre-push: fix the issues above, or bypass once with: git push --no-verify"
-    exit 1
+    if [ "$status" -ne 0 ]; then
+        echo
+        echo "pre-push: push blocked by the Qlty quality check."
+        echo "pre-push: fix the issues above, or bypass once with: git push --no-verify"
+        exit 1
+    fi
 fi
+
+resolve_coderabbit_cli() {
+    if command -v coderabbit >/dev/null 2>&1; then
+        printf '%s\n' coderabbit
+        return 0
+    fi
+    if command -v cr >/dev/null 2>&1; then
+        printf '%s\n' cr
+        return 0
+    fi
+    return 1
+}
+
+# Return 0 when $1 is greater than or equal to $2 for dotted numeric versions.
+version_is_at_least() {
+    left=$1
+    right=$2
+    oldest=$(printf '%s\n%s\n' "$left" "$right" | sort -V | head -n 1)
+    [ "$oldest" = "$right" ]
+}
+
+# Prefer the remote tip when it is an ancestor of the pushed tip. After a
+# rebase the remote tip may not be on this branch, so fall back to the
+# merge base, then to the default base branch.
+# Prints: <flag> <value>
+resolve_review_base() {
+    local_ref=$1
+    local_sha=$2
+    remote_sha=$3
+    local_branch=${local_ref#refs/heads/}
+
+    if [ -z "$remote_sha" ] || [ "$remote_sha" = "$ZERO_OID" ]; then
+        # A new default-base branch has no remote tip. Comparing it with
+        # --base master would review an empty diff and pass the gate.
+        if [ "$local_branch" = "$DEFAULT_BASE_BRANCH" ]; then
+            printf '%s %s\n' "--base-commit" "$EMPTY_TREE_OID"
+            return 0
+        fi
+        printf '%s %s\n' "--base" "$DEFAULT_BASE_BRANCH"
+        return 0
+    fi
+
+    if git merge-base --is-ancestor "$remote_sha" "$local_sha" 2>/dev/null; then
+        printf '%s %s\n' "--base-commit" "$remote_sha"
+        return 0
+    fi
+
+    common_base=$(git merge-base "$remote_sha" "$local_sha" 2>/dev/null || true)
+    if [ -n "$common_base" ]; then
+        printf '%s %s\n' "--base-commit" "$common_base"
+        return 0
+    fi
+
+    printf '%s %s\n' "--base" "$DEFAULT_BASE_BRANCH"
+}
+
+if ! coderabbit_cli=$(resolve_coderabbit_cli); then
+    echo "pre-push: CodeRabbit CLI is not installed, skipping the review."
+    echo "pre-push: install it with: brew install coderabbit"
+    echo "pre-push: or: curl -fsSL https://cli.coderabbit.ai/install.sh | sh"
+    exit 0
+fi
+
+if ! "$coderabbit_cli" auth status >/dev/null 2>&1; then
+    echo "pre-push: CodeRabbit CLI is not authenticated, skipping the review."
+    echo "pre-push: sign in with: coderabbit auth login"
+    exit 0
+fi
+
+coderabbit_version=$("$coderabbit_cli" --version 2>/dev/null | tr -d '[:space:]')
+coderabbit_version=${coderabbit_version#v}
+if [ -z "$coderabbit_version" ] || \
+    ! version_is_at_least "$coderabbit_version" "$MINIMUM_CODERABBIT_CLI_VERSION"
+then
+    echo "pre-push: CodeRabbit CLI $coderabbit_version is too old for --gate, skipping the review."
+    echo "pre-push: upgrade to $MINIMUM_CODERABBIT_CLI_VERSION or later with: brew upgrade coderabbit"
+    echo "pre-push: or: coderabbit update"
+    exit 0
+fi
+
+# Review each non-delete ref being pushed in a detached worktree at the
+# pushed tip, so a push of another branch is not reviewed from HEAD.
+while IFS=' ' read -r local_ref local_sha remote_ref remote_sha; do
+    [ -n "$local_ref" ] || continue
+    [ "$local_sha" != "$ZERO_OID" ] || continue
+
+    echo "pre-push: running CodeRabbit review for $local_ref..."
+
+    base_pair=$(resolve_review_base "$local_ref" "$local_sha" "$remote_sha")
+    base_flag=${base_pair%% *}
+    base_value=${base_pair#* }
+
+    worktree_dir=$(mktemp -d "${TMPDIR:-/tmp}/coderabbit-pre-push.XXXXXX") || exit 1
+    if ! git worktree add --detach "$worktree_dir" "$local_sha" >/dev/null 2>&1; then
+        rm -rf "$worktree_dir"
+        echo
+        echo "pre-push: push blocked because a CodeRabbit review worktree could not be created."
+        echo "pre-push: fix the problem above, or bypass once with: git push --no-verify"
+        exit 1
+    fi
+
+    (
+        cd "$worktree_dir" || exit 1
+        "$coderabbit_cli" review \
+            --committed \
+            "$base_flag" "$base_value" \
+            --gate "$CODERABBIT_GATE_SEVERITY"
+    )
+    status=$?
+
+    git worktree remove --force "$worktree_dir" >/dev/null 2>&1 || rm -rf "$worktree_dir"
+
+    if [ "$status" -eq 2 ]; then
+        echo
+        echo "pre-push: push blocked by CodeRabbit findings at or above $CODERABBIT_GATE_SEVERITY."
+        echo "pre-push: fix the findings above, or bypass once with: git push --no-verify"
+        exit 1
+    fi
+
+    if [ "$status" -ne 0 ]; then
+        echo
+        echo "pre-push: push blocked because the CodeRabbit review did not finish."
+        echo "pre-push: fix the problem above, or bypass once with: git push --no-verify"
+        exit 1
+    fi
+done <<EOF
+$input
+EOF
 
 exit 0
