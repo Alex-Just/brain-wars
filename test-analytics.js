@@ -4,6 +4,15 @@ const assert = require('node:assert');
 const fs = require('node:fs');
 const path = require('node:path');
 
+// Float results get a tolerance; exact equality is fragile (Sonar S1244).
+const CLOSE_ENOUGH = 1e-9;
+function assertClose(actual, expected, message) {
+    assert.ok(
+        Math.abs(actual - expected) <= CLOSE_ENOUGH,
+        message || `expected ${actual} to be within ${CLOSE_ENOUGH} of ${expected}`
+    );
+}
+
 let passed = 0;
 function check(name, fn) {
     try {
@@ -458,7 +467,7 @@ async function runAsyncTests() {
         assert.match(unit.color, /^#[0-9a-f]{6}$/i);
         assert.strictEqual(unit.total, 9);
         assert.strictEqual(unit.correct, 5);
-        assert.strictEqual(unit.accuracyPct, 55.6);
+        assertClose(unit.accuracyPct, 55.6, 'accuracy should be five of nine attempts rounded to one decimal');
         assert.strictEqual(unit.points.length, 24);
         assert.strictEqual(unit.points[0].accuracyPct, 25);
         assert.strictEqual(unit.points[1], null);

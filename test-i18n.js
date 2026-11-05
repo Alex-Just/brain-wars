@@ -20,6 +20,18 @@ const TimeCalc = require('./time-calculations.js');
 const MoneyCalc = require('./money-calculations.js');
 const Units = require('./unit-conversions.js');
 
+// Float results get a tolerance; exact equality is fragile (Sonar S1244).
+const CLOSE_ENOUGH = 1e-9;
+function assertClose(actual, expected, message) {
+    assert.ok(
+        Math.abs(actual - expected) <= CLOSE_ENOUGH,
+        message || `expected ${actual} to be within ${CLOSE_ENOUGH} of ${expected}`
+    );
+}
+
+// A stable lexical order for sets of strings (Sonar S2871).
+const compareStrings = (a, b) => a.localeCompare(b);
+
 let passed = 0;
 function check(name, fn) {
     try {
@@ -49,7 +61,6 @@ check('all language dictionaries are present', () => {
 });
 
 check('all dictionaries share the same keys', () => {
-    const compareStrings = (a, b) => a.localeCompare(b);
     const baseKeys = Object.keys(I18n.translations.en).sort(compareStrings);
     assert.ok(baseKeys.length > 0, 'en dictionary is empty');
     LANGS.forEach((lang) => {
@@ -411,11 +422,11 @@ check('weightFor smooths by volume and clamps bad rows', () => {
     const challenge = require('./challenge.js');
     assert.strictEqual(challenge.weightFor(null), 2);
     assert.strictEqual(challenge.weightFor({ total: 0, wrong: 0 }), 2);
-    assert.strictEqual(challenge.weightFor({ total: 1, wrong: 1 }), 1 + 2 * (2 / 3));
-    assert.strictEqual(challenge.weightFor({ total: 20, wrong: 20 }), 1 + 2 * (21 / 22));
-    assert.strictEqual(challenge.weightFor({ total: 11, wrong: 0 }), 1 + 2 * (1 / 13));
+    assertClose(challenge.weightFor({ total: 1, wrong: 1 }), 1 + 2 * (2 / 3));
+    assertClose(challenge.weightFor({ total: 20, wrong: 20 }), 1 + 2 * (21 / 22));
+    assertClose(challenge.weightFor({ total: 11, wrong: 0 }), 1 + 2 * (1 / 13));
     assert.strictEqual(challenge.weightFor({ total: 'x', wrong: 'y' }), 2);
-    assert.strictEqual(challenge.weightFor({ total: 5, wrong: 99 }), 1 + 2 * (6 / 7));
+    assertClose(challenge.weightFor({ total: 5, wrong: 99 }), 1 + 2 * (6 / 7));
 });
 
 check('parsePracticeHistory keeps totals and drops junk', () => {
@@ -1023,8 +1034,8 @@ check('level one asks for the whole unit table', () => {
     });
     const units = new Set(question.rows.flatMap((row) => [row.from, row.to]));
     assert.deepStrictEqual(
-        [...units].sort(),
-        Object.keys(Units.units).sort(),
+        [...units].sort(compareStrings),
+        Object.keys(Units.units).sort(compareStrings),
         'the table should name every unit in the game'
     );
 });
@@ -1048,7 +1059,7 @@ check('level two converts in two connected steps', () => {
         chains.add(question.rows.map((row) => `${row.from}>${row.to}`).join('|'));
     }
     assert.deepStrictEqual(
-        [...chains].sort(),
+        [...chains].sort(compareStrings),
         ['km>m|m>cm', 'm>cm|cm>mm'],
         'level 2 should mix both length chains'
     );
@@ -1122,7 +1133,7 @@ check('the early levels move one family at a time with whole numbers', () => {
     const table = sampleConversions(1, 3)[0];
     assert.strictEqual(table.table, true, 'level 1 should be the unit table');
     const families = new Set(table.rows.map((row) => row.family));
-    assert.deepStrictEqual([...families].sort(), ['capacity', 'length', 'mass'], 'the table should introduce every family');
+    assert.deepStrictEqual([...families].sort(compareStrings), ['capacity', 'length', 'mass'], 'the table should introduce every family');
     table.rows.forEach((row) => {
         assert.ok(!row.value.includes('.') && !row.answer.includes('.'), `level 1 stays whole: ${JSON.stringify(row)}`);
     });
