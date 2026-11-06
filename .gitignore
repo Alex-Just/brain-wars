@@ -56,5 +56,9 @@ dist/
 docs/superpowers/
 .superpowers/
 
+# ---- Security audit reports ----
+security-audit/
+audit-reports/
+
 # ---- Logs ----
 *.log

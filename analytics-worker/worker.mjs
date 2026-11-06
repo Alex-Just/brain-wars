@@ -48,6 +48,7 @@ function isLocalOrigin(origin) {
 const REPORT_RANGES = [1, 3, 7, 30];
 const PREVIEW_DEFAULT_DAYS = 3;
 const EMAIL_DEFAULT_DAYS = DEFAULT_REPORT_DAYS;
+const MAX_REPORT_DAYS = 30;
 
 // Returns { valid, rejected } for a well-formed batch, or null for a malformed request.
 export function validateEvents(events, now) {
@@ -104,10 +105,10 @@ function checkReportToken(request, url, env, cors) {
     return json({ error: 'unauthorized' }, 401, cors);
 }
 
-// A positive whole number of days, or the fallback when the query value is missing or bad.
+// A positive whole number of days, clamped to the supported report window.
 function resolveDays(raw, fallback) {
     const days = Number.parseInt(raw, 10);
-    return Number.isInteger(days) && days > 0 ? days : fallback;
+    return Number.isInteger(days) && days > 0 ? Math.min(days, MAX_REPORT_DAYS) : fallback;
 }
 
 // The range tabs for the preview page. They keep the token and the device filter, so a
@@ -133,12 +134,12 @@ async function handlePreview(url, env, cors) {
         generateProgressSeries(env.DB, { days, device, now })
     ]);
     if (url.searchParams.get('format') === 'json') {
-        return json({ ...summary, progress }, 200, cors);
+        return json({ ...summary, progress }, 200, { ...cors, 'Cache-Control': 'no-store' });
     }
     const html = renderReportHtml(summary, { nav: previewNav(url, days), progress });
     return new Response(html, {
         status: 200,
-        headers: { 'Content-Type': 'text/html; charset=utf-8', ...cors }
+        headers: { 'Content-Type': 'text/html; charset=utf-8', ...cors, 'Cache-Control': 'no-store' }
     });
 }
 
@@ -147,7 +148,7 @@ async function handleSend(url, env, cors) {
     const device = url.searchParams.get('device') || env?.REPORT_DEVICE || null;
     const summary = await generateWeeklySummary(env.DB, { days, device });
     const result = await sendReportEmail(env, summary);
-    return json(result, result.ok ? 200 : 500, cors);
+    return json(result, result.ok ? 200 : 500, { ...cors, 'Cache-Control': 'no-store' });
 }
 
 // The narrow read path Challenge mode uses: aggregate counts for one device,
@@ -157,7 +158,7 @@ async function handlePractice(url, env, cors) {
     if (!device || device.length > 64) {
         return json({ error: 'invalid_device' }, 400, cors);
     }
-    const days = Math.min(resolveDays(url.searchParams.get('days'), 3), 30);
+    const days = resolveDays(url.searchParams.get('days'), 3);
     const stats = await generatePracticeStats(env.DB, { days, device });
     return json(stats, 200, { ...cors, 'Cache-Control': 'no-store' });
 }
@@ -232,6 +233,11 @@ export default {
         }
 
         if (route === 'POST /report/send') {
+            // Sending is a state-changing side effect; it must not be available
+            // just because the operator left the optional preview token unset.
+            if (!env?.REPORT_TOKEN) {
+                return json({ error: 'send_disabled' }, 403, { ...cors, 'Cache-Control': 'no-store' });
+            }
             const denied = checkReportToken(request, url, env, cors);
             return denied || handleSend(url, env, cors);
         }

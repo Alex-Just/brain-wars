@@ -855,6 +855,129 @@ async function runAsyncTests() {
         assert.ok(html.includes('data-game="operations"'), 'the chart names the game');
     });
 
+    console.log('report hardening');
+
+    await checkAsync('the preview clamps an oversized days value and bounds its progress series', async () => {
+        const db = stubDB({
+            totalsRow: { total: 1, correct_count: 1, wrong_count: 0, active_days: 1, device_count: 1 },
+            gamesRows: [{ game: 'operations', total: 1, correct_count: 1, wrong_count: 0, accuracy_pct: 100 }]
+        });
+        const response = await Worker.default.fetch(
+            stubRequest({ method: 'GET', path: '/report/preview?days=1000&format=json' }),
+            { DB: db }
+        );
+        assert.strictEqual(response.status, 200);
+        const data = await response.json();
+        assert.strictEqual(data.period.days, 30, 'an oversized range is clamped to the supported maximum');
+        assert.ok(data.progress.buckets.length <= 31, 'the preview does not materialize 1,000 buckets');
+        await assert.rejects(
+            Report.generateProgressSeries(stubDB(), { now: NOW, days: 1000 }),
+            /bucket limit/
+        );
+    });
+
+    await checkAsync('the report preview is not cacheable', async () => {
+        const db = stubDB({
+            totalsRow: { total: 1, correct_count: 1, wrong_count: 0, active_days: 1, device_count: 1 },
+            gamesRows: [{ game: 'operations', total: 1, correct_count: 1, wrong_count: 0, accuracy_pct: 100 }]
+        });
+        const env = { DB: db, REPORT_TOKEN: 'secret' };
+        const html = await Worker.default.fetch(stubRequest({
+            method: 'GET',
+            path: '/report/preview',
+            headers: { Authorization: 'Bearer secret' }
+        }), env);
+        assert.strictEqual(html.status, 200);
+        assert.strictEqual(html.headers.get('Cache-Control'), 'no-store');
+
+        const jsonRes = await Worker.default.fetch(stubRequest({
+            method: 'GET',
+            path: '/report/preview?token=secret&format=json'
+        }), env);
+        assert.strictEqual(jsonRes.status, 200);
+        assert.strictEqual(jsonRes.headers.get('Cache-Control'), 'no-store');
+    });
+
+    await checkAsync('POST /report/send fails closed without a configured token', async () => {
+        const originalFetch = globalThis.fetch;
+        let providerCalls = 0;
+        globalThis.fetch = async () => {
+            providerCalls++;
+            return { ok: true, status: 200, text: async () => JSON.stringify({ id: 'sent' }) };
+        };
+
+        try {
+            const response = await Worker.default.fetch(
+                stubRequest({ path: '/report/send', origin: 'https://evil.example' }),
+                { DB: stubDB(), REPORT_EMAIL: 'parent@example.com', RESEND_API_KEY: 'test' }
+            );
+            assert.strictEqual(response.status, 403);
+            assert.deepStrictEqual(await response.json(), { error: 'send_disabled' });
+            assert.strictEqual(providerCalls, 0, 'the disabled send route must not call the provider');
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+    });
+
+    await checkAsync('POST /report/send requires the configured token and is not cacheable', async () => {
+        const originalFetch = globalThis.fetch;
+        let providerCalls = 0;
+        globalThis.fetch = async () => {
+            providerCalls++;
+            return { ok: true, status: 200, text: async () => JSON.stringify({ id: 'sent' }) };
+        };
+
+        try {
+            const env = {
+                DB: stubDB(),
+                REPORT_EMAIL: 'parent@example.com',
+                RESEND_API_KEY: 'test',
+                REPORT_TOKEN: 'secret'
+            };
+            const denied = await Worker.default.fetch(stubRequest({ path: '/report/send' }), env);
+            assert.strictEqual(denied.status, 401);
+            assert.strictEqual(providerCalls, 0);
+
+            const ok = await Worker.default.fetch(stubRequest({
+                path: '/report/send',
+                headers: { Authorization: 'Bearer secret' }
+            }), env);
+            assert.strictEqual(ok.status, 200);
+            assert.strictEqual(ok.headers.get('Cache-Control'), 'no-store');
+            assert.strictEqual(providerCalls, 1);
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+    });
+
+    await checkAsync('the report HTML escapes a crafted game id in progress styles', () => {
+        const crafted = 'x"><img src=x onerror=alert(1)>';
+        const summary = {
+            period: { days: 7, sinceFormatted: 'Oct 26, 2026', nowFormatted: 'Nov 2, 2026' },
+            total: 1, correct: 1, wrong: 0, accuracyPct: 100, activeDays: 1,
+            topPractice: [], mastered: [],
+            games: [{ game: crafted, name: 'Crafted', total: 1, correct: 1, wrong: 0, accuracyPct: 100 }]
+        };
+        const progress = {
+            bucketMs: 24 * 60 * 60 * 1000,
+            buckets: [{ start: NOW - 86400000, label: 'Oct 1' }, { start: NOW, label: 'Oct 2' }],
+            games: [{
+                game: crafted,
+                name: 'Crafted',
+                color: '#000000',
+                total: 1,
+                correct: 1,
+                points: [{ total: 1, correct: 1, accuracyPct: 100 }, null]
+            }]
+        };
+        const html = Report.renderReportHtml(summary, {
+            nav: [{ days: 7, href: '/report/preview?days=7', active: true }],
+            progress
+        });
+        assert.ok(html.includes('&lt;img'), 'the crafted game id is escaped');
+        assert.ok(!html.includes('<img'), 'the crafted game id must not create an element');
+    });
+
     console.log('practice read endpoint');
 
     await checkAsync('generatePracticeStats groups by game for one device', async () => {

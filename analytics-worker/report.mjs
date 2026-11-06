@@ -108,6 +108,8 @@ const MIN_TREND_ATTEMPTS = 5;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
 const THREE_HOURS_MS = 3 * HOUR_MS;
+// The preview supports at most 30 days; hourly buckets would be the largest shape.
+const MAX_PROGRESS_BUCKETS = 24 * 31;
 
 // The weekly email window. The browser preview opens narrower (three days); the
 // worker picks each surface's default and passes it in.
@@ -258,6 +260,10 @@ export async function generateProgressSeries(db, options = {}) {
     const since = now - days * DAY_MS;
     const firstBucket = Math.floor(since / bucketMs);
     const lastBucket = Math.floor((now - 1) / bucketMs);
+    if (!Number.isFinite(since) || !Number.isFinite(firstBucket) ||
+        !Number.isFinite(lastBucket) || lastBucket - firstBucket + 1 > MAX_PROGRESS_BUCKETS) {
+        throw new RangeError('progress range exceeds bucket limit');
+    }
 
     let sql = `
         SELECT game,
@@ -604,7 +610,7 @@ function renderProgressSection(progress) {
         });
         const hidden = visible.has(game.game) ? '' : ' is-hidden';
         const linePath = path.trim();
-        return `<g class="pw-series${hidden}" data-series="${escapeHtml(game.game)}" style="color: var(--pw-${game.game}, ${game.color})">` +
+        return `<g class="pw-series${hidden}" data-series="${escapeHtml(game.game)}" style="color: var(--pw-${escapeHtml(game.game)}, ${game.color})">` +
             `<path class="pw-line" d="${linePath}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>` +
             (linePath ? `<path class="pw-hit" d="${linePath}" fill="none" stroke="transparent" stroke-width="14" pointer-events="stroke" vector-effect="non-scaling-stroke"/>` : '') +
             dots.join('') +
@@ -615,7 +621,7 @@ function renderProgressSection(progress) {
         const note = plottedPoints(game) <= 1 ? ' title="Only one point in this range"' : '';
         return `<label class="pw-chip"${note}>` +
             `<input type="checkbox" data-game="${escapeHtml(game.game)}"${visible.has(game.game) ? ' checked' : ''}>` +
-            `<span class="pw-swatch" style="background-color: var(--pw-${game.game}, ${game.color})"></span>` +
+            `<span class="pw-swatch" style="background-color: var(--pw-${escapeHtml(game.game)}, ${game.color})"></span>` +
             `<span>${escapeHtml(game.name)}</span>` +
             '</label>';
     }).join('');
@@ -764,7 +770,7 @@ export function renderReportHtml(summary, options = {}) {
                             : '';
                         const color = colorByGame.get(item.game);
                         const gameLabel = showTrend && color
-                            ? `<span class="pw-dot" style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background-color: var(--pw-${item.game}, ${color}); margin-right: 7px; vertical-align: 1px;"></span>${escapeHtml(item.name)}`
+                            ? `<span class="pw-dot" style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background-color: var(--pw-${escapeHtml(item.game)}, ${color}); margin-right: 7px; vertical-align: 1px;"></span>${escapeHtml(item.name)}`
                             : escapeHtml(item.name);
                         return `
                         <tr style="border-bottom: 1px solid #f1f5f9;">
