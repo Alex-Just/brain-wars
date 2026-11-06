@@ -46,7 +46,7 @@ npx wrangler secret put REPORT_EMAIL --name brain-wars-answers
 Optional settings (secrets or environment variables):
 
 - `REPORT_EMAIL`: recipient email address.
-- `REPORT_TOKEN`: bearer token to protect the preview and send endpoints.
+- `REPORT_TOKEN`: bearer token for the preview endpoint; required for the HTTP send route. Without it, `POST /report/send` returns 403 `send_disabled`; the scheduled weekly email still sends.
 - `REPORT_DEVICE`: filter stats to one device id.
 
 ### Preview and test endpoints
@@ -57,19 +57,19 @@ Preview the HTML summary in the browser:
 curl https://brain-wars-answers.alex-just.workers.dev/report/preview
 ```
 
-The preview opens on the last three days and shows tabs for 1, 3, 7 and 30 days. Pass `?days=N` to open a range directly. The tabs keep the `token` and `device` query values, so a click stays authorized and filtered. The weekly email keeps its seven-day window.
+The preview opens on the last three days and shows tabs for 1, 3, 7 and 30 days. Pass `?days=N` to open a range directly; values above 30 are clamped to 30. The tabs keep the `token` and `device` query values, so a click stays authorized and filtered. The weekly email keeps its seven-day window.
 
 The preview follows the browser's light or dark color scheme, with a dedicated dark palette for the page, chart, chips and table. The weekly email stays light. It also includes a **Progress by Game** chart and a **Trend** column. The chart follows the selected range: hourly buckets for 1 day, three-hourly for 3 days, and daily for 7 or 30 days. Buckets use UTC, like the rest of the report. It starts with every game that has more than one point in the plot visible; a game with a single point stays unchecked and explains why on hover. The chips and Show all/Hide all buttons change the series without a page reload. Lines connect every point with data, even across gaps; empty buckets are skipped. Hovering a line or its chip accents that line, dims the other lines and chips, and highlights the chip. The Trend column compares the second half of the range with the first half and shows `—` when either half has fewer than five attempts. The weekly email keeps its static five-column table and does not include the chart.
 
 Add `?format=json` for JSON data. The response includes a `progress` object with `bucketMs`, `buckets` and per-game `points`; an empty bucket is `null`.
 
-Trigger sending the email immediately:
+Trigger sending the email immediately (requires `REPORT_TOKEN`):
 
 ```bash
-curl -X POST https://brain-wars-answers.alex-just.workers.dev/report/send
+curl -X POST -H 'Authorization: Bearer <token>' https://brain-wars-answers.alex-just.workers.dev/report/send
 ```
 
-When `REPORT_TOKEN` is set, pass `-H 'Authorization: Bearer <token>'` or `?token=<token>`.
+The token can also be passed as `?token=<token>`. Without `REPORT_TOKEN`, the route returns 403 `send_disabled`; the scheduled weekly email still runs.
 
 ### Practice endpoint
 
