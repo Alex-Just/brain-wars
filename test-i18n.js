@@ -393,17 +393,37 @@ check('every graded answer reports to analytics', () => {
     assert.ok(memory.includes('noteAnswer?.(false)'), 'memory games must report wrong moves');
 });
 
-check('challenge navigation replaces history so Back always exits the run', () => {
+check('challenge navigation replaces history so Back never replays a round', () => {
     // Steps used to push history entries, so Back revisited an earlier round and the
     // stale-tab redirect threw the player forward again: a visible bounce. Replacing
-    // the entry keeps Back meaning "leave the challenge"; the engine must also leave
-    // the game's own back arrow pointing at the hub.
+    // the entry keeps Back from replaying a round; from the first answer on, the back
+    // arrow is hidden instead of repointed.
     const challenge = fs.readFileSync(path.join(__dirname, 'challenge.js'), 'utf8');
     assert.ok(!/(location\.href|location\.assign)/.test(challenge), 'challenge.js must not push step history');
-    assert.ok(!challenge.includes('backBtn'), 'challenge.js must not repoint the game back arrow');
+    assert.ok(!/getElementById\(['"]backBtn['"]\)/.test(challenge), 'challenge.js must not repoint the game back arrow');
     assert.ok(/location\.replace\(/.test(challenge), 'challenge.js must replace the step entry');
     const page = fs.readFileSync(path.join(__dirname, 'challenge.html'), 'utf8');
     assert.ok(!/(location\.href|location\.assign)/.test(page), 'challenge.html must not push step history');
+});
+
+check('a started exam hides the way back to the hub', () => {
+    const challenge = require('./challenge.js');
+    const run = challenge.createRun(5, 10);
+    assert.strictEqual(challenge.hasStarted(run), false, 'a fresh run must keep the back arrow');
+    challenge.bumpAnswer(run, false);
+    assert.strictEqual(challenge.hasStarted(run), true, 'the first graded answer starts the exam');
+    assert.strictEqual(challenge.hasStarted({ solved: 1 }), true, 'a run saved before the counters counts its solved games');
+    assert.strictEqual(challenge.hasStarted({ dirty: true }), true, 'a run saved before the counters counts its mistakes');
+    assert.strictEqual(challenge.hasStarted(null), false);
+
+    // The engine styles the games' own back arrow; challenge.html hides its own.
+    const source = fs.readFileSync(path.join(__dirname, 'challenge.js'), 'utf8');
+    assert.ok(
+        /body\.has-challenge\.ch-started #backBtn/.test(source),
+        'the engine must hide the game back arrow once the exam starts'
+    );
+    const page = fs.readFileSync(path.join(__dirname, 'challenge.html'), 'utf8');
+    assert.ok(/body\.ch-started \.back/.test(page), 'challenge.html must hide its back arrow once the exam starts');
 });
 
 check('the challenge keeps the device language instead of rotating it', () => {

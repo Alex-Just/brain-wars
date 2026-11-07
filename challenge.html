@@ -137,6 +137,11 @@
             text-decoration: none;
         }
 
+        /* A started exam keeps the player in it: the way back to the hub is removed */
+        body.ch-started .back {
+            display: none;
+        }
+
         .lang-bar {
             position: fixed;
             top: max(12px, env(safe-area-inset-top));
@@ -373,6 +378,7 @@
                 renderSetup();
                 summaryView.hidden = true;
                 setupView.hidden = false;
+                document.body.classList.remove('ch-started');
             });
 
             function showSummary(run) {
@@ -399,10 +405,16 @@
             }
 
             const run = Challenge.loadRun();
-            if (run && new URLSearchParams(location.search).has('done')) {
+            const finished = new URLSearchParams(location.search).has('done');
+            if (run && finished) {
                 showSummary(run);
             } else if (run && run.solved > 0) {
                 offerContinue(run);
+            }
+            // An exam that already has answers hides the way back to the hub; the
+            // results screen is the end of the run, so it keeps its back arrow.
+            if (run && !finished && Challenge.hasStarted(run)) {
+                document.body.classList.add('ch-started');
             }
             renderSetup();
         });

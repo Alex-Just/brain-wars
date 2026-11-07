@@ -6,8 +6,8 @@
  *  2. Engine: when a game page is opened with ?challenge=1 it draws the top progress bar,
  *     pins the level, watches the game's completion and mistake signals and takes the
  *     player to the next step. Every step replaces the current history entry, so Back
- *     always exits to the hub instead of replaying earlier rounds. Outside a challenge
- *     it is a no-op.
+ *     never replays an earlier round, and from the first graded answer on the back arrow
+ *     is hidden so the exam cannot be left halfway. Outside a challenge it is a no-op.
  *
  * Browser: window.BrainWarsChallenge. Depends on i18n.js and games.js.
  */
@@ -204,6 +204,16 @@
         return run;
     }
 
+    // An exam counts as started once any answer was graded; from then on its screens
+    // hide the way back to the hub. Runs saved before the counters existed still carry
+    // their progress, so solved games and the mistake flag count too.
+    function hasStarted(run) {
+        const right = Math.max(0, Number(run?.right) || 0);
+        const wrong = Math.max(0, Number(run?.wrong) || 0);
+        const solved = Math.max(0, Number(run?.solved) || 0);
+        return right + wrong > 0 || solved > 0 || Boolean(run?.dirty);
+    }
+
     function stepUrl(run) {
         return global.BrainWarsGames.byId(run.current).file + '?' + PARAM + '=1';
     }
@@ -232,6 +242,7 @@
         parsePracticeHistory: parsePracticeHistory,
         buildQueue: buildQueue,
         bumpAnswer: bumpAnswer,
+        hasStarted: hasStarted,
         practiceUrl: practiceUrl,
         loadPracticeHistory: loadPracticeHistory,
         // One graded tap: every game reports here. Analytics records it in every
@@ -249,6 +260,7 @@
             bumpAnswer(run, ok);
             saveRun(run);
             renderStats();
+            if (hasStarted(run)) document.body.classList.add('ch-started');
         },
         // Starting level for games that read it while setting up their round
         startLevel: () => (active ? run.level : 1)
@@ -357,6 +369,11 @@
                 --ch-bar-offset: calc(34px + env(safe-area-inset-top, 0px));
                 padding-top: var(--ch-bar-offset);
             }
+            /* Once the first answer is in, the exam keeps the player in it: the way
+               back to the hub is removed for the rest of the run. */
+            body.has-challenge.ch-started #backBtn {
+                display: none !important;
+            }
             /* Follow the Leader still pins its back/language row and level readout to the
                viewport, where page padding does nothing, so both have to move down by the
                bar's height. The other games keep their bar in the page flow, where the
@@ -422,6 +439,7 @@
         bar.append(track, flag, counts);
         document.body.appendChild(bar);
         document.body.classList.add('has-challenge');
+        document.body.classList.toggle('ch-started', hasStarted(run));
 
         // Reserve the bar's real height plus the same gap the games put under their header
         // row (10px), so the space above and below the flags stays equal on every device,
@@ -455,7 +473,7 @@
 
     // The game's own success screen is hidden during a run, so move on the moment the
     // step registers: waiting here only looks like a freeze. Replacing the entry (not
-    // pushing one) keeps Back meaning "leave the challenge" on every step.
+    // pushing one) keeps Back from replaying an earlier step.
     function finishStep(flag) {
         if (run.dirty && flag) flag.hidden = false;
         document.body.style.pointerEvents = 'none';
