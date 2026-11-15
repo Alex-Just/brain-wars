@@ -205,7 +205,9 @@ export async function generateWeeklySummary(db, options = {}) {
     const total = totalsRow?.total || 0;
     const correct = totalsRow?.correct_count || 0;
     const wrong = totalsRow?.wrong_count || 0;
-    const activeDays = totalsRow?.active_days || 0;
+    // The window counts back from `now` inclusively, so its distinct UTC dates can
+    // outnumber the period by one; active days can never exceed the period itself.
+    const activeDays = Math.min(totalsRow?.active_days || 0, days);
     const deviceCount = totalsRow?.device_count || 0;
     const overallAccuracy = accuracyPct(correct, total);
 

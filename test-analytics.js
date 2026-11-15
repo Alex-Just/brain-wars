@@ -579,6 +579,19 @@ async function runAsyncTests() {
         assert.strictEqual(summary.mastered.length, 0);
     });
 
+    await checkAsync('active days never exceed the period length', async () => {
+        // The window runs from `now - days` up to `now` inclusive, so activity near
+        // both ends can touch one more UTC date than the period holds. That mismatch
+        // rendered as "8 of 7 days".
+        const db = stubDB({
+            totalsRow: { total: 10, correct_count: 9, wrong_count: 1, active_days: 8, device_count: 1 }
+        });
+        const week = await Report.generateWeeklySummary(db, { now: NOW, days: 7 });
+        assert.strictEqual(week.activeDays, 7, 'a seven-day window reports at most seven active days');
+        const threeDays = await Report.generateWeeklySummary(db, { now: NOW, days: 3 });
+        assert.strictEqual(threeDays.activeDays, 3, 'a three-day window reports at most three active days');
+    });
+
     await checkAsync('renderReportHtml and renderReportText contain key metrics, tips and links', () => {
         const mockSummary = {
             period: { sinceFormatted: 'Oct 3, 2026', nowFormatted: 'Oct 10, 2026' },
