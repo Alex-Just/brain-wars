@@ -737,6 +737,49 @@ async function runAsyncTests() {
         assert.ok(!emailHtml.includes('prefers-color-scheme: dark'), 'the email stays light');
     });
 
+    await checkAsync('the preview trims empty buckets so the lines span the plot', () => {
+        const summary = {
+            total: 10, correct: 5, wrong: 5, accuracyPct: 50, activeDays: 1,
+            topPractice: [], mastered: [],
+            period: { days: 7, sinceFormatted: 'Oct 3, 2026', nowFormatted: 'Oct 10, 2026' },
+            games: []
+        };
+        const nav = [{ days: 7, href: '/report/preview?days=7', active: true }];
+        const labels = ['Nov 5', 'Nov 6', 'Nov 7', 'Nov 8', 'Nov 9', 'Nov 10', 'Nov 11'];
+        const progress = {
+            period: { days: 7, since: 0, now: 0 },
+            bucketMs: 24 * 60 * 60 * 1000,
+            buckets: labels.map((label, index) => ({ start: index * 24 * 60 * 60 * 1000, label })),
+            games: [{
+                game: 'operations',
+                name: 'Mental Math',
+                color: '#4f46e5',
+                total: 10,
+                correct: 5,
+                accuracyPct: 50,
+                delta: 0,
+                points: [
+                    null,
+                    null,
+                    { total: 2, correct: 1, accuracyPct: 50 },
+                    null,
+                    { total: 2, correct: 1, accuracyPct: 50 },
+                    null,
+                    null
+                ]
+            }]
+        };
+        const html = Report.renderReportHtml(summary, { nav, progress });
+        const series = html.match(/<g class="pw-series[^"]*" data-series="operations"[^>]*><path[^>]* d="([^"]*)"/);
+        assert.ok(series, 'the operations series has a path');
+        // The 760-wide chart has a 44px left margin and an 18px right margin.
+        assert.match(series[1], /^M44\.0,/, 'the first data point starts at the left edge of the plot');
+        assert.match(series[1], /L742\.0,/, 'the last data point ends at the right edge of the plot');
+        assert.ok(html.includes('>Nov 9<'), 'the last data bucket keeps its label');
+        assert.ok(!html.includes('>Nov 5<'), 'an empty bucket before the data gets no label');
+        assert.ok(!html.includes('>Nov 11<'), 'an empty bucket after the data gets no label');
+    });
+
     await checkAsync('sendReportEmail sends via Resend with Bearer auth and recipient', async () => {
         const originalFetch = globalThis.fetch;
         let sentUrl = null;
