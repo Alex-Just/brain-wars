@@ -572,9 +572,24 @@ function renderProgressSection(progress) {
     const margin = { top: 18, right: 18, bottom: 30, left: 44 };
     const plotWidth = width - margin.left - margin.right;
     const plotHeight = height - margin.top - margin.bottom;
-    const x = (index) => buckets.length <= 1
+    // Draw the x-axis over the buckets that hold data, not the whole requested
+    // window. A quiet start would otherwise leave most of the plot empty and
+    // squeeze the lines into one corner.
+    let firstBucket = -1;
+    let lastBucket = -1;
+    games.forEach((game) => {
+        game.points.forEach((point, index) => {
+            if (!point) return;
+            if (firstBucket < 0 || index < firstBucket) firstBucket = index;
+            if (index > lastBucket) lastBucket = index;
+        });
+    });
+    const startIndex = firstBucket >= 0 ? firstBucket : 0;
+    const endIndex = lastBucket >= 0 ? lastBucket : buckets.length - 1;
+    const bucketCount = endIndex - startIndex + 1;
+    const x = (index) => bucketCount <= 1
         ? margin.left + plotWidth / 2
-        : margin.left + (index / (buckets.length - 1)) * plotWidth;
+        : margin.left + ((index - startIndex) / (bucketCount - 1)) * plotWidth;
     const y = (value) => margin.top + plotHeight - (value / 100) * plotHeight;
     const plottedPoints = (game) => game.points.filter(Boolean).length;
     const visible = new Set(games.filter((game) => plottedPoints(game) > 1).map((game) => game.game));
@@ -586,13 +601,15 @@ function renderProgressSection(progress) {
             `<text x="${margin.left - 8}" y="${lineY + 4}" text-anchor="end" font-size="11" fill="#64748b">${value}%</text>`;
     }).join('');
 
-    const labelStep = Math.max(1, Math.ceil((buckets.length - 1) / 5));
+    const labelStep = Math.max(1, Math.ceil((bucketCount - 1) / 5));
     const labelIndexes = [];
-    for (let index = 0; index < buckets.length; index += labelStep) labelIndexes.push(index);
-    if (labelIndexes[labelIndexes.length - 1] !== buckets.length - 1) labelIndexes.push(buckets.length - 1);
+    if (bucketCount > 0) {
+        for (let index = startIndex; index <= endIndex; index += labelStep) labelIndexes.push(index);
+        if (labelIndexes[labelIndexes.length - 1] !== endIndex) labelIndexes.push(endIndex);
+    }
     const xLabels = labelIndexes.map((index) => {
-        const first = index === 0;
-        const last = index === buckets.length - 1;
+        const first = index === startIndex;
+        const last = index === endIndex;
         const anchor = first && !last ? 'start' : last && !first ? 'end' : 'middle';
         const labelX = first && !last ? margin.left : last && !first ? width - margin.right : x(index);
         return `<text x="${labelX.toFixed(1)}" y="${height - 8}" text-anchor="${anchor}" font-size="11" fill="#64748b">${escapeHtml(buckets[index].label)}</text>`;
