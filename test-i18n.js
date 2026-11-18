@@ -1039,14 +1039,14 @@ check('the unit ladder has twenty levels', () => {
     assert.strictEqual(Units.maxLevel, 20, 'expected twenty levels');
 });
 
-check('level one asks for the whole unit table', () => {
+check('level one asks for the whole unit table in a random order', () => {
     const question = Units.build(1, mulberry32(2468), null);
     assert.strictEqual(question.table, true, 'level 1 should be the unit table');
     assert.strictEqual(question.kind, 'table', 'level 1 should be the reference table');
     assert.deepStrictEqual(
-        question.rows.map((row) => `${row.from}>${row.to}`),
-        ['km>m', 'm>cm', 'cm>mm', 'kg>g', 'l>ml'],
-        'the table should ladder through the units the game uses'
+        question.rows.map((row) => `${row.from}>${row.to}`).sort(compareStrings),
+        ['cm>mm', 'kg>g', 'km>m', 'l>ml', 'm>cm'],
+        'the table should hold every unit step in the game'
     );
     question.rows.forEach((row) => {
         assert.strictEqual(row.value, '1', `a table row starts at one unit: ${JSON.stringify(row)}`);
@@ -1058,6 +1058,13 @@ check('level one asks for the whole unit table', () => {
         Object.keys(Units.units).sort(compareStrings),
         'the table should name every unit in the game'
     );
+    // A remembered position is no help: every round draws a new row order.
+    const orders = new Set();
+    for (let seed = 1; seed <= 20; seed++) {
+        const table = Units.build(1, mulberry32(seed), null);
+        orders.add(table.rows.map((row) => `${row.from}>${row.to}`).join('|'));
+    }
+    assert.ok(orders.size > 1, 'level 1 should shuffle the table rows on every build');
 });
 
 check('level two converts in two connected steps', () => {

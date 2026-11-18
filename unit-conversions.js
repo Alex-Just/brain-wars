@@ -5,9 +5,10 @@
  * mass (kg, g), length (km, m, cm, mm) and capacity (l, ml). One question turns a
  * measurement into another unit of the same family — bigger to smaller multiplies
  * by a power of ten, smaller to bigger divides by one. Level 1 is the reference
- * table: one "1 <unit> = ? <smaller unit>" row for every unit step in the game.
- * Level 2 chains two steps, so the answer of the first conversion becomes the
- * measurement of the second (km > m > cm, or m > cm > mm).
+ * table: one "1 <unit> = ? <smaller unit>" row for every unit step in the game,
+ * in a fresh random order each round. Level 2 chains two steps, so the answer of
+ * the first conversion becomes the measurement of the second (km > m > cm, or
+ * m > cm > mm) with a freshly drawn chain and starting value.
  *
  * Every unit is stored as its power of ten against the family's base unit (gram,
  * metre, litre), so a conversion is always the integer step `exp = from - to` and
@@ -45,11 +46,11 @@
     //   answerPlaces decimal places on the answer (up conversions)
     //   maxMantissa  cap on the significant digits, so sizes stay readable
     // The first level is the reference table: every unit the game uses, once, as
-    // "1 <unit> = ? <smaller unit>". Level 2 chains two length steps, so the first
-    // answer is the measurement of the second. The early levels then move one
-    // family at a time, whole numbers only; decimals arrive on the way down (11),
-    // then on the way up (12-13), then on both sides (14), and the two-step jumps
-    // close the ladder.
+    // "1 <unit> = ? <smaller unit>", shuffled per round. Level 2 draws a random
+    // chain (and start value) each round, so neither early level repeats a fixed
+    // layout. The early levels then move one family at a time, whole numbers only;
+    // decimals arrive on the way down (11), then on the way up (12-13), then on
+    // both sides (14), and the two-step jumps close the ladder.
     const TABLE_ROWS = [
         ['km', 'm'],
         ['m', 'cm'],
@@ -123,6 +124,17 @@
         return list[Math.floor(rng() * list.length)];
     }
 
+    // Fisher-Yates, without touching the input. Used for the level-1 table so the
+    // row order changes every round and cannot be memorised by position.
+    function shuffle(rng, list) {
+        const copy = list.slice();
+        for (let i = copy.length - 1; i > 0; i--) {
+            const j = Math.floor(rng() * (i + 1));
+            [copy[i], copy[j]] = [copy[j], copy[i]];
+        }
+        return copy;
+    }
+
     // The significant digits of a value with `places` decimals. A mantissa that
     // ends in zero would quietly drop a place, so those are nudged down: a level
     // that teaches tenths always shows a tenth.
@@ -194,15 +206,16 @@
         };
     }
 
-    // The level-1 table: one row per unit step, always "1 <from> = ? <to>".
-    // Every row is a full question, so the page can grade and hint each row with
-    // the same rule and check helpers as a single conversion.
-    function buildTable() {
+    // The level-1 table: one row per unit step, always "1 <from> = ? <to>". The
+    // rows are shuffled per build, so a child cannot answer by remembering a row's
+    // position. Every row is a full question, so the page can grade and hint each
+    // row with the same rule and check helpers as a single conversion.
+    function buildTable(rng) {
         return {
             table: true,
             kind: 'table',
             family: 'mixed',
-            rows: TABLE_ROWS.map(([from, to]) => downRow(from, to, '1'))
+            rows: shuffle(rng, TABLE_ROWS).map(([from, to]) => downRow(from, to, '1'))
         };
     }
 
@@ -276,8 +289,8 @@
      */
     function build(level, rng, avoid) {
         const config = LEVELS[clampLevel(level) - 1];
-        if (config.table) return buildTable();
         const random = typeof rng === 'function' ? rng : Math.random;
+        if (config.table) return buildTable(random);
         const avoidKey = avoid ? questionKey(avoid) : null;
 
         let question = null;
